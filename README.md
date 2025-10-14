@@ -1,0 +1,264 @@
+# Why Designers - Backend API
+
+A professional Express.js backend API built with TypeScript, MongoDB, and following best practices including the Controller-Service-Repository pattern.
+
+## Features
+
+- **TypeScript** - Full type safety
+- **Express.js** - Fast, unopinionated web framework
+- **MongoDB** - NoSQL database with Mongoose ODM
+- **JWT Authentication** - Secure authentication with refresh tokens
+- **Role-based Authorization** - User and admin roles
+- **Input Validation** - Using Joi schemas
+- **Error Handling** - Centralized error handling
+- **Security** - Helmet, CORS, Rate limiting
+- **File Upload** - AWS S3 integration with Multer
+- **API Documentation** - Interactive Swagger/OpenAPI docs
+- **Clean Architecture** - Controller-Service-Repository pattern
+- **Design Patterns** - Singleton, Factory, Repository patterns
+
+## Project Structure
+
+```
+why-designers/
+├── src/
+│   ├── config/           # Configuration files (database, env, swagger)
+│   ├── controllers/      # Route controllers (handle requests)
+│   ├── services/         # Business logic layer
+│   ├── repositories/     # Data access layer (database operations)
+│   ├── models/           # Database models (Mongoose schemas)
+│   ├── middlewares/      # Custom middlewares (auth, validation, error handling, upload)
+│   ├── routes/           # API routes
+│   ├── validators/       # Joi validation schemas
+│   ├── utils/            # Utility functions and helpers
+│   ├── types/            # TypeScript type definitions
+│   ├── docs/             # API documentation (Swagger annotations)
+│   ├── app.ts            # Express app setup
+│   └── server.ts         # Server entry point
+├── dist/                 # Compiled JavaScript (generated)
+├── .env.example          # Environment variables template
+├── API_DOCS.md           # API endpoint documentation
+├── .gitignore
+├── tsconfig.json         # TypeScript configuration
+├── package.json
+└── README.md
+```
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v16 or higher)
+- MongoDB (v4.4 or higher)
+- npm or yarn
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd why-designers
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Set up environment variables:
+```bash
+cp .env.example .env
+```
+
+4. Edit `.env` file with your configuration:
+```env
+NODE_ENV=development
+PORT=5000
+MONGODB_URI=mongodb://localhost:27017/why-designers
+JWT_SECRET=your-super-secret-jwt-key
+JWT_EXPIRE=7d
+```
+
+5. Start MongoDB (if running locally):
+```bash
+mongod
+```
+
+6. Run the development server:
+```bash
+npm run dev
+```
+
+The server will start at `http://localhost:5000`
+
+## Available Scripts
+
+- `npm run dev` - Start development server with hot reload
+- `npm run build` - Build TypeScript to JavaScript
+- `npm start` - Start production server
+- `npm run start:prod` - Start production server with NODE_ENV=production
+- `npm run clean` - Remove build directory
+- `npm run rebuild` - Clean and rebuild
+
+## API Documentation
+
+### 📚 Interactive Swagger/OpenAPI Documentation
+
+Once the server is running, access the interactive API documentation at:
+
+**🔗 http://localhost:5000/api-docs**
+
+**Features:**
+- ✅ Test all endpoints directly in the browser
+- ✅ Built-in authentication (click "Authorize" button)
+- ✅ Request/response examples
+- ✅ Schema validation
+- ✅ Export as JSON: http://localhost:5000/api-docs.json
+
+**How to Use:**
+1. Start the server: `npm run dev`
+2. Open browser and go to: http://localhost:5000/api-docs
+3. Click the **"Authorize"** button (top right)
+4. Enter your JWT token in the format: `Bearer <your-token>`
+5. Test any endpoint by clicking "Try it out"
+
+### 📄 Markdown Documentation
+
+For detailed endpoint documentation with cURL examples, see [API_DOCS.md](./API_DOCS.md)
+
+## API Endpoints
+
+### Health Check
+- `GET /api/v1/health` - Check server status
+
+### Authentication
+- `POST /api/v1/users/register` - Register new user
+- `POST /api/v1/users/login` - Login user
+- `POST /api/v1/users/refresh-token` - Refresh access token
+- `POST /api/v1/users/logout` - Logout user (Protected)
+
+### User Profile
+- `GET /api/v1/users/profile` - Get current user profile (Protected)
+- `PATCH /api/v1/users/profile` - Update profile (Protected)
+- `PUT /api/v1/users/profile/upload` - Update profile with image upload (Protected)
+- `POST /api/v1/users/change-password` - Change password (Protected)
+- `POST /api/v1/users/verify-email` - Verify email (Protected)
+- `POST /api/v1/users/verify-phone` - Verify phone (Protected)
+
+### Admin Only
+- `GET /api/v1/users` - Get all users (Admin only)
+- `GET /api/v1/users/:id` - Get user by ID (Admin only)
+- `PATCH /api/v1/users/:id` - Update user (Admin only)
+- `DELETE /api/v1/users/:id` - Delete user (Admin only)
+- `POST /api/v1/users/:id/deactivate` - Soft delete user (Admin only)
+
+## Architecture Patterns
+
+### Controller-Service-Repository Pattern
+
+**Controller Layer** (`controllers/`)
+- Handles HTTP requests and responses
+- Input validation
+- Calls service layer methods
+- Returns formatted responses
+
+**Service Layer** (`services/`)
+- Contains business logic
+- Orchestrates operations
+- Calls repository methods
+- Handles transactions
+
+**Repository Layer** (`repositories/`)
+- Direct database operations
+- CRUD operations
+- Query building
+- Data access abstraction
+
+### Design Patterns Used
+
+1. **Singleton Pattern** - Database connection
+2. **Factory Pattern** - Response handlers
+3. **Repository Pattern** - Data access layer
+4. **Strategy Pattern** - Validation middleware
+5. **Dependency Injection** - Service dependencies
+
+## Security Features
+
+- **Helmet** - Sets security HTTP headers
+- **CORS** - Cross-origin resource sharing
+- **Rate Limiting** - Prevents brute force attacks
+- **JWT** - Secure token-based authentication
+- **Bcrypt** - Password hashing
+- **Input Validation** - Joi schemas prevent injection attacks
+
+## Error Handling
+
+Centralized error handling with custom error classes:
+- `BadRequestError` (400)
+- `UnauthorizedError` (401)
+- `ForbiddenError` (403)
+- `NotFoundError` (404)
+- `ConflictError` (409)
+- `ValidationError` (422)
+- `InternalServerError` (500)
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| NODE_ENV | Environment mode | development |
+| PORT | Server port | 5000 |
+| MONGODB_URI | MongoDB connection string | - |
+| JWT_SECRET | JWT secret key | - |
+| JWT_EXPIRE | JWT expiration time | 7d |
+| BCRYPT_ROUNDS | Bcrypt salt rounds | 10 |
+| CORS_ORIGIN | CORS allowed origin | * |
+| RATE_LIMIT_WINDOW_MS | Rate limit window | 900000 |
+| RATE_LIMIT_MAX_REQUESTS | Max requests per window | 100 |
+| AWS_ACCESS_KEY_ID | AWS access key for S3 | - |
+| AWS_SECRET_ACCESS_KEY | AWS secret key for S3 | - |
+| AWS_REGION | AWS region | us-east-1 |
+| AWS_S3_BUCKET_NAME | S3 bucket name | - |
+
+### AWS S3 Configuration
+
+For file upload functionality, you need to configure AWS S3:
+
+1. Create an S3 bucket in AWS Console
+2. Add the credentials to your `.env` file
+3. Configure bucket policy for public access (see [API_DOCS.md](./API_DOCS.md) for details)
+
+## Development Guidelines
+
+1. **Code Style** - Follow TypeScript best practices
+2. **Error Handling** - Always use try-catch and custom errors
+3. **Validation** - Validate all inputs using Joi
+4. **Authentication** - Protect routes with auth middleware
+5. **Testing** - Write unit and integration tests
+6. **Documentation** - Document all endpoints and functions
+
+## Production Deployment
+
+1. Build the project:
+```bash
+npm run build
+```
+
+2. Set environment variables for production
+
+3. Start the server:
+```bash
+npm run start:prod
+```
+
+## License
+
+ISC
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
