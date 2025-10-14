@@ -581,22 +581,37 @@ curl -X POST http://localhost:5000/api/v1/users/change-password \
 
 ---
 
-### 8. Verify Email with OTP
+### 8. Verify Email with OTP (Public)
 
 Verify user's email using the 6-digit OTP sent during registration. OTP expires after 5 minutes.
 
+**🌐 Public Endpoint:** This endpoint supports both authenticated and public access.
+
 **Endpoint:** `POST /users/verify-email`
 
-**Headers:**
+**Usage Modes:**
+
+**Mode 1: With Authentication (Token)**
+- Provide Bearer token in Authorization header
+- Only `otp` is required in request body
+- Email is identified from the token
+
+**Mode 2: Without Authentication (Public)**
+- No token required
+- Both `otp` and `email` are required in request body
+- Useful when users lose their tokens or tokens expire
+
+**Headers (Optional for public access):**
 ```
-Authorization: Bearer YOUR_JWT_TOKEN
+Authorization: Bearer YOUR_JWT_TOKEN  (Optional)
 Content-Type: application/json
 ```
 
 **Request Body:**
 ```json
 {
-  "otp": "123456"
+  "otp": "123456",
+  "email": "user@example.com"  (Required if no Bearer token)
 }
 ```
 
@@ -613,7 +628,9 @@ Content-Type: application/json
 }
 ```
 
-**Error Response (400 Bad Request):**
+**Error Responses:**
+
+**400 Bad Request (Invalid OTP):**
 ```json
 {
   "success": false,
@@ -621,12 +638,42 @@ Content-Type: application/json
 }
 ```
 
-**cURL Example:**
+**400 Bad Request (Missing Email/UserId):**
+```json
+{
+  "success": false,
+  "message": "Either userId or email is required"
+}
+```
+
+**404 Not Found:**
+```json
+{
+  "success": false,
+  "message": "User not found"
+}
+```
+
+**cURL Examples:**
+
+**With Bearer token (authenticated):**
 ```bash
 curl -X POST http://localhost:5000/api/v1/users/verify-email \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"otp": "123456"}'
+  -d '{
+    "otp": "123456"
+  }'
+```
+
+**Without token (public access):**
+```bash
+curl -X POST http://localhost:5000/api/v1/users/verify-email \
+  -H "Content-Type: application/json" \
+  -d '{
+    "otp": "123456",
+    "email": "user@example.com"
+  }'
 ```
 
 **Notes:**
@@ -634,18 +681,41 @@ curl -X POST http://localhost:5000/api/v1/users/verify-email \
 - OTP can only be used once
 - A welcome email will be sent upon successful verification
 - Check your email (including spam folder) for the OTP
+- If you have a valid token, you only need to provide the OTP
+- If you don't have a token (or it expired), provide both OTP and email
 
 ---
 
-### 9. Resend OTP
+### 9. Resend OTP (Public)
 
 Resend email verification OTP if the previous one expired or was not received. Rate limited to once per minute.
 
+**🌐 Public Endpoint:** This endpoint supports both authenticated and public access.
+
 **Endpoint:** `POST /users/resend-otp`
 
-**Headers:**
+**Usage Modes:**
+
+**Mode 1: With Authentication (Token)**
+- Provide Bearer token in Authorization header
+- No request body needed (email is identified from token)
+
+**Mode 2: Without Authentication (Public)**
+- No token required
+- `email` is required in request body
+- Useful when users lose their tokens or tokens expire
+
+**Headers (Optional for public access):**
 ```
-Authorization: Bearer YOUR_JWT_TOKEN
+Authorization: Bearer YOUR_JWT_TOKEN  (Optional)
+Content-Type: application/json
+```
+
+**Request Body (for public access):**
+```json
+{
+  "email": "user@example.com"  (Required if no Bearer token)
+}
 ```
 
 **Response (200 OK):**
@@ -675,10 +745,38 @@ Authorization: Bearer YOUR_JWT_TOKEN
 }
 ```
 
-**cURL Example:**
+**400 Bad Request (Missing Email/UserId):**
+```json
+{
+  "success": false,
+  "message": "Either userId or email is required"
+}
+```
+
+**404 Not Found:**
+```json
+{
+  "success": false,
+  "message": "User not found"
+}
+```
+
+**cURL Examples:**
+
+**With Bearer token (authenticated):**
 ```bash
 curl -X POST http://localhost:5000/api/v1/users/resend-otp \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json"
+```
+
+**Without token (public access):**
+```bash
+curl -X POST http://localhost:5000/api/v1/users/resend-otp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com"
+  }'
 ```
 
 **Notes:**
@@ -686,6 +784,8 @@ curl -X POST http://localhost:5000/api/v1/users/resend-otp \
 - Cannot resend if email is already verified
 - New OTP invalidates any previous unused OTPs
 - OTP is valid for 5 minutes
+- If you have a valid token, no request body is needed
+- If you don't have a token (or it expired), provide your email in the request body
 
 ---
 
@@ -1092,6 +1192,645 @@ The system has two roles:
    - Can update any user
    - Can delete any user
    - Can deactivate any user
+
+---
+
+## Category Endpoints
+
+All category creation, update, and delete operations require admin role with verification. Public users can view categories.
+
+### 17. Get All Categories
+
+Get a paginated list of all active categories.
+
+**Endpoint:** `GET /categories`
+
+**Query Parameters:**
+- `page` (default: 1) - Page number
+- `limit` (default: 10, max: 100) - Items per page
+- `sortBy` (default: "createdAt") - Sort field
+- `order` (default: "desc") - Sort order (asc/desc)
+- `search` (optional) - Search in category name and description
+- `includeInactive` (optional, Admin only) - Include inactive categories
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Categories retrieved successfully",
+  "data": [
+    {
+      "_id": "64cat123...",
+      "name": "Technology",
+      "slug": "technology",
+      "description": "All about tech and innovation",
+      "isActive": true,
+      "createdBy": {
+        "_id": "64user...",
+        "firstName": "Admin",
+        "lastName": "User",
+        "email": "admin@example.com"
+      },
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2024-01-15T10:00:00.000Z"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "limit": 10,
+    "total": 25,
+    "totalPages": 3
+  }
+}
+```
+
+**cURL Example:**
+```bash
+curl "http://localhost:5000/api/v1/categories?page=1&limit=10" \
+  -H "Content-Type: application/json"
+```
+
+---
+
+### 18. Get Category By ID
+
+Get a specific category by ID (Public).
+
+**Endpoint:** `GET /categories/:id`
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Category retrieved successfully",
+  "data": {
+    "_id": "64cat123...",
+    "name": "Technology",
+    "slug": "technology",
+    "description": "All about tech and innovation",
+    "isActive": true,
+    "createdBy": { ... },
+    "createdAt": "2024-01-15T10:00:00.000Z",
+    "updatedAt": "2024-01-15T10:00:00.000Z"
+  }
+}
+```
+
+**cURL Example:**
+```bash
+curl http://localhost:5000/api/v1/categories/64cat123... \
+  -H "Content-Type: application/json"
+```
+
+---
+
+### 19. Get Category By Slug
+
+Get a specific category by slug (Public).
+
+**Endpoint:** `GET /categories/slug/:slug`
+
+**cURL Example:**
+```bash
+curl http://localhost:5000/api/v1/categories/slug/technology \
+  -H "Content-Type: application/json"
+```
+
+---
+
+### 20. Create Category (Admin Only)
+
+Create a new blog category.
+
+**⚠️ Requires: Admin Role + Verification**
+
+**Endpoint:** `POST /categories`
+
+**Headers:**
+```
+Authorization: Bearer ADMIN_JWT_TOKEN
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "name": "Technology",
+  "slug": "technology",
+  "description": "All about tech and innovation"
+}
+```
+
+**Required Fields:**
+- `name` (min: 2, max: 50 characters, unique)
+
+**Optional Fields:**
+- `slug` (URL-friendly, lowercase, auto-generated from name if not provided)
+- `description` (max: 500 characters)
+
+**Response (201 Created):**
+```json
+{
+  "success": true,
+  "message": "Category created successfully",
+  "data": {
+    "_id": "64cat123...",
+    "name": "Technology",
+    "slug": "technology",
+    "description": "All about tech and innovation",
+    "isActive": true,
+    "createdBy": "64user...",
+    "createdAt": "2024-01-15T10:00:00.000Z",
+    "updatedAt": "2024-01-15T10:00:00.000Z"
+  }
+}
+```
+
+**cURL Example:**
+```bash
+curl -X POST http://localhost:5000/api/v1/categories \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Technology",
+    "description": "All about tech and innovation"
+  }'
+```
+
+---
+
+### 21. Update Category (Admin Only)
+
+Update an existing category.
+
+**⚠️ Requires: Admin Role + Verification**
+
+**Endpoint:** `PATCH /categories/:id`
+
+**Headers:**
+```
+Authorization: Bearer ADMIN_JWT_TOKEN
+Content-Type: application/json
+```
+
+**Request Body (all fields optional):**
+```json
+{
+  "name": "Tech & Innovation",
+  "slug": "tech-innovation",
+  "description": "Updated description",
+  "isActive": true
+}
+```
+
+**cURL Example:**
+```bash
+curl -X PATCH http://localhost:5000/api/v1/categories/64cat123... \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Tech & Innovation"
+  }'
+```
+
+---
+
+### 22. Delete Category (Admin Only)
+
+Permanently delete a category.
+
+**⚠️ Requires: Admin Role + Verification**
+
+**Endpoint:** `DELETE /categories/:id`
+
+**Headers:**
+```
+Authorization: Bearer ADMIN_JWT_TOKEN
+```
+
+**cURL Example:**
+```bash
+curl -X DELETE http://localhost:5000/api/v1/categories/64cat123... \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN"
+```
+
+---
+
+## Blog Endpoints
+
+All blog creation, update, and delete operations require authentication and verification. Public users can view published blogs.
+
+### 23. Get All Published Blogs
+
+Get a paginated list of all published blogs (Public).
+
+**Endpoint:** `GET /blogs`
+
+**Query Parameters:**
+- `page` (default: 1) - Page number
+- `limit` (default: 10, max: 100) - Items per page
+- `sortBy` (default: "createdAt") - Sort field
+- `order` (default: "desc") - Sort order (asc/desc)
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Blogs retrieved successfully",
+  "data": [
+    {
+      "_id": "64blog123...",
+      "title": "Getting Started with Node.js",
+      "slug": "getting-started-with-nodejs",
+      "content": "Full blog content here...",
+      "excerpt": "Learn how to get started with Node.js development",
+      "featuredImage": "https://example.com/image.jpg",
+      "authorId": {
+        "_id": "64user...",
+        "firstName": "John",
+        "lastName": "Doe",
+        "email": "john@example.com",
+        "profilePicture": "..."
+      },
+      "categoryId": {
+        "_id": "64cat...",
+        "name": "Technology",
+        "slug": "technology"
+      },
+      "tags": ["nodejs", "javascript", "backend"],
+      "status": "published",
+      "publishedAt": "2024-01-15T10:00:00.000Z",
+      "viewCount": 125,
+      "readTime": 5,
+      "isActive": true,
+      "createdAt": "2024-01-15T09:00:00.000Z",
+      "updatedAt": "2024-01-15T10:00:00.000Z"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "limit": 10,
+    "total": 50,
+    "totalPages": 5
+  }
+}
+```
+
+**cURL Example:**
+```bash
+curl "http://localhost:5000/api/v1/blogs?page=1&limit=10"
+```
+
+---
+
+### 24. Get My Blogs
+
+Get authenticated user's blogs including drafts.
+
+**⚠️ Requires: Authentication + Verification**
+
+**Endpoint:** `GET /blogs/my-blogs`
+
+**Headers:**
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+**Query Parameters:**
+- `page` (default: 1)
+- `limit` (default: 10)
+- `status` (optional: draft, published, archived)
+
+**cURL Example:**
+```bash
+curl "http://localhost:5000/api/v1/blogs/my-blogs?status=draft" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+---
+
+### 25. Search Blogs
+
+Search published blogs by title, content, excerpt, or tags.
+
+**Endpoint:** `GET /blogs/search`
+
+**Query Parameters:**
+- `q` (required, min: 2 characters) - Search query
+- `page` (default: 1)
+- `limit` (default: 10)
+
+**cURL Example:**
+```bash
+curl "http://localhost:5000/api/v1/blogs/search?q=nodejs&page=1"
+```
+
+---
+
+### 26. Get Blogs By Category
+
+Get all published blogs in a specific category.
+
+**Endpoint:** `GET /blogs/category/:categoryId`
+
+**cURL Example:**
+```bash
+curl "http://localhost:5000/api/v1/blogs/category/64cat123..."
+```
+
+---
+
+### 27. Get Blogs By Author
+
+Get all published blogs by a specific author (Public).
+
+**Endpoint:** `GET /blogs/author/:authorId`
+
+**cURL Example:**
+```bash
+curl "http://localhost:5000/api/v1/blogs/author/64user123..."
+```
+
+---
+
+### 28. Get Most Viewed Blogs
+
+Get the most viewed published blogs.
+
+**Endpoint:** `GET /blogs/most-viewed`
+
+**Query Parameters:**
+- `limit` (default: 10) - Number of blogs to return
+
+**cURL Example:**
+```bash
+curl "http://localhost:5000/api/v1/blogs/most-viewed?limit=5"
+```
+
+---
+
+### 29. Get Recent Blogs
+
+Get the most recently published blogs.
+
+**Endpoint:** `GET /blogs/recent`
+
+**Query Parameters:**
+- `limit` (default: 10) - Number of blogs to return
+
+**cURL Example:**
+```bash
+curl "http://localhost:5000/api/v1/blogs/recent?limit=5"
+```
+
+---
+
+### 30. Get All Tags
+
+Get list of all unique tags used in published blogs.
+
+**Endpoint:** `GET /blogs/tags`
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Tags retrieved successfully",
+  "data": ["nodejs", "javascript", "react", "typescript", "backend", "frontend"]
+}
+```
+
+**cURL Example:**
+```bash
+curl http://localhost:5000/api/v1/blogs/tags
+```
+
+---
+
+### 31. Create Blog
+
+Create a new blog post.
+
+**⚠️ Requires: Authentication + Verification**
+
+**Endpoint:** `POST /blogs`
+
+**Headers:**
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "title": "Getting Started with Node.js",
+  "slug": "getting-started-with-nodejs",
+  "content": "Full blog content here (minimum 50 characters)...",
+  "excerpt": "Learn how to get started with Node.js development",
+  "featuredImage": "https://example.com/image.jpg",
+  "categoryId": "64cat123...",
+  "tags": ["nodejs", "javascript", "backend"],
+  "status": "draft"
+}
+```
+
+**Required Fields:**
+- `title` (min: 5, max: 200 characters)
+- `content` (min: 50 characters)
+- `categoryId` (valid category ID)
+
+**Optional Fields:**
+- `slug` (URL-friendly, auto-generated from title if not provided)
+- `excerpt` (max: 500 characters, auto-generated from content if not provided)
+- `featuredImage` (valid URL)
+- `tags` (array of strings, max: 10 tags)
+- `status` (draft/published/archived, default: draft)
+
+**Response (201 Created):**
+```json
+{
+  "success": true,
+  "message": "Blog created successfully",
+  "data": {
+    "_id": "64blog123...",
+    "title": "Getting Started with Node.js",
+    "slug": "getting-started-with-nodejs",
+    "authorId": "64user...",
+    "status": "draft",
+    ...
+  }
+}
+```
+
+**cURL Example:**
+```bash
+curl -X POST http://localhost:5000/api/v1/blogs \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Getting Started with Node.js",
+    "content": "Full blog content here...",
+    "categoryId": "64cat123...",
+    "tags": ["nodejs", "javascript"]
+  }'
+```
+
+---
+
+### 32. Get Blog By ID
+
+Get a specific blog by ID. Published blogs are public, drafts only visible to author/admin.
+
+**Endpoint:** `GET /blogs/:id`
+
+**cURL Example:**
+```bash
+curl http://localhost:5000/api/v1/blogs/64blog123...
+```
+
+---
+
+### 33. Get Blog By Slug
+
+Get a specific blog by slug. Published blogs are public, drafts only visible to author/admin.
+
+**Endpoint:** `GET /blogs/slug/:slug`
+
+**cURL Example:**
+```bash
+curl http://localhost:5000/api/v1/blogs/slug/getting-started-with-nodejs
+```
+
+---
+
+### 34. Update Blog
+
+Update a blog. Only author or admin can update.
+
+**⚠️ Requires: Authentication + Verification + Ownership or Admin**
+
+**Endpoint:** `PATCH /blogs/:id`
+
+**Headers:**
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+Content-Type: application/json
+```
+
+**Request Body (all fields optional):**
+```json
+{
+  "title": "Updated Title",
+  "content": "Updated content...",
+  "excerpt": "Updated excerpt",
+  "featuredImage": "https://example.com/new-image.jpg",
+  "categoryId": "64cat456...",
+  "tags": ["nodejs", "javascript", "tutorial"],
+  "status": "published"
+}
+```
+
+**cURL Example:**
+```bash
+curl -X PATCH http://localhost:5000/api/v1/blogs/64blog123... \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Updated Title",
+    "status": "published"
+  }'
+```
+
+---
+
+### 35. Publish Blog
+
+Change blog status to published. Only author or admin can publish.
+
+**⚠️ Requires: Authentication + Verification + Ownership or Admin**
+
+**Endpoint:** `POST /blogs/:id/publish`
+
+**Headers:**
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Blog published successfully",
+  "data": {
+    "_id": "64blog123...",
+    "status": "published",
+    "publishedAt": "2024-01-15T10:00:00.000Z",
+    ...
+  }
+}
+```
+
+**cURL Example:**
+```bash
+curl -X POST http://localhost:5000/api/v1/blogs/64blog123.../publish \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+---
+
+### 36. Delete Blog
+
+Permanently delete a blog. Only author or admin can delete.
+
+**⚠️ Requires: Authentication + Verification + Ownership or Admin**
+
+**Endpoint:** `DELETE /blogs/:id`
+
+**Headers:**
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+**cURL Example:**
+```bash
+curl -X DELETE http://localhost:5000/api/v1/blogs/64blog123... \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+---
+
+## Blog Features
+
+### Blog Status Workflow
+- **draft** → **published** → **archived**
+- Drafts are only visible to author and admins
+- Published blogs are publicly accessible
+- Archived blogs are hidden from public view
+
+### View Count
+- Automatically incremented when published blogs are viewed
+- Not incremented for draft/archived blogs
+- Not incremented for author viewing their own blog
+
+### Read Time
+- Automatically calculated based on content word count
+- Assumes average reading speed of 200 words per minute
+- Returned as a virtual property (e.g., `readTime: 5` means 5 minutes)
+
+### Slug Generation
+- Auto-generated from title if not provided
+- Must be unique across all blogs
+- URL-friendly format (lowercase, hyphens, no special characters)
+
+### Excerpt Generation
+- Auto-generated from first 200 characters of content if not provided
+- Can be customized during blog creation/update
+
+### Tags
+- Maximum 10 tags per blog
+- Used for search and categorization
+- Tag list endpoint available at `/blogs/tags`
 
 ---
 

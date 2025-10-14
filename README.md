@@ -9,6 +9,9 @@ A professional Express.js backend API built with TypeScript, MongoDB, and follow
 - **MongoDB** - NoSQL database with Mongoose ODM
 - **JWT Authentication** - Secure authentication with refresh tokens
 - **Role-based Authorization** - User and admin roles
+- **Email Verification** - OTP-based email verification with AWS SES
+- **Blog Management** - Complete blog CRUD with categories, tags, and search
+- **Category Management** - Blog categorization system
 - **Input Validation** - Using Joi schemas
 - **Error Handling** - Centralized error handling
 - **Security** - Helmet, CORS, Rate limiting
@@ -152,6 +155,30 @@ For detailed endpoint documentation with cURL examples, see [API_DOCS.md](./API_
 - `DELETE /api/v1/users/:id` - Delete user (Admin only)
 - `POST /api/v1/users/:id/deactivate` - Soft delete user (Admin only)
 
+### Categories
+- `GET /api/v1/categories` - Get all categories (Public)
+- `GET /api/v1/categories/:id` - Get category by ID (Public)
+- `GET /api/v1/categories/slug/:slug` - Get category by slug (Public)
+- `POST /api/v1/categories` - Create category (Admin only)
+- `PATCH /api/v1/categories/:id` - Update category (Admin only)
+- `DELETE /api/v1/categories/:id` - Delete category (Admin only)
+
+### Blogs
+- `GET /api/v1/blogs` - Get all published blogs (Public)
+- `GET /api/v1/blogs/my-blogs` - Get my blogs (Protected)
+- `GET /api/v1/blogs/search` - Search blogs (Public)
+- `GET /api/v1/blogs/category/:categoryId` - Get blogs by category (Public)
+- `GET /api/v1/blogs/author/:authorId` - Get blogs by author (Public)
+- `GET /api/v1/blogs/most-viewed` - Get most viewed blogs (Public)
+- `GET /api/v1/blogs/recent` - Get recent blogs (Public)
+- `GET /api/v1/blogs/tags` - Get all tags (Public)
+- `GET /api/v1/blogs/:id` - Get blog by ID (Public for published)
+- `GET /api/v1/blogs/slug/:slug` - Get blog by slug (Public for published)
+- `POST /api/v1/blogs` - Create blog (Protected)
+- `PATCH /api/v1/blogs/:id` - Update blog (Owner or Admin)
+- `POST /api/v1/blogs/:id/publish` - Publish blog (Owner or Admin)
+- `DELETE /api/v1/blogs/:id` - Delete blog (Owner or Admin)
+
 ## Architecture Patterns
 
 ### Controller-Service-Repository Pattern
@@ -215,10 +242,13 @@ Centralized error handling with custom error classes:
 | CORS_ORIGIN | CORS allowed origin | * |
 | RATE_LIMIT_WINDOW_MS | Rate limit window | 900000 |
 | RATE_LIMIT_MAX_REQUESTS | Max requests per window | 100 |
-| AWS_ACCESS_KEY_ID | AWS access key for S3 | - |
-| AWS_SECRET_ACCESS_KEY | AWS secret key for S3 | - |
+| AWS_ACCESS_KEY_ID | AWS access key for S3/SES | - |
+| AWS_SECRET_ACCESS_KEY | AWS secret key for S3/SES | - |
 | AWS_REGION | AWS region | us-east-1 |
 | AWS_S3_BUCKET_NAME | S3 bucket name | - |
+| AWS_SES_REGION | AWS SES region | us-east-1 |
+| AWS_SES_FROM_EMAIL | Sender email for SES | - |
+| AWS_SES_FROM_NAME | Sender name for emails | Why Designers |
 
 ### AWS S3 Configuration
 
@@ -227,6 +257,16 @@ For file upload functionality, you need to configure AWS S3:
 1. Create an S3 bucket in AWS Console
 2. Add the credentials to your `.env` file
 3. Configure bucket policy for public access (see [API_DOCS.md](./API_DOCS.md) for details)
+
+### AWS SES Configuration
+
+For email verification functionality, you need to configure AWS SES:
+
+1. **Verify your sender email** in AWS SES Console
+   - Go to AWS SES → Verified Identities
+   - Verify the email address you'll use as sender
+2. Add SES credentials to your `.env` file
+3. For production, request to move SES out of sandbox mode
 
 ## Development Guidelines
 
