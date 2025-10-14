@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import userController from '../controllers/user.controller';
-import { authenticate, authorize, requireVerification } from '../middlewares/auth';
+import { authenticate, authorize, requireVerification, optionalAuthenticate } from '../middlewares/auth';
 import { validate, validateParams, validateQuery } from '../middlewares/validate';
 import { uploadSingle } from '../middlewares/upload';
 import {
@@ -10,6 +10,7 @@ import {
   updateProfileSchema,
   changePasswordSchema,
   verifyEmailSchema,
+  resendOTPSchema,
   verifyPhoneSchema,
   paginationSchema,
   idParamSchema,
@@ -34,9 +35,11 @@ router.patch('/profile', authenticate, requireVerification, validate(updateProfi
 router.put('/profile/upload', authenticate, requireVerification, uploadSingle('profilePicture'), userController.updateProfileWithImage);
 router.post('/change-password', authenticate, requireVerification, validate(changePasswordSchema), userController.changePassword);
 
-// Verification (no verification required - users need these to verify themselves)
-router.post('/verify-email', authenticate, validate(verifyEmailSchema), userController.verifyEmail);
-router.post('/resend-otp', authenticate, userController.resendOTP);
+// Verification (PUBLIC - users need these to verify themselves, can be called with or without authentication)
+// If authenticated (has token): email is optional in body
+// If not authenticated (no token): email is required in body
+router.post('/verify-email', optionalAuthenticate, validate(verifyEmailSchema), userController.verifyEmail);
+router.post('/resend-otp', optionalAuthenticate, validate(resendOTPSchema), userController.resendOTP);
 router.post('/verify-phone', authenticate, userController.verifyPhone);
 
 // ============= Admin routes (require authentication, verification, and admin role) =============

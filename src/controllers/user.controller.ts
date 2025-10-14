@@ -111,27 +111,21 @@ export class UserController {
   });
 
   verifyEmail = asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    const userId = req.user?.id;
+    const userId = req.user?.id; // Optional - may be undefined for public access
+    const { otp, email } = req.body;
 
-    if (!userId) {
-      return ApiResponse.error(res, 'Unauthorized', 401);
-    }
-
-    const { otp } = req.body;
-
-    const user = await userService.verifyEmail(userId, otp);
+    // Support both authenticated and public requests
+    const user = await userService.verifyEmail(otp, userId, email);
 
     return ApiResponse.success(res, user, 'Email verified successfully');
   });
 
   resendOTP = asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    const userId = req.user?.id;
+    const userId = req.user?.id; // Optional - may be undefined for public access
+    const { email } = req.body;
 
-    if (!userId) {
-      return ApiResponse.error(res, 'Unauthorized', 401);
-    }
-
-    await userService.resendOTP(userId);
+    // Support both authenticated and public requests
+    await userService.resendOTP(userId, email);
 
     return ApiResponse.success(res, null, 'OTP has been sent to your email');
   });

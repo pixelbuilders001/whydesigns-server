@@ -79,6 +79,40 @@ export const requireVerification = async (
   }
 };
 
+export const optionalAuthenticate = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+
+    // If no token provided, just continue without setting req.user
+    if (!token) {
+      return next();
+    }
+
+    const decoded = jwt.verify(token, config.JWT_SECRET) as JwtPayload;
+
+    // Fetch user with role to get the latest role information
+    const user = await userRepository.findByIdWithRole(decoded.id);
+
+    if (user && user.isActive) {
+      req.user = {
+        id: user._id,
+        email: user.email,
+        role: (user.roleId as any as IRole)?.name || '',
+      };
+    }
+
+    next();
+  } catch (error) {
+    // If token is invalid, just continue without setting req.user
+    // This allows the endpoint to work for both authenticated and public users
+    next();
+  }
+};
+
 export const authorize = (...roles: string[]) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {

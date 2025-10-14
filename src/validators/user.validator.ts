@@ -109,6 +109,15 @@ export const verifyEmailSchema = Joi.object({
     'string.length': 'OTP must be 6 digits',
     'string.pattern.base': 'OTP must contain only numbers',
   }),
+  email: Joi.string().email().optional().messages({
+    'string.email': 'Please provide a valid email address',
+  }),
+});
+
+export const resendOTPSchema = Joi.object({
+  email: Joi.string().email().optional().messages({
+    'string.email': 'Please provide a valid email address',
+  }),
 });
 
 export const verifyPhoneSchema = Joi.object({

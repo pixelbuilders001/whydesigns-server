@@ -274,29 +274,58 @@ export class UserService {
     await user.save();
   }
 
-  async verifyEmail(id: string, otp: string): Promise<IUser> {
+  async verifyEmail(otp: string, userId?: string, email?: string): Promise<IUser> {
+    // Get user by ID or email
+    let user: IUser | null = null;
+
+    if (userId) {
+      user = await userRepository.findById(userId);
+    } else if (email) {
+      user = await userRepository.findByEmail(email);
+    } else {
+      throw new BadRequestError('Either userId or email is required');
+    }
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    if (user.isEmailVerified) {
+      throw new BadRequestError('Email is already verified');
+    }
+
     // Verify OTP
-    await otpService.verifyOTP(id, otp, 'email_verification');
+    await otpService.verifyOTP(user._id, otp, 'email_verification');
 
     // Update user email verification status
-    const user = await userRepository.update(id, { isEmailVerified: true });
-    if (!user) {
+    const updatedUser = await userRepository.update(user._id, { isEmailVerified: true });
+    if (!updatedUser) {
       throw new NotFoundError('User not found');
     }
 
     // Send welcome email
     try {
-      await emailService.sendWelcomeEmail(user.email, user.firstName);
+      await emailService.sendWelcomeEmail(updatedUser.email, updatedUser.firstName);
     } catch (error) {
       console.error('Failed to send welcome email:', error);
       // Don't fail verification if welcome email fails
     }
 
-    return user;
+    return updatedUser;
   }
 
-  async resendOTP(id: string): Promise<void> {
-    const user = await userRepository.findById(id);
+  async resendOTP(userId?: string, email?: string): Promise<void> {
+    // Get user by ID or email
+    let user: IUser | null = null;
+
+    if (userId) {
+      user = await userRepository.findById(userId);
+    } else if (email) {
+      user = await userRepository.findByEmail(email);
+    } else {
+      throw new BadRequestError('Either userId or email is required');
+    }
+
     if (!user) {
       throw new NotFoundError('User not found');
     }
