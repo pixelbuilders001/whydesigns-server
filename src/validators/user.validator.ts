@@ -1,13 +1,11 @@
 import Joi from 'joi';
 
 export const registerSchema = Joi.object({
-  firstName: Joi.string().min(2).max(50).required().messages({
-    'string.empty': 'First name is required',
+  firstName: Joi.string().min(2).max(50).optional().allow('').messages({
     'string.min': 'First name must be at least 2 characters',
     'string.max': 'First name must not exceed 50 characters',
   }),
-  lastName: Joi.string().min(2).max(50).required().messages({
-    'string.empty': 'Last name is required',
+  lastName: Joi.string().min(2).max(50).optional().allow('').messages({
     'string.min': 'Last name must be at least 2 characters',
     'string.max': 'Last name must not exceed 50 characters',
   }),
@@ -21,18 +19,16 @@ export const registerSchema = Joi.object({
   }),
   phoneNumber: Joi.string()
     .pattern(/^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/)
-    .required()
+    .optional()
+    .allow('')
     .messages({
-      'string.empty': 'Phone number is required',
       'string.pattern.base': 'Please provide a valid phone number',
     }),
-  dateOfBirth: Joi.date().max('now').required().messages({
+  dateOfBirth: Joi.date().max('now').optional().messages({
     'date.base': 'Please provide a valid date of birth',
     'date.max': 'Date of birth must be in the past',
-    'any.required': 'Date of birth is required',
   }),
-  gender: Joi.string().valid('male', 'female', 'other').required().messages({
-    'string.empty': 'Gender is required',
+  gender: Joi.string().valid('male', 'female', 'other').optional().messages({
     'any.only': 'Gender must be male, female, or other',
   }),
   address: Joi.string().optional().allow(''),

@@ -3,21 +3,21 @@ import bcrypt from 'bcryptjs';
 
 export interface IUser extends Document {
   _id: string;
-  firstName: string;
-  lastName: string;
+  firstName?: string;
+  lastName?: string;
   roleId: mongoose.Types.ObjectId;
-  dateOfBirth: Date;
+  dateOfBirth?: Date;
   email: string;
   password: string;
-  phoneNumber: string;
+  phoneNumber?: string;
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
-  address: string;
-  profilePicture: string;
+  address?: string;
+  profilePicture?: string;
   isActive: boolean;
   refreshToken: string | null;
   provider: 'google' | 'facebook' | 'local';
-  gender: 'male' | 'female' | 'other';
+  gender?: 'male' | 'female' | 'other';
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -28,17 +28,17 @@ const userSchema = new Schema<IUser>(
   {
     firstName: {
       type: String,
-      required: [true, 'First name is required'],
       trim: true,
       minlength: [2, 'First name must be at least 2 characters'],
       maxlength: [50, 'First name must not exceed 50 characters'],
+      default: '',
     },
     lastName: {
       type: String,
-      required: [true, 'Last name is required'],
       trim: true,
       minlength: [2, 'Last name must be at least 2 characters'],
       maxlength: [50, 'Last name must not exceed 50 characters'],
+      default: '',
     },
     roleId: {
       type: Schema.Types.ObjectId,
@@ -47,9 +47,10 @@ const userSchema = new Schema<IUser>(
     },
     dateOfBirth: {
       type: Date,
-      required: [true, 'Date of birth is required'],
       validate: {
         validator: function (value: Date) {
+          // Only validate if value is provided
+          if (!value) return true;
           return value < new Date();
         },
         message: 'Date of birth must be in the past',
@@ -73,9 +74,9 @@ const userSchema = new Schema<IUser>(
     },
     phoneNumber: {
       type: String,
-      required: [true, 'Phone number is required'],
       trim: true,
       match: [/^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/, 'Please provide a valid phone number'],
+      default: '',
     },
     isEmailVerified: {
       type: Boolean,
@@ -111,7 +112,6 @@ const userSchema = new Schema<IUser>(
     gender: {
       type: String,
       enum: ['male', 'female', 'other'],
-      required: [true, 'Gender is required'],
     },
   },
   {
@@ -133,7 +133,9 @@ const userSchema = new Schema<IUser>(
 
 // Virtual for full name
 userSchema.virtual('fullName').get(function (this: IUser) {
-  return `${this.firstName} ${this.lastName}`;
+  const firstName = this.firstName || '';
+  const lastName = this.lastName || '';
+  return `${firstName} ${lastName}`.trim() || 'User';
 });
 
 // Hash password before saving

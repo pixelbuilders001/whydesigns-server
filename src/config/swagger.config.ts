@@ -136,51 +136,60 @@ const swaggerDefinition = {
       },
       RegisterRequest: {
         type: 'object',
-        required: ['firstName', 'lastName', 'email', 'password', 'phoneNumber', 'dateOfBirth', 'gender'],
+        required: ['email', 'password'],
         properties: {
           firstName: {
             type: 'string',
             minLength: 2,
             maxLength: 50,
+            description: 'Optional - First name (min 2, max 50 characters)',
             example: 'John',
           },
           lastName: {
             type: 'string',
             minLength: 2,
             maxLength: 50,
+            description: 'Optional - Last name (min 2, max 50 characters)',
             example: 'Doe',
           },
           email: {
             type: 'string',
             format: 'email',
+            description: 'Required - Valid email address',
             example: 'john.doe@example.com',
           },
           password: {
             type: 'string',
             minLength: 6,
+            description: 'Required - Password (minimum 6 characters)',
             example: 'password123',
           },
           phoneNumber: {
             type: 'string',
+            description: 'Optional - Phone number with country code',
             example: '+1234567890',
           },
           dateOfBirth: {
             type: 'string',
             format: 'date',
+            description: 'Optional - Date of birth (YYYY-MM-DD format)',
             example: '1990-01-15',
           },
           gender: {
             type: 'string',
             enum: ['male', 'female', 'other'],
+            description: 'Optional - Gender (male, female, or other)',
             example: 'male',
           },
           address: {
             type: 'string',
+            description: 'Optional - User address',
             example: '123 Main Street, New York',
           },
           profilePicture: {
             type: 'string',
             format: 'uri',
+            description: 'Optional - Profile picture URL',
             example: 'https://example.com/profile.jpg',
           },
         },

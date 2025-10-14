@@ -15,13 +15,13 @@ import {
 import { PaginationOptions } from '../types';
 
 export interface RegisterUserData {
-  firstName: string;
-  lastName: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   password: string;
-  phoneNumber: string;
-  dateOfBirth: Date;
-  gender: 'male' | 'female' | 'other';
+  phoneNumber?: string;
+  dateOfBirth?: Date;
+  gender?: 'male' | 'female' | 'other';
   address?: string;
   profilePicture?: string;
 }
@@ -34,10 +34,12 @@ export class UserService {
       throw new ConflictError('User with this email already exists');
     }
 
-    // Check if phone number already exists
-    const existingPhone = await userRepository.existsByPhone(userData.phoneNumber);
-    if (existingPhone) {
-      throw new ConflictError('User with this phone number already exists');
+    // Check if phone number already exists (only if provided)
+    if (userData.phoneNumber) {
+      const existingPhone = await userRepository.existsByPhone(userData.phoneNumber);
+      if (existingPhone) {
+        throw new ConflictError('User with this phone number already exists');
+      }
     }
 
     // Get or create USER role
@@ -74,7 +76,7 @@ export class UserService {
       await otpService.createAndSendOTP(
         user._id,
         user.email,
-        user.firstName,
+        user.firstName || 'User',
         'email_verification'
       );
     } catch (error) {
@@ -305,7 +307,7 @@ export class UserService {
 
     // Send welcome email
     try {
-      await emailService.sendWelcomeEmail(updatedUser.email, updatedUser.firstName);
+      await emailService.sendWelcomeEmail(updatedUser.email, updatedUser.firstName || 'User');
     } catch (error) {
       console.error('Failed to send welcome email:', error);
       // Don't fail verification if welcome email fails
@@ -334,7 +336,7 @@ export class UserService {
       throw new BadRequestError('Email is already verified');
     }
 
-    await otpService.resendOTP(user._id, user.email, user.firstName, 'email_verification');
+    await otpService.resendOTP(user._id, user.email, user.firstName || 'User', 'email_verification');
   }
 
   async verifyPhone(id: string): Promise<IUser> {

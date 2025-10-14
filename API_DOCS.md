@@ -136,10 +136,10 @@ Create a new user account. User will automatically be assigned the USER role. **
 **Request Body:**
 ```json
 {
-  "firstName": "John",
-  "lastName": "Doe",
   "email": "john.doe@example.com",
   "password": "password123",
+  "firstName": "John",
+  "lastName": "Doe",
   "phoneNumber": "+1234567890",
   "dateOfBirth": "1990-01-15",
   "gender": "male",
@@ -149,15 +149,15 @@ Create a new user account. User will automatically be assigned the USER role. **
 ```
 
 **Required Fields:**
-- `firstName` (min: 2, max: 50 characters)
-- `lastName` (min: 2, max: 50 characters)
 - `email` (valid email format)
 - `password` (min: 6 characters)
-- `phoneNumber` (valid phone format)
-- `dateOfBirth` (date in the past)
-- `gender` (male, female, or other)
 
-**Optional Fields:**
+**Optional Fields (validated if provided):**
+- `firstName` (min: 2, max: 50 characters)
+- `lastName` (min: 2, max: 50 characters)
+- `phoneNumber` (valid phone format)
+- `dateOfBirth` (date in the past, YYYY-MM-DD format)
+- `gender` (male, female, or other)
 - `address`
 - `profilePicture` (valid URL)
 
@@ -195,15 +195,27 @@ Create a new user account. User will automatically be assigned the USER role. **
 }
 ```
 
-**cURL Example:**
+**cURL Examples:**
+
+**Minimal registration (only email and password):**
 ```bash
 curl -X POST http://localhost:5000/api/v1/users/register \
   -H "Content-Type: application/json" \
   -d '{
-    "firstName": "John",
-    "lastName": "Doe",
+    "email": "john.doe@example.com",
+    "password": "password123"
+  }'
+```
+
+**Full registration (with all optional fields):**
+```bash
+curl -X POST http://localhost:5000/api/v1/users/register \
+  -H "Content-Type: application/json" \
+  -d '{
     "email": "john.doe@example.com",
     "password": "password123",
+    "firstName": "John",
+    "lastName": "Doe",
     "phoneNumber": "+1234567890",
     "dateOfBirth": "1990-01-15",
     "gender": "male",
