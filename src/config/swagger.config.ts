@@ -319,6 +319,14 @@ const swaggerDefinition = {
       name: 'Admin',
       description: 'Admin-only endpoints for user management',
     },
+    {
+      name: 'Categories',
+      description: 'Blog category management endpoints',
+    },
+    {
+      name: 'Blogs',
+      description: 'Blog post management and publishing endpoints',
+    },
   ],
 };
 

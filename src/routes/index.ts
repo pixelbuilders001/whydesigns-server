@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import userRoutes from './user.routes';
+import categoryRoutes from './category.routes';
+import blogRoutes from './blog.routes';
 
 const router = Router();
 
@@ -14,5 +16,7 @@ router.get('/health', (req, res) => {
 
 // API routes
 router.use('/users', userRoutes);
+router.use('/categories', categoryRoutes);
+router.use('/blogs', blogRoutes);
 
 export default router;
