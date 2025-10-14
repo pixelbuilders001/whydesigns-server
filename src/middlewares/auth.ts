@@ -51,6 +51,34 @@ export const authenticate = async (
   }
 };
 
+export const requireVerification = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) {
+      throw new UnauthorizedError('User not authenticated');
+    }
+
+    // Fetch user to check verification status
+    const user = await userRepository.findById(req.user.id);
+
+    if (!user) {
+      throw new UnauthorizedError('User not found');
+    }
+
+    // User must have either email OR phone verified
+    if (!user.isEmailVerified && !user.isPhoneVerified) {
+      throw new ForbiddenError('Please verify your email or phone number to access this resource');
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const authorize = (...roles: string[]) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {

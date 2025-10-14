@@ -2,6 +2,8 @@ import jwt from 'jsonwebtoken';
 import userRepository from '../repositories/user.repository';
 import roleRepository from '../repositories/role.repository';
 import s3Service from './s3.service';
+import otpService from './otp.service';
+import emailService from './email.service';
 import { IUser } from '../models/user.model';
 import { config } from '../config/env.config';
 import {
@@ -66,6 +68,19 @@ export class UserService {
 
     // Save refresh token
     await userRepository.updateRefreshToken(user._id, refreshToken);
+
+    // Send OTP for email verification
+    try {
+      await otpService.createAndSendOTP(
+        user._id,
+        user.email,
+        user.firstName,
+        'email_verification'
+      );
+    } catch (error) {
+      console.error('Failed to send OTP email:', error);
+      // Don't fail registration if email sending fails
+    }
 
     return { user, token, refreshToken };
   }
@@ -259,12 +274,38 @@ export class UserService {
     await user.save();
   }
 
-  async verifyEmail(id: string): Promise<IUser> {
+  async verifyEmail(id: string, otp: string): Promise<IUser> {
+    // Verify OTP
+    await otpService.verifyOTP(id, otp, 'email_verification');
+
+    // Update user email verification status
     const user = await userRepository.update(id, { isEmailVerified: true });
     if (!user) {
       throw new NotFoundError('User not found');
     }
+
+    // Send welcome email
+    try {
+      await emailService.sendWelcomeEmail(user.email, user.firstName);
+    } catch (error) {
+      console.error('Failed to send welcome email:', error);
+      // Don't fail verification if welcome email fails
+    }
+
     return user;
+  }
+
+  async resendOTP(id: string): Promise<void> {
+    const user = await userRepository.findById(id);
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    if (user.isEmailVerified) {
+      throw new BadRequestError('Email is already verified');
+    }
+
+    await otpService.resendOTP(user._id, user.email, user.firstName, 'email_verification');
   }
 
   async verifyPhone(id: string): Promise<IUser> {

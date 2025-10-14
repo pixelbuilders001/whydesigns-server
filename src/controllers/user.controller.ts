@@ -117,9 +117,23 @@ export class UserController {
       return ApiResponse.error(res, 'Unauthorized', 401);
     }
 
-    const user = await userService.verifyEmail(userId);
+    const { otp } = req.body;
+
+    const user = await userService.verifyEmail(userId, otp);
 
     return ApiResponse.success(res, user, 'Email verified successfully');
+  });
+
+  resendOTP = asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return ApiResponse.error(res, 'Unauthorized', 401);
+    }
+
+    await userService.resendOTP(userId);
+
+    return ApiResponse.success(res, null, 'OTP has been sent to your email');
   });
 
   verifyPhone = asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {

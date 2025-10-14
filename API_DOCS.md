@@ -43,13 +43,93 @@ Most endpoints require authentication using Bearer token in the Authorization he
 Authorization: Bearer YOUR_JWT_TOKEN
 ```
 
+### Verification Requirements
+
+**Important:** After registration, users must verify their **email OR phone** to access most protected endpoints.
+
+**Routes that DON'T require verification:**
+- ✅ `/logout` - You can logout without verification
+- ✅ `/profile` (GET) - You can view your profile to see verification status
+- ✅ `/verify-email` - Needed to verify your email
+- ✅ `/resend-otp` - Needed to get new OTP
+- ✅ `/verify-phone` - Needed to verify your phone
+
+**Routes that REQUIRE verification (email OR phone):**
+- 🔒 `/profile` (PATCH) - Update profile
+- 🔒 `/profile/upload` (PUT) - Update profile with image
+- 🔒 `/change-password` - Change password
+- 🔒 All admin routes - Admin operations
+
+**Error Response (403 Forbidden) if not verified:**
+```json
+{
+  "success": false,
+  "message": "Please verify your email or phone number to access this resource"
+}
+```
+
+---
+
+## Email Verification Flow
+
+The API uses a 6-digit OTP system for email verification:
+
+### How It Works
+
+1. **Registration**: When a user registers, a 6-digit OTP is automatically sent to their email
+2. **OTP Validity**: The OTP is valid for 5 minutes
+3. **Verification**: User must call the `/verify-email` endpoint with the OTP
+4. **Resend**: If OTP expires or is not received, use `/resend-otp` endpoint (rate limited to once per minute)
+5. **Welcome Email**: Upon successful verification, a welcome email is sent
+
+### Example Flow
+
+```
+1. POST /users/register
+   → User created, OTP sent to email (123456)
+
+2. Check email for 6-digit OTP
+
+3. POST /users/verify-email with {"otp": "123456"}
+   → Email verified, welcome email sent
+
+// If OTP expired:
+4. POST /users/resend-otp
+   → New OTP sent (654321)
+
+5. POST /users/verify-email with {"otp": "654321"}
+   → Email verified
+```
+
+### AWS SES Configuration Required
+
+To enable email sending, configure AWS SES:
+
+1. **Verify Your Email in AWS SES Console**
+   - Go to AWS SES → Verified Identities
+   - Verify the email address you'll use as sender (AWS_SES_FROM_EMAIL)
+   - For production, move SES out of sandbox mode
+
+2. **Environment Variables**
+   ```env
+   AWS_ACCESS_KEY_ID=your-aws-access-key-id
+   AWS_SECRET_ACCESS_KEY=your-aws-secret-access-key
+   AWS_SES_REGION=us-east-1
+   AWS_SES_FROM_EMAIL=noreply@why-designers.com
+   AWS_SES_FROM_NAME=Why Designers
+   ```
+
+3. **Sandbox Mode Limitations**
+   - In sandbox mode, you can only send emails to verified email addresses
+   - Request production access to send to any email address
+
 ---
 
 ## Public Endpoints
 
 ### 1. Register User
 
-Create a new user account. User will automatically be assigned the USER role.
+Create a new user account. User will automatically be assigned the USER role. **An OTP will be sent to the registered email for verification.**
 
 **Endpoint:** `POST /users/register`
 
@@ -295,6 +375,8 @@ curl http://localhost:5000/api/v1/users/profile \
 
 Update the authenticated user's profile information.
 
+**⚠️ Requires Verification:** You must verify your email OR phone to use this endpoint.
+
 **Endpoint:** `PATCH /users/profile`
 
 **Headers:**
@@ -347,6 +429,8 @@ curl -X PATCH http://localhost:5000/api/v1/users/profile \
 ### 7. Update Profile with Image Upload
 
 Update user profile with profile picture upload to AWS S3. This endpoint accepts multipart/form-data and handles image upload.
+
+**⚠️ Requires Verification:** You must verify your email OR phone to use this endpoint.
 
 **Endpoint:** `PUT /users/profile/upload`
 
@@ -455,6 +539,8 @@ AWS_S3_BUCKET_NAME=your-bucket-name
 
 Change the authenticated user's password.
 
+**⚠️ Requires Verification:** You must verify your email OR phone to use this endpoint.
+
 **Endpoint:** `POST /users/change-password`
 
 **Headers:**
@@ -495,15 +581,23 @@ curl -X POST http://localhost:5000/api/v1/users/change-password \
 
 ---
 
-### 8. Verify Email
+### 8. Verify Email with OTP
 
-Mark user's email as verified.
+Verify user's email using the 6-digit OTP sent during registration. OTP expires after 5 minutes.
 
 **Endpoint:** `POST /users/verify-email`
 
 **Headers:**
 ```
 Authorization: Bearer YOUR_JWT_TOKEN
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "otp": "123456"
+}
 ```
 
 **Response (200 OK):**
@@ -519,15 +613,83 @@ Authorization: Bearer YOUR_JWT_TOKEN
 }
 ```
 
+**Error Response (400 Bad Request):**
+```json
+{
+  "success": false,
+  "message": "Invalid or expired OTP"
+}
+```
+
 **cURL Example:**
 ```bash
 curl -X POST http://localhost:5000/api/v1/users/verify-email \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"otp": "123456"}'
 ```
+
+**Notes:**
+- OTP is valid for 5 minutes after it's sent
+- OTP can only be used once
+- A welcome email will be sent upon successful verification
+- Check your email (including spam folder) for the OTP
 
 ---
 
-### 9. Verify Phone
+### 9. Resend OTP
+
+Resend email verification OTP if the previous one expired or was not received. Rate limited to once per minute.
+
+**Endpoint:** `POST /users/resend-otp`
+
+**Headers:**
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "OTP has been sent to your email",
+  "data": null
+}
+```
+
+**Error Responses:**
+
+**400 Bad Request (Already Verified):**
+```json
+{
+  "success": false,
+  "message": "Email is already verified"
+}
+```
+
+**400 Bad Request (Rate Limit):**
+```json
+{
+  "success": false,
+  "message": "Please wait at least 60 seconds before requesting a new OTP"
+}
+```
+
+**cURL Example:**
+```bash
+curl -X POST http://localhost:5000/api/v1/users/resend-otp \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Notes:**
+- Can only request a new OTP once per minute
+- Cannot resend if email is already verified
+- New OTP invalidates any previous unused OTPs
+- OTP is valid for 5 minutes
+
+---
+
+### 10. Verify Phone
 
 Mark user's phone as verified.
 
@@ -559,7 +721,7 @@ curl -X POST http://localhost:5000/api/v1/users/verify-phone \
 
 ---
 
-### 10. Logout
+### 11. Logout
 
 Logout user and invalidate refresh token.
 
@@ -589,9 +751,11 @@ curl -X POST http://localhost:5000/api/v1/users/logout \
 
 ## Admin Endpoints
 
-All admin endpoints require authentication with ADMIN role.
+All admin endpoints require:
+- ✅ Authentication with ADMIN role
+- ✅ Email OR phone verification
 
-### 11. Get All Users
+### 12. Get All Users
 
 Get a paginated list of all users (Admin only).
 
@@ -656,7 +820,7 @@ curl "http://localhost:5000/api/v1/users?isActive=true" \
 
 ---
 
-### 12. Get User By ID
+### 13. Get User By ID
 
 Get a specific user by ID (Admin only).
 
@@ -690,7 +854,7 @@ curl http://localhost:5000/api/v1/users/64abc123def456789 \
 
 ---
 
-### 13. Update User
+### 14. Update User
 
 Update any user's information (Admin only).
 
@@ -742,7 +906,7 @@ curl -X PATCH http://localhost:5000/api/v1/users/64abc123def456789 \
 
 ---
 
-### 14. Delete User
+### 15. Delete User
 
 Permanently delete a user (Admin only).
 
@@ -770,7 +934,7 @@ curl -X DELETE http://localhost:5000/api/v1/users/64abc123def456789 \
 
 ---
 
-### 15. Deactivate User (Soft Delete)
+### 16. Deactivate User (Soft Delete)
 
 Deactivate a user account without deleting (Admin only).
 

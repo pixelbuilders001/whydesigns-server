@@ -192,7 +192,7 @@
  * /users/profile:
  *   patch:
  *     summary: Update user profile
- *     description: Update authenticated user's profile information
+ *     description: Update authenticated user's profile information. Requires email OR phone verification.
  *     tags: [User Profile]
  *     security:
  *       - BearerAuth: []
@@ -247,7 +247,7 @@
  * /users/profile/upload:
  *   put:
  *     summary: Update profile with image upload
- *     description: Update user profile with profile picture upload to AWS S3
+ *     description: Update user profile with profile picture upload to AWS S3. Requires email OR phone verification.
  *     tags: [User Profile]
  *     security:
  *       - BearerAuth: []
@@ -309,7 +309,7 @@
  * /users/change-password:
  *   post:
  *     summary: Change password
- *     description: Change authenticated user's password
+ *     description: Change authenticated user's password. Requires email OR phone verification.
  *     tags: [User Profile]
  *     security:
  *       - BearerAuth: []
@@ -350,11 +350,26 @@
  * @swagger
  * /users/verify-email:
  *   post:
- *     summary: Verify email
- *     description: Mark user's email as verified
+ *     summary: Verify email with OTP
+ *     description: Verify user's email address using 6-digit OTP sent during registration
  *     tags: [User Profile]
  *     security:
  *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - otp
+ *             properties:
+ *               otp:
+ *                 type: string
+ *                 length: 6
+ *                 pattern: '^[0-9]{6}$'
+ *                 description: 6-digit OTP sent to email
+ *                 example: '123456'
  *     responses:
  *       200:
  *         description: Email verified successfully
@@ -369,6 +384,42 @@
  *                   type: string
  *                 data:
  *                   $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Invalid or expired OTP
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
+/**
+ * @swagger
+ * /users/resend-otp:
+ *   post:
+ *     summary: Resend OTP
+ *     description: Resend email verification OTP. Can only be requested once per minute.
+ *     tags: [User Profile]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: OTP sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         description: Email already verified or rate limit exceeded
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
  *         description: Unauthorized
  *         content:
@@ -413,7 +464,7 @@
  * /users:
  *   get:
  *     summary: Get all users (Admin only)
- *     description: Get paginated list of all users with filtering and sorting options
+ *     description: Get paginated list of all users with filtering and sorting options. Requires email OR phone verification.
  *     tags: [Admin]
  *     security:
  *       - BearerAuth: []

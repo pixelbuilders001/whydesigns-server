@@ -104,8 +104,10 @@ export const updateProfileSchema = Joi.object({
 });
 
 export const verifyEmailSchema = Joi.object({
-  token: Joi.string().required().messages({
-    'string.empty': 'Verification token is required',
+  otp: Joi.string().length(6).pattern(/^[0-9]+$/).required().messages({
+    'string.empty': 'OTP is required',
+    'string.length': 'OTP must be 6 digits',
+    'string.pattern.base': 'OTP must contain only numbers',
   }),
 });
 
