@@ -1846,4 +1846,454 @@ curl -X DELETE http://localhost:5000/api/v1/blogs/64blog123... \
 
 ---
 
+## Counselor Endpoints
+
+All counselor creation, update, and delete operations require admin role with verification. Public users can view counselors.
+
+### 37. Get All Counselors
+
+Get a paginated list of all active counselors. Supports search and filtering by specialty.
+
+**Endpoint:** `GET /counselors`
+
+**Query Parameters:**
+- `page` (default: 1) - Page number
+- `limit` (default: 10, max: 100) - Items per page
+- `sortBy` (default: "createdAt") - Sort field
+- `order` (default: "desc") - Sort order (asc/desc)
+- `search` (optional) - Search in counselor name, bio, title, and specialties
+- `specialty` (optional) - Filter by specialty
+- `includeInactive` (optional, Admin only) - Include inactive counselors
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Counselors retrieved successfully",
+  "data": [
+    {
+      "_id": "64xyz...",
+      "id": 1,
+      "fullName": "Dr. John Smith",
+      "title": "Licensed Clinical Psychologist",
+      "yearsOfExperience": 15,
+      "bio": "Experienced psychologist specializing in cognitive behavioral therapy...",
+      "avatarUrl": "https://example.com/avatar.jpg",
+      "specialties": ["Anxiety", "Depression", "CBT"],
+      "isActive": true,
+      "rating": 4.5,
+      "experienceLevel": "Expert",
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2024-01-15T10:00:00.000Z"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "limit": 10,
+    "total": 25,
+    "totalPages": 3
+  }
+}
+```
+
+**cURL Example:**
+```bash
+curl "http://localhost:5000/api/v1/counselors?page=1&limit=10"
+```
+
+---
+
+### 38. Get Counselor By ID
+
+Get a specific counselor by their numeric ID (Public).
+
+**Endpoint:** `GET /counselors/:id`
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Counselor retrieved successfully",
+  "data": {
+    "id": 1,
+    "fullName": "Dr. John Smith",
+    "title": "Licensed Clinical Psychologist",
+    "yearsOfExperience": 15,
+    "bio": "Experienced psychologist specializing in cognitive behavioral therapy...",
+    "avatarUrl": "https://example.com/avatar.jpg",
+    "specialties": ["Anxiety", "Depression", "CBT"],
+    "isActive": true,
+    "rating": 4.5,
+    "experienceLevel": "Expert",
+    "createdAt": "2024-01-15T10:00:00.000Z",
+    "updatedAt": "2024-01-15T10:00:00.000Z"
+  }
+}
+```
+
+**cURL Example:**
+```bash
+curl http://localhost:5000/api/v1/counselors/1
+```
+
+---
+
+### 39. Get Top Rated Counselors
+
+Get the highest rated counselors (Public).
+
+**Endpoint:** `GET /counselors/top-rated`
+
+**Query Parameters:**
+- `limit` (default: 10, max: 100) - Number of counselors to return
+
+**cURL Example:**
+```bash
+curl "http://localhost:5000/api/v1/counselors/top-rated?limit=5"
+```
+
+---
+
+### 40. Get Most Experienced Counselors
+
+Get counselors with the most years of experience (Public).
+
+**Endpoint:** `GET /counselors/most-experienced`
+
+**Query Parameters:**
+- `limit` (default: 10, max: 100) - Number of counselors to return
+
+**cURL Example:**
+```bash
+curl "http://localhost:5000/api/v1/counselors/most-experienced?limit=5"
+```
+
+---
+
+### 41. Get All Specialties
+
+Get list of all unique specialties from active counselors (Public).
+
+**Endpoint:** `GET /counselors/specialties`
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Specialties retrieved successfully",
+  "data": ["Anxiety", "CBT", "Depression", "Family Therapy", "PTSD", "Stress Management"]
+}
+```
+
+**cURL Example:**
+```bash
+curl http://localhost:5000/api/v1/counselors/specialties
+```
+
+---
+
+### 42. Get Counselor Statistics (Admin Only)
+
+Get overview statistics for counselors.
+
+**⚠️ Requires: Admin Role + Verification**
+
+**Endpoint:** `GET /counselors/stats/overview`
+
+**Headers:**
+```
+Authorization: Bearer ADMIN_JWT_TOKEN
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Counselor statistics retrieved successfully",
+  "data": {
+    "total": 50,
+    "active": 45,
+    "inactive": 5,
+    "averageRating": 4.32,
+    "totalSpecialties": 15
+  }
+}
+```
+
+**cURL Example:**
+```bash
+curl http://localhost:5000/api/v1/counselors/stats/overview \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN"
+```
+
+---
+
+### 43. Create Counselor (Admin Only)
+
+Create a new counselor.
+
+**⚠️ Requires: Admin Role + Verification**
+
+**Endpoint:** `POST /counselors`
+
+**Headers:**
+```
+Authorization: Bearer ADMIN_JWT_TOKEN
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "fullName": "Dr. John Smith",
+  "title": "Licensed Clinical Psychologist",
+  "yearsOfExperience": 15,
+  "bio": "Experienced psychologist specializing in cognitive behavioral therapy with over 15 years of experience...",
+  "avatarUrl": "https://example.com/avatar.jpg",
+  "specialties": ["Anxiety", "Depression", "CBT"],
+  "isActive": true,
+  "rating": 4.5
+}
+```
+
+**Required Fields:**
+- `fullName` (min: 2, max: 100 characters)
+- `title` (max: 100 characters)
+- `yearsOfExperience` (integer, 0-100)
+- `bio` (min: 10, max: 2000 characters)
+- `specialties` (array of strings, min: 1, max: 20)
+
+**Optional Fields:**
+- `avatarUrl` (valid URL)
+- `isActive` (boolean, default: true)
+- `rating` (number, 0-5, default: 0)
+
+**Response (201 Created):**
+```json
+{
+  "success": true,
+  "message": "Counselor created successfully",
+  "data": {
+    "_id": "64xyz...",
+    "id": 1,
+    "fullName": "Dr. John Smith",
+    "title": "Licensed Clinical Psychologist",
+    "yearsOfExperience": 15,
+    "bio": "Experienced psychologist...",
+    "avatarUrl": "https://example.com/avatar.jpg",
+    "specialties": ["Anxiety", "Depression", "CBT"],
+    "isActive": true,
+    "rating": 4.5,
+    "experienceLevel": "Expert",
+    "createdAt": "2024-01-15T10:00:00.000Z",
+    "updatedAt": "2024-01-15T10:00:00.000Z"
+  }
+}
+```
+
+**cURL Example:**
+```bash
+curl -X POST http://localhost:5000/api/v1/counselors \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "fullName": "Dr. John Smith",
+    "title": "Licensed Clinical Psychologist",
+    "yearsOfExperience": 15,
+    "bio": "Experienced psychologist specializing in cognitive behavioral therapy...",
+    "specialties": ["Anxiety", "Depression", "CBT"]
+  }'
+```
+
+---
+
+### 44. Update Counselor (Admin Only)
+
+Update an existing counselor.
+
+**⚠️ Requires: Admin Role + Verification**
+
+**Endpoint:** `PATCH /counselors/:id`
+
+**Headers:**
+```
+Authorization: Bearer ADMIN_JWT_TOKEN
+Content-Type: application/json
+```
+
+**Request Body (all fields optional):**
+```json
+{
+  "fullName": "Dr. John Smith Jr.",
+  "title": "Senior Clinical Psychologist",
+  "yearsOfExperience": 16,
+  "bio": "Updated biography...",
+  "avatarUrl": "https://example.com/new-avatar.jpg",
+  "specialties": ["Anxiety", "Depression", "CBT", "PTSD"],
+  "isActive": true,
+  "rating": 4.7
+}
+```
+
+**cURL Example:**
+```bash
+curl -X PATCH http://localhost:5000/api/v1/counselors/1 \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Senior Clinical Psychologist",
+    "rating": 4.7
+  }'
+```
+
+---
+
+### 45. Update Counselor Rating (Admin Only)
+
+Update a counselor's rating.
+
+**⚠️ Requires: Admin Role + Verification**
+
+**Endpoint:** `PATCH /counselors/:id/rating`
+
+**Headers:**
+```
+Authorization: Bearer ADMIN_JWT_TOKEN
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "rating": 4.5
+}
+```
+
+**Required Fields:**
+- `rating` (number, 0-5)
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Counselor rating updated successfully",
+  "data": {
+    "id": 1,
+    "rating": 4.5,
+    ...
+  }
+}
+```
+
+**cURL Example:**
+```bash
+curl -X PATCH http://localhost:5000/api/v1/counselors/1/rating \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rating": 4.5
+  }'
+```
+
+---
+
+### 46. Delete Counselor (Admin Only)
+
+Permanently delete a counselor.
+
+**⚠️ Requires: Admin Role + Verification**
+
+**Endpoint:** `DELETE /counselors/:id`
+
+**Headers:**
+```
+Authorization: Bearer ADMIN_JWT_TOKEN
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Counselor deleted successfully",
+  "data": null
+}
+```
+
+**cURL Example:**
+```bash
+curl -X DELETE http://localhost:5000/api/v1/counselors/1 \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN"
+```
+
+---
+
+### 47. Deactivate Counselor (Admin Only)
+
+Deactivate a counselor without deleting (soft delete).
+
+**⚠️ Requires: Admin Role + Verification**
+
+**Endpoint:** `POST /counselors/:id/deactivate`
+
+**Headers:**
+```
+Authorization: Bearer ADMIN_JWT_TOKEN
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Counselor deactivated successfully",
+  "data": {
+    "id": 1,
+    "isActive": false,
+    ...
+  }
+}
+```
+
+**cURL Example:**
+```bash
+curl -X POST http://localhost:5000/api/v1/counselors/1/deactivate \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN"
+```
+
+---
+
+## Counselor Features
+
+### Auto-Incrementing ID
+- Each counselor gets a unique numeric ID (1, 2, 3, ...)
+- Separate from MongoDB's `_id`
+- Used for public-facing URLs and references
+
+### Experience Levels
+Automatically calculated based on years of experience:
+- **Junior**: 0-1 years
+- **Mid-Level**: 2-4 years
+- **Senior**: 5-9 years
+- **Expert**: 10+ years
+
+### Specialties
+- Minimum 1 specialty required
+- Maximum 20 specialties per counselor
+- Used for filtering and search
+- All unique specialties available at `/counselors/specialties`
+
+### Rating System
+- Rating range: 0-5 stars
+- Default rating: 0
+- Can be updated separately using rating endpoint
+- Used for sorting top-rated counselors
+
+### Search and Filters
+The `/counselors` endpoint supports:
+- **Search**: Searches across full name, title, bio, and specialties
+- **Specialty Filter**: Filter counselors by specific specialty
+- **Sorting**: Sort by any field (createdAt, rating, yearsOfExperience, etc.)
+- **Pagination**: Control page size and number
+
+---
+
 For more information, see the main [README.md](README.md) file.

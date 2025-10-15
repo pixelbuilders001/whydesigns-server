@@ -1381,4 +1381,384 @@
  *         description: Blog not found
  */
 
+// ============= Counselor API Documentation =============
+
+/**
+ * @swagger
+ * /counselors:
+ *   get:
+ *     summary: Get all counselors
+ *     description: Get paginated list of all active counselors. Supports search and filtering by specialty.
+ *     tags: [Counselors]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *           maximum: 100
+ *         description: Items per page
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           default: createdAt
+ *         description: Field to sort by
+ *       - in: query
+ *         name: order
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: desc
+ *         description: Sort order
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search in counselor name, bio, title, and specialties
+ *       - in: query
+ *         name: specialty
+ *         schema:
+ *           type: string
+ *         description: Filter by specialty
+ *       - in: query
+ *         name: includeInactive
+ *         schema:
+ *           type: boolean
+ *           default: false
+ *         description: Include inactive counselors (Admin only)
+ *     responses:
+ *       200:
+ *         description: Counselors retrieved successfully
+ */
+
+/**
+ * @swagger
+ * /counselors/top-rated:
+ *   get:
+ *     summary: Get top rated counselors
+ *     description: Get the highest rated counselors
+ *     tags: [Counselors]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *           maximum: 100
+ *         description: Number of counselors to return
+ *     responses:
+ *       200:
+ *         description: Top rated counselors retrieved successfully
+ */
+
+/**
+ * @swagger
+ * /counselors/most-experienced:
+ *   get:
+ *     summary: Get most experienced counselors
+ *     description: Get counselors with the most years of experience
+ *     tags: [Counselors]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *           maximum: 100
+ *         description: Number of counselors to return
+ *     responses:
+ *       200:
+ *         description: Most experienced counselors retrieved successfully
+ */
+
+/**
+ * @swagger
+ * /counselors/specialties:
+ *   get:
+ *     summary: Get all specialties
+ *     description: Get list of all unique specialties from active counselors
+ *     tags: [Counselors]
+ *     responses:
+ *       200:
+ *         description: Specialties retrieved successfully
+ */
+
+/**
+ * @swagger
+ * /counselors/stats/overview:
+ *   get:
+ *     summary: Get counselor statistics (Admin only)
+ *     description: Get overview statistics for counselors. Requires admin role and verification.
+ *     tags: [Counselors]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Statistics retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin access required
+ */
+
+/**
+ * @swagger
+ * /counselors/{id}:
+ *   get:
+ *     summary: Get counselor by ID
+ *     description: Get a specific counselor's details by their numeric ID
+ *     tags: [Counselors]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Counselor ID (numeric)
+ *     responses:
+ *       200:
+ *         description: Counselor retrieved successfully
+ *       400:
+ *         description: Invalid counselor ID
+ *       404:
+ *         description: Counselor not found
+ */
+
+/**
+ * @swagger
+ * /counselors:
+ *   post:
+ *     summary: Create counselor (Admin only)
+ *     description: Create a new counselor. Requires admin role and verification.
+ *     tags: [Counselors]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - fullName
+ *               - title
+ *               - yearsOfExperience
+ *               - bio
+ *               - specialties
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
+ *                 example: Dr. John Smith
+ *               title:
+ *                 type: string
+ *                 maxLength: 100
+ *                 example: Licensed Clinical Psychologist
+ *               yearsOfExperience:
+ *                 type: integer
+ *                 minimum: 0
+ *                 maximum: 100
+ *                 example: 15
+ *               bio:
+ *                 type: string
+ *                 minLength: 10
+ *                 maxLength: 2000
+ *                 example: Experienced psychologist specializing in cognitive behavioral therapy...
+ *               avatarUrl:
+ *                 type: string
+ *                 format: uri
+ *                 example: https://example.com/avatar.jpg
+ *               specialties:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 minItems: 1
+ *                 maxItems: 20
+ *                 example: [Anxiety, Depression, CBT]
+ *               isActive:
+ *                 type: boolean
+ *                 default: true
+ *               rating:
+ *                 type: number
+ *                 minimum: 0
+ *                 maximum: 5
+ *                 default: 0
+ *                 example: 4.5
+ *     responses:
+ *       201:
+ *         description: Counselor created successfully
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin access required
+ */
+
+/**
+ * @swagger
+ * /counselors/{id}:
+ *   patch:
+ *     summary: Update counselor (Admin only)
+ *     description: Update an existing counselor
+ *     tags: [Counselors]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Counselor ID (numeric)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *               title:
+ *                 type: string
+ *               yearsOfExperience:
+ *                 type: integer
+ *               bio:
+ *                 type: string
+ *               avatarUrl:
+ *                 type: string
+ *                 format: uri
+ *               specialties:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               isActive:
+ *                 type: boolean
+ *               rating:
+ *                 type: number
+ *                 minimum: 0
+ *                 maximum: 5
+ *     responses:
+ *       200:
+ *         description: Counselor updated successfully
+ *       400:
+ *         description: Invalid counselor ID or validation error
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Counselor not found
+ */
+
+/**
+ * @swagger
+ * /counselors/{id}/rating:
+ *   patch:
+ *     summary: Update counselor rating (Admin only)
+ *     description: Update a counselor's rating
+ *     tags: [Counselors]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Counselor ID (numeric)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - rating
+ *             properties:
+ *               rating:
+ *                 type: number
+ *                 minimum: 0
+ *                 maximum: 5
+ *                 example: 4.5
+ *     responses:
+ *       200:
+ *         description: Rating updated successfully
+ *       400:
+ *         description: Invalid rating value
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Counselor not found
+ */
+
+/**
+ * @swagger
+ * /counselors/{id}:
+ *   delete:
+ *     summary: Delete counselor (Admin only)
+ *     description: Permanently delete a counselor
+ *     tags: [Counselors]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Counselor ID (numeric)
+ *     responses:
+ *       200:
+ *         description: Counselor deleted successfully
+ *       400:
+ *         description: Invalid counselor ID
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Counselor not found
+ */
+
+/**
+ * @swagger
+ * /counselors/{id}/deactivate:
+ *   post:
+ *     summary: Deactivate counselor (Admin only)
+ *     description: Soft delete a counselor (set isActive to false)
+ *     tags: [Counselors]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Counselor ID (numeric)
+ *     responses:
+ *       200:
+ *         description: Counselor deactivated successfully
+ *       400:
+ *         description: Invalid counselor ID
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Counselor not found
+ */
+
 export {};

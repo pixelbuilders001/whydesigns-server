@@ -59,8 +59,8 @@ router.get(
 router.post(
   '/',
   authenticate,
-  requireVerification,
   authorize('ADMIN'),
+  requireVerification,
   uploadSingle('featuredImage'),
   validate(createBlogSchema),
   blogController.createBlog
@@ -78,8 +78,8 @@ router.get('/:id', validateParams(blogIdParamSchema), blogController.getBlogById
 router.patch(
   '/:id',
   authenticate,
-  requireVerification,
   authorize('ADMIN'),
+  requireVerification,
   validateParams(blogIdParamSchema),
   uploadSingle('featuredImage'),
   validate(updateBlogSchema),
@@ -90,8 +90,8 @@ router.patch(
 router.post(
   '/:id/publish',
   authenticate,
-  requireVerification,
   authorize('ADMIN'),
+  requireVerification,
   validateParams(blogIdParamSchema),
   blogController.publishBlog
 );
@@ -100,8 +100,8 @@ router.post(
 router.delete(
   '/:id',
   authenticate,
-  requireVerification,
   authorize('ADMIN'),
+  requireVerification,
   validateParams(blogIdParamSchema),
   blogController.deleteBlog
 );
@@ -110,8 +110,8 @@ router.delete(
 router.post(
   '/:id/deactivate',
   authenticate,
-  requireVerification,
   authorize('ADMIN'),
+  requireVerification,
   validateParams(blogIdParamSchema),
   blogController.softDeleteBlog
 );

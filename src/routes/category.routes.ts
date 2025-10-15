@@ -17,8 +17,8 @@ const router = Router();
 router.get(
   '/stats/overview',
   authenticate,
-  requireVerification,
   authorize('ADMIN'),
+  requireVerification,
   categoryController.getCategoryStats
 );
 
@@ -49,8 +49,8 @@ router.get(
 router.post(
   '/',
   authenticate,
-  requireVerification,
   authorize('ADMIN'),
+  requireVerification,
   validate(createCategorySchema),
   categoryController.createCategory
 );
@@ -59,8 +59,8 @@ router.post(
 router.patch(
   '/:id',
   authenticate,
-  requireVerification,
   authorize('ADMIN'),
+  requireVerification,
   validateParams(categoryIdParamSchema),
   validate(updateCategorySchema),
   categoryController.updateCategory
@@ -70,8 +70,8 @@ router.patch(
 router.delete(
   '/:id',
   authenticate,
-  requireVerification,
   authorize('ADMIN'),
+  requireVerification,
   validateParams(categoryIdParamSchema),
   categoryController.deleteCategory
 );
@@ -80,8 +80,8 @@ router.delete(
 router.post(
   '/:id/deactivate',
   authenticate,
-  requireVerification,
   authorize('ADMIN'),
+  requireVerification,
   validateParams(categoryIdParamSchema),
   categoryController.softDeleteCategory
 );
