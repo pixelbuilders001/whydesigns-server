@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import blogService from '../services/blog.service';
+import s3Service from '../services/s3.service';
 import { ApiResponse } from '../utils/ApiResponse';
 import { asyncHandler } from '../utils/asyncHandler';
 import { AuthenticatedRequest, PaginationQuery } from '../types';
@@ -12,9 +13,16 @@ export class BlogController {
       return ApiResponse.error(res, 'Unauthorized', 401);
     }
 
+    // Handle file upload if present
+    let featuredImageUrl = '';
+    if (req.file) {
+      featuredImageUrl = await s3Service.uploadFile(req.file, 'blog-images');
+    }
+
     const blogData = {
       ...req.body,
       authorId: userId,
+      featuredImage: featuredImageUrl || req.body.featuredImage || '',
     };
 
     const blog = await blogService.createBlog(blogData);
@@ -23,7 +31,7 @@ export class BlogController {
   });
 
   getAllBlogs = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    const query = req.query as unknown as PaginationQuery & { search?: string; status?: BlogStatus; categoryId?: string; authorId?: string };
+    const query = req.query as unknown as PaginationQuery & { search?: string; status?: BlogStatus; authorId?: string };
     const page = parseInt(query.page || '1', 10);
     const limit = parseInt(query.limit || '10', 10);
     const sortBy = query.sortBy || 'createdAt';
@@ -94,26 +102,6 @@ export class BlogController {
     const blog = await blogService.getBlogBySlug(slug, userId, userRole);
 
     return ApiResponse.success(res, blog, 'Blog retrieved successfully');
-  });
-
-  getBlogsByCategory = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    const { categoryId } = req.params;
-    const query = req.query as unknown as PaginationQuery;
-    const page = parseInt(query.page || '1', 10);
-    const limit = parseInt(query.limit || '10', 10);
-    const sortBy = query.sortBy || 'createdAt';
-    const order = query.order || 'desc';
-
-    const result = await blogService.getBlogsByCategory(categoryId, { page, limit, sortBy, order });
-
-    return ApiResponse.paginated(
-      res,
-      result.blogs,
-      page,
-      limit,
-      result.total,
-      'Blogs retrieved successfully'
-    );
   });
 
   getBlogsByAuthor = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
@@ -187,7 +175,24 @@ export class BlogController {
       return ApiResponse.error(res, 'Unauthorized', 401);
     }
 
-    const blog = await blogService.updateBlog(id, userId, userRole, req.body);
+    // Handle file upload if present
+    let featuredImageUrl = '';
+    if (req.file) {
+      featuredImageUrl = await s3Service.uploadFile(req.file, 'blog-images');
+
+      // Get existing blog to delete old image
+      const existingBlog = await blogService.getBlogById(id, userId, userRole);
+      if (existingBlog.featuredImage) {
+        await s3Service.deleteFile(existingBlog.featuredImage);
+      }
+    }
+
+    const updateData = {
+      ...req.body,
+      ...(featuredImageUrl && { featuredImage: featuredImageUrl }),
+    };
+
+    const blog = await blogService.updateBlog(id, userId, userRole, updateData);
 
     return ApiResponse.success(res, blog, 'Blog updated successfully');
   });

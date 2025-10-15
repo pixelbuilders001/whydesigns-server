@@ -4,7 +4,6 @@ import { PaginationOptions } from '../types';
 export interface BlogFilters {
   status?: BlogStatus;
   authorId?: string;
-  categoryId?: string;
   tags?: string[];
   isActive?: boolean;
 }
@@ -17,14 +16,12 @@ export class BlogRepository {
 
   async findById(id: string): Promise<IBlog | null> {
     return await Blog.findById(id)
-      .populate('authorId', 'firstName lastName email profilePicture')
-      .populate('categoryId', 'name slug');
+      .populate('authorId', 'firstName lastName email profilePicture');
   }
 
   async findBySlug(slug: string): Promise<IBlog | null> {
     return await Blog.findOne({ slug })
-      .populate('authorId', 'firstName lastName email profilePicture')
-      .populate('categoryId', 'name slug');
+      .populate('authorId', 'firstName lastName email profilePicture');
   }
 
   async findAll(
@@ -41,7 +38,6 @@ export class BlogRepository {
     const filter: any = {};
     if (filters.status) filter.status = filters.status;
     if (filters.authorId) filter.authorId = filters.authorId;
-    if (filters.categoryId) filter.categoryId = filters.categoryId;
     if (filters.isActive !== undefined) filter.isActive = filters.isActive;
     if (filters.tags && filters.tags.length > 0) {
       filter.tags = { $in: filters.tags };
@@ -50,7 +46,6 @@ export class BlogRepository {
     const [blogs, total] = await Promise.all([
       Blog.find(filter)
         .populate('authorId', 'firstName lastName email profilePicture')
-        .populate('categoryId', 'name slug')
         .sort(sortOptions)
         .skip(skip)
         .limit(limit),
@@ -72,13 +67,6 @@ export class BlogRepository {
     return this.findAll(options, { ...filters, authorId });
   }
 
-  async findByCategory(
-    categoryId: string,
-    options: PaginationOptions
-  ): Promise<{ blogs: IBlog[]; total: number }> {
-    return this.findAll(options, { categoryId, status: 'published', isActive: true });
-  }
-
   async findByTags(
     tags: string[],
     options: PaginationOptions
@@ -91,8 +79,7 @@ export class BlogRepository {
       new: true,
       runValidators: true,
     })
-      .populate('authorId', 'firstName lastName email profilePicture')
-      .populate('categoryId', 'name slug');
+      .populate('authorId', 'firstName lastName email profilePicture');
 
     return blog;
   }
@@ -146,7 +133,6 @@ export class BlogRepository {
     const [blogs, total] = await Promise.all([
       Blog.find(searchFilter, { score: { $meta: 'textScore' } })
         .populate('authorId', 'firstName lastName email profilePicture')
-        .populate('categoryId', 'name slug')
         .sort({ score: { $meta: 'textScore' }, ...sortOptions })
         .skip(skip)
         .limit(limit),
@@ -181,7 +167,6 @@ export class BlogRepository {
     const [blogs, total] = await Promise.all([
       Blog.find(searchFilter)
         .populate('authorId', 'firstName lastName email profilePicture')
-        .populate('categoryId', 'name slug')
         .sort(sortOptions)
         .skip(skip)
         .limit(limit),
@@ -197,10 +182,6 @@ export class BlogRepository {
     return await Blog.countDocuments(filter);
   }
 
-  async countByCategory(categoryId: string): Promise<number> {
-    return await Blog.countDocuments({ categoryId, status: 'published', isActive: true });
-  }
-
   async countByStatus(status: BlogStatus): Promise<number> {
     return await Blog.countDocuments({ status, isActive: true });
   }
@@ -208,7 +189,6 @@ export class BlogRepository {
   async getMostViewedBlogs(limit: number = 10): Promise<IBlog[]> {
     return await Blog.find({ status: 'published', isActive: true })
       .populate('authorId', 'firstName lastName email profilePicture')
-      .populate('categoryId', 'name slug')
       .sort({ viewCount: -1 })
       .limit(limit);
   }
@@ -216,7 +196,6 @@ export class BlogRepository {
   async getRecentBlogs(limit: number = 10): Promise<IBlog[]> {
     return await Blog.find({ status: 'published', isActive: true })
       .populate('authorId', 'firstName lastName email profilePicture')
-      .populate('categoryId', 'name slug')
       .sort({ publishedAt: -1 })
       .limit(limit);
   }

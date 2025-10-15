@@ -31,9 +31,6 @@ router.get('/search', validateQuery(searchBlogSchema), blogController.searchBlog
 // Get blogs by slug (must come before /:id to avoid conflicts)
 router.get('/slug/:slug', validateParams(blogSlugParamSchema), blogController.getBlogBySlug);
 
-// Get blogs by category
-router.get('/category/:categoryId', validateQuery(blogPaginationSchema), blogController.getBlogsByCategory);
-
 // Get blogs by author (public - only published blogs)
 router.get('/author/:authorId', validateQuery(blogPaginationSchema), blogController.getBlogsByAuthor);
 
@@ -63,6 +60,7 @@ router.post(
   '/',
   authenticate,
   requireVerification,
+  uploadSingle('featuredImage'),
   validate(createBlogSchema),
   blogController.createBlog
 );
@@ -81,6 +79,7 @@ router.patch(
   authenticate,
   requireVerification,
   validateParams(blogIdParamSchema),
+  uploadSingle('featuredImage'),
   validate(updateBlogSchema),
   blogController.updateBlog
 );

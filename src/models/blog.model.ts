@@ -10,7 +10,6 @@ export interface IBlog extends Document {
   excerpt: string;
   featuredImage: string;
   authorId: mongoose.Types.ObjectId;
-  categoryId: mongoose.Types.ObjectId;
   tags: string[];
   status: BlogStatus;
   publishedAt: Date | null;
@@ -57,12 +56,6 @@ const blogSchema = new Schema<IBlog>(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: [true, 'Author is required'],
-      index: true,
-    },
-    categoryId: {
-      type: Schema.Types.ObjectId,
-      ref: 'Category',
-      required: [true, 'Category is required'],
       index: true,
     },
     tags: {
@@ -114,7 +107,6 @@ const blogSchema = new Schema<IBlog>(
 blogSchema.index({ slug: 1 });
 blogSchema.index({ title: 'text', content: 'text', excerpt: 'text' }); // Text index for search
 blogSchema.index({ authorId: 1, status: 1 });
-blogSchema.index({ categoryId: 1, status: 1 });
 blogSchema.index({ status: 1, publishedAt: -1 });
 blogSchema.index({ tags: 1 });
 blogSchema.index({ isActive: 1 });

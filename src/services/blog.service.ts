@@ -1,5 +1,4 @@
 import blogRepository, { BlogFilters } from '../repositories/blog.repository';
-import categoryRepository from '../repositories/category.repository';
 import { IBlog, Blog, BlogStatus } from '../models/blog.model';
 import { PaginationOptions } from '../types';
 import { NotFoundError, BadRequestError, ConflictError, ForbiddenError } from '../utils/AppError';
@@ -11,7 +10,6 @@ interface CreateBlogData {
   excerpt?: string;
   featuredImage?: string;
   authorId: string;
-  categoryId: string;
   tags?: string[];
   status?: BlogStatus;
 }
@@ -22,24 +20,13 @@ interface UpdateBlogData {
   content?: string;
   excerpt?: string;
   featuredImage?: string;
-  categoryId?: string;
   tags?: string[];
   status?: BlogStatus;
 }
 
 export class BlogService {
   async createBlog(data: CreateBlogData): Promise<IBlog> {
-    const { title, slug, content, excerpt, featuredImage, authorId, categoryId, tags, status } = data;
-
-    // Verify category exists
-    const category = await categoryRepository.findById(categoryId);
-    if (!category) {
-      throw new NotFoundError('Category not found');
-    }
-
-    if (!category.isActive) {
-      throw new BadRequestError('Cannot create blog with inactive category');
-    }
+    const { title, slug, content, excerpt, featuredImage, authorId, tags, status } = data;
 
     // Generate slug from title if not provided
     const blogSlug = slug || (Blog as any).generateSlug(title);
@@ -61,7 +48,6 @@ export class BlogService {
       excerpt: blogExcerpt,
       featuredImage: featuredImage || '',
       authorId,
-      categoryId,
       tags: tags || [],
       status: status || 'draft',
     });
@@ -129,16 +115,6 @@ export class BlogService {
     return await blogRepository.findByAuthor(authorId, options, filters);
   }
 
-  async getBlogsByCategory(categoryId: string, options: PaginationOptions): Promise<{ blogs: IBlog[]; total: number }> {
-    // Verify category exists
-    const category = await categoryRepository.findById(categoryId);
-    if (!category) {
-      throw new NotFoundError('Category not found');
-    }
-
-    return await blogRepository.findByCategory(categoryId, options);
-  }
-
   async getBlogsByAuthor(authorId: string, options: PaginationOptions): Promise<{ blogs: IBlog[]; total: number }> {
     // Only return published blogs for public author view
     return await blogRepository.findByAuthor(authorId, options, { status: 'published', isActive: true });
@@ -152,7 +128,7 @@ export class BlogService {
   }
 
   async updateBlog(id: string, userId: string, userRole: string, data: UpdateBlogData): Promise<IBlog> {
-    const { title, slug, content, excerpt, featuredImage, categoryId, tags, status } = data;
+    const { title, slug, content, excerpt, featuredImage, tags, status } = data;
 
     // Check if blog exists
     const existingBlog = await blogRepository.findById(id);
@@ -163,17 +139,6 @@ export class BlogService {
     // Check authorization - only author or admin can update
     if (existingBlog.authorId.toString() !== userId && userRole !== 'ADMIN') {
       throw new ForbiddenError('You do not have permission to update this blog');
-    }
-
-    // If category is being updated, verify it exists
-    if (categoryId && categoryId !== existingBlog.categoryId.toString()) {
-      const category = await categoryRepository.findById(categoryId);
-      if (!category) {
-        throw new NotFoundError('Category not found');
-      }
-      if (!category.isActive) {
-        throw new BadRequestError('Cannot update blog to inactive category');
-      }
     }
 
     // Check if slug is being updated and if it already exists
@@ -191,7 +156,6 @@ export class BlogService {
     if (content !== undefined) updateData.content = content;
     if (excerpt !== undefined) updateData.excerpt = excerpt;
     if (featuredImage !== undefined) updateData.featuredImage = featuredImage;
-    if (categoryId !== undefined) updateData.categoryId = categoryId as any;
     if (tags !== undefined) updateData.tags = tags;
     if (status !== undefined) {
       updateData.status = status;

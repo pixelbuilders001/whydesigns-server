@@ -1121,26 +1121,6 @@
 
 /**
  * @swagger
- * /blogs/category/{categoryId}:
- *   get:
- *     summary: Get blogs by category
- *     description: Get all published blogs in a specific category
- *     tags: [Blogs]
- *     parameters:
- *       - in: path
- *         name: categoryId
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Blogs retrieved successfully
- *       404:
- *         description: Category not found
- */
-
-/**
- * @swagger
  * /blogs/author/{authorId}:
  *   get:
  *     summary: Get blogs by author
@@ -1210,21 +1190,24 @@
  * /blogs:
  *   post:
  *     summary: Create blog
- *     description: Create a new blog post. Requires authentication and verification.
+ *     description: Create a new blog post with optional featured image upload to AWS S3. Requires authentication and verification.
  *     tags: [Blogs]
  *     security:
  *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required:
  *               - title
  *               - content
- *               - categoryId
  *             properties:
+ *               featuredImage:
+ *                 type: string
+ *                 format: binary
+ *                 description: Featured image file (JPEG, PNG, GIF, WebP - max 5MB)
  *               title:
  *                 type: string
  *                 minLength: 5
@@ -1238,16 +1221,9 @@
  *               excerpt:
  *                 type: string
  *                 maxLength: 500
- *               featuredImage:
- *                 type: string
- *                 format: uri
- *               categoryId:
- *                 type: string
  *               tags:
- *                 type: array
- *                 items:
- *                   type: string
- *                 maxItems: 10
+ *                 type: string
+ *                 description: Comma-separated tags (e.g., "javascript,nodejs,express") - max 10 tags
  *               status:
  *                 type: string
  *                 enum: [draft, published, archived]
@@ -1255,10 +1231,10 @@
  *     responses:
  *       201:
  *         description: Blog created successfully
+ *       400:
+ *         description: Invalid file type or size
  *       401:
  *         description: Unauthorized
- *       404:
- *         description: Category not found
  */
 
 /**
@@ -1308,7 +1284,7 @@
  * /blogs/{id}:
  *   patch:
  *     summary: Update blog
- *     description: Update blog. Only author or admin can update.
+ *     description: Update blog with optional featured image upload to AWS S3. Only author or admin can update. Old featured image will be deleted when uploading a new one.
  *     tags: [Blogs]
  *     security:
  *       - BearerAuth: []
@@ -1320,30 +1296,31 @@
  *           type: string
  *     requestBody:
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             properties:
+ *               featuredImage:
+ *                 type: string
+ *                 format: binary
+ *                 description: Featured image file (JPEG, PNG, GIF, WebP - max 5MB)
  *               title:
  *                 type: string
  *               content:
  *                 type: string
  *               excerpt:
  *                 type: string
- *               featuredImage:
- *                 type: string
- *               categoryId:
- *                 type: string
  *               tags:
- *                 type: array
- *                 items:
- *                   type: string
+ *                 type: string
+ *                 description: Comma-separated tags (e.g., "javascript,nodejs,express") - max 10 tags
  *               status:
  *                 type: string
  *                 enum: [draft, published, archived]
  *     responses:
  *       200:
  *         description: Blog updated successfully
+ *       400:
+ *         description: Invalid file type or size
  *       401:
  *         description: Unauthorized
  *       403:

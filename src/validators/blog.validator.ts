@@ -22,12 +22,23 @@ export const createBlogSchema = Joi.object({
   featuredImage: Joi.string().uri().optional().allow('').messages({
     'string.uri': 'Featured image must be a valid URL',
   }),
-  categoryId: Joi.string().required().messages({
-    'string.empty': 'Category is required',
-  }),
-  tags: Joi.array().items(Joi.string()).max(10).optional().messages({
-    'array.max': 'A blog can have a maximum of 10 tags',
-  }),
+  tags: Joi.alternatives()
+    .try(
+      Joi.array().items(Joi.string()).max(10),
+      Joi.string().custom((value, helpers) => {
+        // Handle comma-separated string from form data
+        if (value.trim() === '') return [];
+        const tagsArray = value.split(',').map((tag: string) => tag.trim()).filter((tag: string) => tag);
+        if (tagsArray.length > 10) {
+          return helpers.error('array.max');
+        }
+        return tagsArray;
+      })
+    )
+    .optional()
+    .messages({
+      'array.max': 'A blog can have a maximum of 10 tags',
+    }),
   status: Joi.string().valid('draft', 'published', 'archived').optional().default('draft').messages({
     'any.only': 'Status must be draft, published, or archived',
   }),
@@ -53,12 +64,23 @@ export const updateBlogSchema = Joi.object({
   featuredImage: Joi.string().uri().optional().allow('').messages({
     'string.uri': 'Featured image must be a valid URL',
   }),
-  categoryId: Joi.string().optional().messages({
-    'string.empty': 'Category ID cannot be empty',
-  }),
-  tags: Joi.array().items(Joi.string()).max(10).optional().messages({
-    'array.max': 'A blog can have a maximum of 10 tags',
-  }),
+  tags: Joi.alternatives()
+    .try(
+      Joi.array().items(Joi.string()).max(10),
+      Joi.string().custom((value, helpers) => {
+        // Handle comma-separated string from form data
+        if (value.trim() === '') return [];
+        const tagsArray = value.split(',').map((tag: string) => tag.trim()).filter((tag: string) => tag);
+        if (tagsArray.length > 10) {
+          return helpers.error('array.max');
+        }
+        return tagsArray;
+      })
+    )
+    .optional()
+    .messages({
+      'array.max': 'A blog can have a maximum of 10 tags',
+    }),
   status: Joi.string().valid('draft', 'published', 'archived').optional().messages({
     'any.only': 'Status must be draft, published, or archived',
   }),
@@ -70,7 +92,6 @@ export const blogPaginationSchema = Joi.object({
   sortBy: Joi.string().default('createdAt'),
   order: Joi.string().valid('asc', 'desc').default('desc'),
   status: Joi.string().valid('draft', 'published', 'archived').optional(),
-  categoryId: Joi.string().optional(),
   authorId: Joi.string().optional(),
   search: Joi.string().optional(),
 });
