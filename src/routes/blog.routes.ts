@@ -55,11 +55,12 @@ router.get(
   blogController.getBlogStats
 );
 
-// Create blog (authenticated users with verification)
+// Create blog (ADMIN only)
 router.post(
   '/',
   authenticate,
   requireVerification,
+  authorize('ADMIN'),
   uploadSingle('featuredImage'),
   validate(createBlogSchema),
   blogController.createBlog
@@ -72,41 +73,45 @@ router.get('/', validateQuery(blogPaginationSchema), blogController.getAllBlogs)
 // Get blog by ID (public for published, owner/admin for draft)
 router.get('/:id', validateParams(blogIdParamSchema), blogController.getBlogById);
 
-// ============= Owner/Admin routes =============
-// Update blog (owner or admin)
+// ============= ADMIN only routes =============
+// Update blog (ADMIN only)
 router.patch(
   '/:id',
   authenticate,
   requireVerification,
+  authorize('ADMIN'),
   validateParams(blogIdParamSchema),
   uploadSingle('featuredImage'),
   validate(updateBlogSchema),
   blogController.updateBlog
 );
 
-// Publish blog (owner or admin)
+// Publish blog (ADMIN only)
 router.post(
   '/:id/publish',
   authenticate,
   requireVerification,
+  authorize('ADMIN'),
   validateParams(blogIdParamSchema),
   blogController.publishBlog
 );
 
-// Delete blog - hard delete (owner or admin)
+// Delete blog - hard delete (ADMIN only)
 router.delete(
   '/:id',
   authenticate,
   requireVerification,
+  authorize('ADMIN'),
   validateParams(blogIdParamSchema),
   blogController.deleteBlog
 );
 
-// Soft delete blog - deactivate (owner or admin)
+// Soft delete blog - deactivate (ADMIN only)
 router.post(
   '/:id/deactivate',
   authenticate,
   requireVerification,
+  authorize('ADMIN'),
   validateParams(blogIdParamSchema),
   blogController.softDeleteBlog
 );

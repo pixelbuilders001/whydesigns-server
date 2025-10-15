@@ -37,7 +37,9 @@ export const validateQuery = (schema: Joi.ObjectSchema) => {
       throw new ValidationError(errorMessage);
     }
 
-    req.query = value;
+    // Clear existing query params and assign validated values
+    Object.keys(req.query).forEach(key => delete (req.query as any)[key]);
+    Object.assign(req.query, value);
     next();
   };
 };
@@ -57,7 +59,9 @@ export const validateParams = (schema: Joi.ObjectSchema) => {
       throw new ValidationError(errorMessage);
     }
 
-    req.params = value;
+    // Clear existing params and assign validated values
+    Object.keys(req.params).forEach(key => delete (req.params as any)[key]);
+    Object.assign(req.params, value);
     next();
   };
 };
