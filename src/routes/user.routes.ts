@@ -14,6 +14,8 @@ import {
   verifyPhoneSchema,
   paginationSchema,
   idParamSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
 } from '../validators/user.validator';
 
 const router = Router();
@@ -21,6 +23,10 @@ const router = Router();
 // ============= Public routes =============
 router.post('/register', validate(registerSchema), userController.register);
 router.post('/login', validate(loginSchema), userController.login);
+
+// Password reset (PUBLIC)
+router.post('/forgot-password', validate(forgotPasswordSchema), userController.forgotPassword);
+router.post('/reset-password', validate(resetPasswordSchema), userController.resetPassword);
 
 // ============= Auth routes (require authentication) =============
 // Token management

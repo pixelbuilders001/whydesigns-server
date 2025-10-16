@@ -19,9 +19,8 @@ export const createBlogSchema = Joi.object({
   excerpt: Joi.string().max(500).optional().allow('').messages({
     'string.max': 'Excerpt must not exceed 500 characters',
   }),
-  featuredImage: Joi.string().uri().optional().allow('').messages({
-    'string.uri': 'Featured image must be a valid URL',
-  }),
+  // featuredImage can be uploaded as multipart file, so this field is optional in body
+  featuredImage: Joi.string().optional().allow(''),
   tags: Joi.alternatives()
     .try(
       Joi.array().items(Joi.string()).max(10),
@@ -61,9 +60,8 @@ export const updateBlogSchema = Joi.object({
   excerpt: Joi.string().max(500).optional().allow('').messages({
     'string.max': 'Excerpt must not exceed 500 characters',
   }),
-  featuredImage: Joi.string().uri().optional().allow('').messages({
-    'string.uri': 'Featured image must be a valid URL',
-  }),
+  // featuredImage can be uploaded as multipart file, so this field is optional in body
+  featuredImage: Joi.string().optional().allow(''),
   tags: Joi.alternatives()
     .try(
       Joi.array().items(Joi.string()).max(10),

@@ -14,6 +14,14 @@ interface EnvConfig {
   CORS_ORIGIN: string;
   RATE_LIMIT_WINDOW_MS: number;
   RATE_LIMIT_MAX_REQUESTS: number;
+  // Google Calendar
+  GOOGLE_CLIENT_EMAIL?: string;
+  GOOGLE_PRIVATE_KEY?: string;
+  GOOGLE_CALENDAR_ID?: string;
+  TIMEZONE?: string;
+  // AWS SES (already defined elsewhere)
+  AWS_SES_FROM_EMAIL?: string;
+  AWS_SES_FROM_NAME?: string;
 }
 
 const getEnvVariable = (key: string, defaultValue?: string): string => {
@@ -34,6 +42,14 @@ export const config: EnvConfig = {
   CORS_ORIGIN: getEnvVariable('CORS_ORIGIN', '*'),
   RATE_LIMIT_WINDOW_MS: parseInt(getEnvVariable('RATE_LIMIT_WINDOW_MS', '900000'), 10), // 15 minutes
   RATE_LIMIT_MAX_REQUESTS: parseInt(getEnvVariable('RATE_LIMIT_MAX_REQUESTS', '100'), 10),
+  // Google Calendar (optional)
+  GOOGLE_CLIENT_EMAIL: process.env.GOOGLE_CLIENT_EMAIL,
+  GOOGLE_PRIVATE_KEY: process.env.GOOGLE_PRIVATE_KEY,
+  GOOGLE_CALENDAR_ID: process.env.GOOGLE_CALENDAR_ID,
+  TIMEZONE: process.env.TIMEZONE || 'UTC',
+  // AWS SES
+  AWS_SES_FROM_EMAIL: process.env.AWS_SES_FROM_EMAIL,
+  AWS_SES_FROM_NAME: process.env.AWS_SES_FROM_NAME || 'Why Designers',
 };
 
 export default config;

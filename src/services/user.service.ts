@@ -276,6 +276,93 @@ export class UserService {
     await user.save();
   }
 
+  async forgotPassword(email: string): Promise<void> {
+    // Find user by email
+    const user = await userRepository.findByEmail(email);
+    if (!user) {
+      // For security reasons, don't reveal if user exists or not
+      // Just return success to prevent email enumeration attacks
+      console.log(`⚠️  Forgot password attempted for non-existent email: ${email}`);
+      return;
+    }
+
+    // Check if user account is active
+    if (!user.isActive) {
+      throw new BadRequestError('Account is deactivated. Please contact support.');
+    }
+
+    // Check if user registered with social login
+    if (user.provider !== 'local') {
+      throw new BadRequestError(
+        `This account was created using ${user.provider} login. Please use ${user.provider} to sign in.`
+      );
+    }
+
+    // Create and send OTP for password reset
+    try {
+      await otpService.createAndSendOTP(
+        user._id,
+        user.email,
+        user.firstName || 'User',
+        'password_reset'
+      );
+      console.log(`✅ Password reset OTP sent to ${email}`);
+    } catch (error) {
+      console.error('Failed to send password reset OTP:', error);
+      throw new BadRequestError('Failed to send password reset email. Please try again later.');
+    }
+  }
+
+  async resetPassword(email: string, otp: string, newPassword: string): Promise<void> {
+    // Find user by email
+    const user = await userRepository.findByEmail(email);
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    // Check if user account is active
+    if (!user.isActive) {
+      throw new BadRequestError('Account is deactivated. Please contact support.');
+    }
+
+    // Check if user registered with social login
+    if (user.provider !== 'local') {
+      throw new BadRequestError(
+        `This account was created using ${user.provider} login. Please use ${user.provider} to sign in.`
+      );
+    }
+
+    // Verify OTP
+    try {
+      await otpService.verifyOTP(user._id, otp, 'password_reset');
+    } catch (error) {
+      throw error; // Re-throw OTP verification errors
+    }
+
+    // Get user with password field to update it
+    const userWithPassword = await userRepository.findByIdWithPassword(user._id);
+    if (!userWithPassword) {
+      throw new NotFoundError('User not found');
+    }
+
+    // Update password
+    userWithPassword.password = newPassword;
+    await userWithPassword.save();
+
+    // Invalidate all refresh tokens for security
+    await userRepository.updateRefreshToken(user._id, null);
+
+    // Send password changed confirmation email
+    try {
+      await emailService.sendPasswordChangedEmail(user.email, user.firstName || 'User');
+    } catch (error) {
+      console.error('Failed to send password changed email:', error);
+      // Don't fail the password reset if email fails
+    }
+
+    console.log(`✅ Password reset successfully for ${email}`);
+  }
+
   async verifyEmail(otp: string, userId?: string, email?: string): Promise<IUser> {
     // Get user by ID or email
     let user: IUser | null = null;

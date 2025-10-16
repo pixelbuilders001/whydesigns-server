@@ -3,6 +3,7 @@ import userRoutes from './user.routes';
 import categoryRoutes from './category.routes';
 import blogRoutes from './blog.routes';
 import counselorRoutes from './counselor.routes';
+import bookingRoutes from './booking.routes';
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use('/users', userRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/blogs', blogRoutes);
 router.use('/counselors', counselorRoutes);
+router.use('/bookings', bookingRoutes);
 
 export default router;

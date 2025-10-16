@@ -231,6 +231,139 @@ export class EmailService {
 
     await this.sendEmail({ to, subject, html, text });
   }
+
+  /**
+   * Send password changed confirmation email
+   */
+  async sendPasswordChangedEmail(to: string, name: string): Promise<void> {
+    const subject = 'Password Changed Successfully - Why Designers';
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Password Changed</title>
+        <style>
+          body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+          }
+          .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          }
+          .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+            text-align: center;
+            color: #ffffff;
+          }
+          .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+          }
+          .content {
+            padding: 40px 30px;
+          }
+          .icon-container {
+            text-align: center;
+            margin-bottom: 30px;
+          }
+          .icon {
+            font-size: 64px;
+          }
+          .greeting {
+            font-size: 18px;
+            color: #333333;
+            margin-bottom: 20px;
+          }
+          .message {
+            font-size: 16px;
+            color: #666666;
+            line-height: 1.6;
+            margin-bottom: 20px;
+          }
+          .info-box {
+            background-color: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 14px;
+            color: #2e7d32;
+          }
+          .warning-box {
+            background-color: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 14px;
+            color: #e65100;
+          }
+          .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #999999;
+          }
+          .footer a {
+            color: #667eea;
+            text-decoration: none;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Why Designers</h1>
+          </div>
+          <div class="content">
+            <div class="icon-container">
+              <div class="icon">🔒</div>
+            </div>
+            <div class="greeting">Hi ${name},</div>
+            <div class="message">
+              Your password has been successfully changed.
+            </div>
+            <div class="info-box">
+              <strong>✓ Security Update:</strong> Your password was changed successfully. You can now use your new password to log in to your account.
+            </div>
+            <div class="warning-box">
+              <strong>⚠️ Didn't make this change?</strong><br>
+              If you did not change your password, please contact our support team immediately at support@whyedesigners.com or reset your password again to secure your account.
+            </div>
+            <div class="message">
+              For your security, all active sessions have been logged out. Please log in again with your new password.
+            </div>
+            <div class="message">
+              Best regards,<br>
+              The Why Designers Team
+            </div>
+          </div>
+          <div class="footer">
+            <p>&copy; 2025 Why Designers. All rights reserved.</p>
+            <p>
+              <a href="#">Privacy Policy</a> |
+              <a href="#">Terms of Service</a> |
+              <a href="#">Contact Support</a>
+            </p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+    const text = `Hi ${name},\n\nYour password has been successfully changed.\n\nFor your security, all active sessions have been logged out. Please log in again with your new password.\n\nIf you did not make this change, please contact support immediately.\n\nBest regards,\nThe Why Designers Team`;
+
+    await this.sendEmail({ to, subject, html, text });
+  }
 }
 
 export default new EmailService();

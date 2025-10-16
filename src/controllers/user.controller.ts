@@ -110,6 +110,26 @@ export class UserController {
     return ApiResponse.success(res, null, 'Password changed successfully');
   });
 
+  forgotPassword = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+    const { email } = req.body;
+
+    await userService.forgotPassword(email);
+
+    return ApiResponse.success(
+      res,
+      null,
+      'If the email exists in our system, a password reset OTP has been sent. Please check your email.'
+    );
+  });
+
+  resetPassword = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+    const { email, otp, newPassword } = req.body;
+
+    await userService.resetPassword(email, otp, newPassword);
+
+    return ApiResponse.success(res, null, 'Password reset successfully. Please log in with your new password.');
+  });
+
   verifyEmail = asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     const userId = req.user?.id; // Optional - may be undefined for public access
     const { otp, email } = req.body;

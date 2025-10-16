@@ -348,6 +348,124 @@
 
 /**
  * @swagger
+ * /users/forgot-password:
+ *   post:
+ *     summary: Forgot password (Public)
+ *     description: |
+ *       Request a password reset OTP. A 6-digit OTP will be sent to the provided email address if it exists in the system.
+ *
+ *       **Security Features:**
+ *       - Does not reveal whether email exists (prevents email enumeration)
+ *       - Only works for local accounts (not social login accounts)
+ *       - Inactive accounts cannot reset password
+ *       - OTP expires in 5 minutes
+ *       - Rate limited to 1 request per minute per user
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *     responses:
+ *       200:
+ *         description: Success response (always returned for security)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *             example:
+ *               success: true
+ *               message: If the email exists in our system, a password reset OTP has been sent. Please check your email.
+ *               data: null
+ *       400:
+ *         description: Account is deactivated or registered with social login
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
+/**
+ * @swagger
+ * /users/reset-password:
+ *   post:
+ *     summary: Reset password with OTP (Public)
+ *     description: |
+ *       Reset user password using the OTP received via email.
+ *
+ *       **Security Features:**
+ *       - Requires valid 6-digit OTP
+ *       - OTP must not be expired (5 minutes validity)
+ *       - OTP can only be used once
+ *       - All active sessions are invalidated after password reset
+ *       - Password change confirmation email is sent
+ *       - Only works for local accounts
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - otp
+ *               - newPassword
+ *               - confirmPassword
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *               otp:
+ *                 type: string
+ *                 length: 6
+ *                 pattern: '^[0-9]{6}$'
+ *                 example: '123456'
+ *                 description: 6-digit OTP received via email
+ *               newPassword:
+ *                 type: string
+ *                 minLength: 6
+ *                 example: newPassword123
+ *               confirmPassword:
+ *                 type: string
+ *                 example: newPassword123
+ *                 description: Must match newPassword
+ *     responses:
+ *       200:
+ *         description: Password reset successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *             example:
+ *               success: true
+ *               message: Password reset successfully. Please log in with your new password.
+ *               data: null
+ *       400:
+ *         description: Invalid or expired OTP, passwords don't match, or account registered with social login
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
+/**
+ * @swagger
  * /users/verify-email:
  *   post:
  *     summary: Verify email with OTP (Public)
@@ -1759,6 +1877,655 @@
  *         description: Forbidden
  *       404:
  *         description: Counselor not found
+ */
+
+// ============= Booking API Documentation =============
+
+/**
+ * @swagger
+ * /bookings:
+ *   post:
+ *     summary: Create a booking (Public)
+ *     description: Create a new counseling session booking. Available to both logged-in users and guests. Google Calendar event and confirmation email will be sent automatically.
+ *     tags: [Bookings]
+ *     security:
+ *       - BearerAuth: []
+ *       - {}
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - counselorId
+ *               - guestName
+ *               - guestEmail
+ *               - guestPhone
+ *               - bookingDate
+ *               - bookingTime
+ *               - sessionType
+ *             properties:
+ *               counselorId:
+ *                 type: string
+ *                 description: MongoDB ObjectId of the counselor
+ *                 example: 507f1f77bcf86cd799439011
+ *               guestName:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
+ *                 example: John Doe
+ *               guestEmail:
+ *                 type: string
+ *                 format: email
+ *                 example: john@example.com
+ *               guestPhone:
+ *                 type: string
+ *                 example: +1234567890
+ *               bookingDate:
+ *                 type: string
+ *                 format: date
+ *                 description: Must be a future date
+ *                 example: 2025-11-01
+ *               bookingTime:
+ *                 type: string
+ *                 pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
+ *                 description: Time in HH:MM format (24-hour)
+ *                 example: 14:30
+ *               duration:
+ *                 type: integer
+ *                 minimum: 15
+ *                 maximum: 240
+ *                 default: 60
+ *                 description: Duration in minutes
+ *                 example: 60
+ *               sessionType:
+ *                 type: string
+ *                 enum: [online, in-person]
+ *                 example: online
+ *               notes:
+ *                 type: string
+ *                 maxLength: 1000
+ *                 example: Please call 5 minutes before the session
+ *               reasonForBooking:
+ *                 type: string
+ *                 maxLength: 500
+ *                 example: Seeking help with anxiety management
+ *               meetingLink:
+ *                 type: string
+ *                 format: uri
+ *                 description: Optional custom meeting link. If not provided and sessionType is online, Google Meet link will be created
+ *     responses:
+ *       201:
+ *         description: Booking created successfully
+ *       400:
+ *         description: Validation error or time slot not available
+ *       404:
+ *         description: Counselor not found
+ */
+
+/**
+ * @swagger
+ * /bookings:
+ *   get:
+ *     summary: Get all bookings (Admin only)
+ *     description: Get paginated list of all bookings. Requires admin role and verification.
+ *     tags: [Bookings]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *           maximum: 100
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           default: bookingDate
+ *       - in: query
+ *         name: order
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: asc
+ *     responses:
+ *       200:
+ *         description: Bookings retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin access required
+ */
+
+/**
+ * @swagger
+ * /bookings/{id}:
+ *   get:
+ *     summary: Get booking by ID (Public)
+ *     description: Get a specific booking's details by ID
+ *     tags: [Bookings]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Booking ID
+ *     responses:
+ *       200:
+ *         description: Booking retrieved successfully
+ *       404:
+ *         description: Booking not found
+ */
+
+/**
+ * @swagger
+ * /bookings/email:
+ *   get:
+ *     summary: Get bookings by email (Public)
+ *     description: Get all bookings for a specific email address. Useful for guest users to check their bookings.
+ *     tags: [Bookings]
+ *     parameters:
+ *       - in: query
+ *         name: email
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: email
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *     responses:
+ *       200:
+ *         description: Bookings retrieved successfully
+ */
+
+/**
+ * @swagger
+ * /bookings/status:
+ *   get:
+ *     summary: Get bookings by status (Admin only)
+ *     description: Get all bookings filtered by status
+ *     tags: [Bookings]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [pending, confirmed, cancelled, completed, no-show]
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *     responses:
+ *       200:
+ *         description: Bookings retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ */
+
+/**
+ * @swagger
+ * /bookings/upcoming:
+ *   get:
+ *     summary: Get upcoming bookings (Admin only)
+ *     description: Get all upcoming confirmed bookings
+ *     tags: [Bookings]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *           maximum: 50
+ *     responses:
+ *       200:
+ *         description: Upcoming bookings retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ */
+
+/**
+ * @swagger
+ * /bookings/upcoming/email:
+ *   get:
+ *     summary: Get upcoming bookings by email (Public)
+ *     description: Get upcoming bookings for a specific email address
+ *     tags: [Bookings]
+ *     parameters:
+ *       - in: query
+ *         name: email
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: email
+ *     responses:
+ *       200:
+ *         description: Upcoming bookings retrieved successfully
+ */
+
+/**
+ * @swagger
+ * /bookings/user/{userId}:
+ *   get:
+ *     summary: Get bookings by user
+ *     description: Get all bookings for a specific user. Users can only view their own bookings unless they're admin.
+ *     tags: [Bookings]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *     responses:
+ *       200:
+ *         description: User bookings retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Can only view own bookings
+ */
+
+/**
+ * @swagger
+ * /bookings/user/{userId}/upcoming:
+ *   get:
+ *     summary: Get upcoming bookings by user
+ *     description: Get upcoming bookings for a specific user
+ *     tags: [Bookings]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Upcoming bookings retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ */
+
+/**
+ * @swagger
+ * /bookings/counselor/{counselorId}:
+ *   get:
+ *     summary: Get bookings by counselor (Admin only)
+ *     description: Get all bookings for a specific counselor
+ *     tags: [Bookings]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: counselorId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *     responses:
+ *       200:
+ *         description: Counselor bookings retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ */
+
+/**
+ * @swagger
+ * /bookings/counselor/{counselorId}/upcoming:
+ *   get:
+ *     summary: Get upcoming bookings by counselor (Admin only)
+ *     description: Get upcoming bookings for a specific counselor
+ *     tags: [Bookings]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: counselorId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Upcoming counselor bookings retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ */
+
+/**
+ * @swagger
+ * /bookings/counselor/{counselorId}/date:
+ *   get:
+ *     summary: Get counselor bookings for specific date (Admin only)
+ *     description: Get all bookings for a counselor on a specific date. Useful for checking availability.
+ *     tags: [Bookings]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: counselorId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: date
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: 2025-11-01
+ *     responses:
+ *       200:
+ *         description: Counselor bookings for date retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ */
+
+/**
+ * @swagger
+ * /bookings/stats:
+ *   get:
+ *     summary: Get booking statistics (Admin only)
+ *     description: Get overall booking statistics including counts by status
+ *     tags: [Bookings]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Statistics retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ */
+
+/**
+ * @swagger
+ * /bookings/{id}:
+ *   patch:
+ *     summary: Update booking (Admin only)
+ *     description: Update booking details. Cannot update cancelled or completed bookings.
+ *     tags: [Bookings]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               bookingDate:
+ *                 type: string
+ *                 format: date
+ *               bookingTime:
+ *                 type: string
+ *                 pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
+ *               duration:
+ *                 type: integer
+ *                 minimum: 15
+ *                 maximum: 240
+ *               sessionType:
+ *                 type: string
+ *                 enum: [online, in-person]
+ *               notes:
+ *                 type: string
+ *                 maxLength: 1000
+ *               reasonForBooking:
+ *                 type: string
+ *                 maxLength: 500
+ *               status:
+ *                 type: string
+ *                 enum: [pending, confirmed, cancelled, completed, no-show]
+ *     responses:
+ *       200:
+ *         description: Booking updated successfully
+ *       400:
+ *         description: Cannot update cancelled/completed bookings or time slot not available
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Booking not found
+ */
+
+/**
+ * @swagger
+ * /bookings/{id}/confirm:
+ *   patch:
+ *     summary: Confirm booking (Admin only)
+ *     description: Change booking status from pending to confirmed
+ *     tags: [Bookings]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Booking confirmed successfully
+ *       400:
+ *         description: Only pending bookings can be confirmed
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Booking not found
+ */
+
+/**
+ * @swagger
+ * /bookings/{id}/cancel:
+ *   patch:
+ *     summary: Cancel booking (Admin only)
+ *     description: Cancel a booking. Google Calendar event will be deleted and cancellation email sent.
+ *     tags: [Bookings]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - cancelledBy
+ *             properties:
+ *               cancellationReason:
+ *                 type: string
+ *                 maxLength: 500
+ *                 example: Emergency situation
+ *               cancelledBy:
+ *                 type: string
+ *                 enum: [user, admin, counselor]
+ *                 example: admin
+ *     responses:
+ *       200:
+ *         description: Booking cancelled successfully
+ *       400:
+ *         description: Booking already cancelled or cannot cancel completed bookings
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Booking not found
+ */
+
+/**
+ * @swagger
+ * /bookings/{id}/complete:
+ *   patch:
+ *     summary: Mark booking as completed (Admin only)
+ *     description: Change booking status to completed. Only confirmed bookings can be marked as completed.
+ *     tags: [Bookings]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Booking marked as completed
+ *       400:
+ *         description: Only confirmed bookings can be marked as completed
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Booking not found
+ */
+
+/**
+ * @swagger
+ * /bookings/{id}/no-show:
+ *   patch:
+ *     summary: Mark booking as no-show (Admin only)
+ *     description: Change booking status to no-show when client doesn't show up
+ *     tags: [Bookings]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Booking marked as no-show
+ *       400:
+ *         description: Only confirmed bookings can be marked as no-show
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Booking not found
+ */
+
+/**
+ * @swagger
+ * /bookings/{id}:
+ *   delete:
+ *     summary: Delete booking (Admin only)
+ *     description: Permanently delete a booking. Google Calendar event will be cancelled.
+ *     tags: [Bookings]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Booking deleted successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Booking not found
+ */
+
+/**
+ * @swagger
+ * /bookings/send-reminders:
+ *   post:
+ *     summary: Send booking reminders (Admin only)
+ *     description: Manually trigger sending reminder emails for upcoming bookings. Typically called by a cron job.
+ *     tags: [Bookings]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Booking reminders sent successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
  */
 
 export {};

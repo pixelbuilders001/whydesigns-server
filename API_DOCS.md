@@ -273,7 +273,195 @@ curl -X POST http://localhost:5000/api/v1/users/login \
 
 ---
 
-### 3. Refresh Token
+### 3. Forgot Password (Public)
+
+Request a password reset OTP. A 6-digit OTP will be sent to the provided email address if it exists.
+
+**🔒 Security Features:**
+- Does not reveal whether email exists (prevents email enumeration)
+- Only works for local accounts (not social login accounts)
+- Inactive accounts cannot reset password
+- OTP expires in 5 minutes
+- Rate limited to 1 request per minute per user
+
+**Endpoint:** `POST /users/forgot-password`
+
+**Request Body:**
+```json
+{
+  "email": "john.doe@example.com"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "If the email exists in our system, a password reset OTP has been sent. Please check your email.",
+  "data": null
+}
+```
+
+**Error Responses:**
+
+**400 Bad Request (Account Deactivated):**
+```json
+{
+  "success": false,
+  "message": "Account is deactivated. Please contact support."
+}
+```
+
+**400 Bad Request (Social Login Account):**
+```json
+{
+  "success": false,
+  "message": "This account was created using google login. Please use google to sign in."
+}
+```
+
+**cURL Example:**
+```bash
+curl -X POST http://localhost:5000/api/v1/users/forgot-password \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "john.doe@example.com"
+  }'
+```
+
+**Notes:**
+- For security, always returns success even if email doesn't exist
+- Check your email (including spam folder) for the OTP
+- OTP is valid for 5 minutes
+- Can request new OTP once per minute
+- Only works for accounts registered with email/password (not Google/Facebook)
+
+---
+
+### 4. Reset Password with OTP (Public)
+
+Reset user password using the OTP received via email.
+
+**🔒 Security Features:**
+- Requires valid 6-digit OTP
+- OTP must not be expired (5 minutes validity)
+- OTP can only be used once
+- All active sessions are invalidated after password reset
+- Password change confirmation email is sent
+- Only works for local accounts
+
+**Endpoint:** `POST /users/reset-password`
+
+**Request Body:**
+```json
+{
+  "email": "john.doe@example.com",
+  "otp": "123456",
+  "newPassword": "newPassword123",
+  "confirmPassword": "newPassword123"
+}
+```
+
+**Required Fields:**
+- `email` (valid email format)
+- `otp` (6-digit number)
+- `newPassword` (min: 6 characters)
+- `confirmPassword` (must match newPassword)
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Password reset successfully. Please log in with your new password.",
+  "data": null
+}
+```
+
+**Error Responses:**
+
+**400 Bad Request (Invalid/Expired OTP):**
+```json
+{
+  "success": false,
+  "message": "Invalid or expired OTP"
+}
+```
+
+**400 Bad Request (Passwords Don't Match):**
+```json
+{
+  "success": false,
+  "message": "Passwords do not match"
+}
+```
+
+**400 Bad Request (Social Login Account):**
+```json
+{
+  "success": false,
+  "message": "This account was created using google login. Please use google to sign in."
+}
+```
+
+**404 Not Found:**
+```json
+{
+  "success": false,
+  "message": "User not found"
+}
+```
+
+**cURL Example:**
+```bash
+curl -X POST http://localhost:5000/api/v1/users/reset-password \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "john.doe@example.com",
+    "otp": "123456",
+    "newPassword": "newPassword123",
+    "confirmPassword": "newPassword123"
+  }'
+```
+
+**Notes:**
+- OTP is sent to your email via the `/forgot-password` endpoint
+- OTP expires after 5 minutes
+- OTP can only be used once
+- After successful reset, all active sessions are logged out for security
+- You'll receive a confirmation email after password change
+- Must log in again with new password
+
+---
+
+### Password Reset Flow
+
+Complete flow for resetting a forgotten password:
+
+```
+1. POST /users/forgot-password
+   Request: { "email": "user@example.com" }
+   → OTP sent to email (123456)
+
+2. Check email for 6-digit OTP
+
+3. POST /users/reset-password
+   Request: {
+     "email": "user@example.com",
+     "otp": "123456",
+     "newPassword": "newPassword123",
+     "confirmPassword": "newPassword123"
+   }
+   → Password reset, confirmation email sent
+
+4. All sessions logged out for security
+
+5. POST /users/login with new password
+   → Login successful with new credentials
+```
+
+---
+
+### 5. Refresh Token
 
 Get a new access token using refresh token.
 
@@ -2293,6 +2481,570 @@ The `/counselors` endpoint supports:
 - **Specialty Filter**: Filter counselors by specific specialty
 - **Sorting**: Sort by any field (createdAt, rating, yearsOfExperience, etc.)
 - **Pagination**: Control page size and number
+
+---
+
+## 📅 Booking Management
+
+The Booking module allows users (logged-in or guests) to book counseling sessions. It includes Google Calendar integration for automatic event creation and email notifications for confirmations, reminders, and cancellations.
+
+### Key Features
+- **Public Booking**: Both authenticated users and guests can create bookings
+- **Google Calendar Integration**: Automatic event creation with Google Meet links (configurable)
+- **Email Notifications**: Confirmation, reminder, and cancellation emails via AWS SES
+- **Availability Check**: Prevents double-booking of counselors
+- **Status Management**: Track bookings through their lifecycle (pending → confirmed → completed)
+- **Multiple Access Levels**:
+  - Public: Create bookings, view by email/ID
+  - Users: View their own bookings
+  - Admin: Full CRUD and management capabilities
+
+---
+
+### 48. Create Booking (Public)
+
+Create a new counseling session booking. Available for both logged-in users and guests.
+
+**Endpoint:** `POST /bookings`
+
+**Headers (Optional):**
+```
+Authorization: Bearer USER_JWT_TOKEN (optional for guests)
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "counselorId": "507f1f77bcf86cd799439011",
+  "guestName": "John Doe",
+  "guestEmail": "john@example.com",
+  "guestPhone": "+1234567890",
+  "bookingDate": "2025-11-01",
+  "bookingTime": "14:30",
+  "duration": 60,
+  "sessionType": "online",
+  "notes": "Please call 5 minutes before the session",
+  "reasonForBooking": "Seeking help with anxiety management"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "success": true,
+  "message": "Booking created successfully. A confirmation email has been sent.",
+  "data": {
+    "_id": "507f1f77bcf86cd799439011",
+    "counselorId": {
+      "id": 1,
+      "fullName": "Dr. Sarah Johnson",
+      "title": "Licensed Clinical Psychologist",
+      "avatarUrl": "https://example.com/avatar.jpg"
+    },
+    "guestName": "John Doe",
+    "guestEmail": "john@example.com",
+    "guestPhone": "+1234567890",
+    "bookingDate": "2025-11-01T00:00:00.000Z",
+    "bookingTime": "14:30",
+    "duration": 60,
+    "sessionType": "online",
+    "meetingLink": "https://meet.google.com/xxx-yyyy-zzz",
+    "status": "pending",
+    "googleCalendarEventId": "calendar_event_id",
+    "confirmationEmailSent": true,
+    "createdAt": "2025-10-15T10:00:00.000Z"
+  }
+}
+```
+
+**cURL Example:**
+```bash
+curl -X POST http://localhost:5000/api/v1/bookings \
+  -H "Content-Type: application/json" \
+  -d '{
+    "counselorId": "507f1f77bcf86cd799439011",
+    "guestName": "John Doe",
+    "guestEmail": "john@example.com",
+    "guestPhone": "+1234567890",
+    "bookingDate": "2025-11-01",
+    "bookingTime": "14:30",
+    "duration": 60,
+    "sessionType": "online",
+    "reasonForBooking": "Seeking help with anxiety management"
+  }'
+```
+
+---
+
+### 49. Get All Bookings (Admin Only)
+
+Get paginated list of all bookings.
+
+**⚠️ Requires: Admin Role + Verification**
+
+**Endpoint:** `GET /bookings`
+
+**Headers:**
+```
+Authorization: Bearer ADMIN_JWT_TOKEN
+```
+
+**Query Parameters:**
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Items per page (default: 10, max: 100)
+- `sortBy` (optional): Field to sort by (default: bookingDate)
+- `order` (optional): asc or desc (default: asc)
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Bookings retrieved successfully",
+  "data": {
+    "bookings": [...],
+    "pagination": {
+      "currentPage": 1,
+      "totalPages": 5,
+      "totalBookings": 50,
+      "bookingsPerPage": 10
+    }
+  }
+}
+```
+
+**cURL Example:**
+```bash
+curl -X GET "http://localhost:5000/api/v1/bookings?page=1&limit=10&sortBy=bookingDate&order=asc" \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN"
+```
+
+---
+
+### 50. Get Booking by ID (Public)
+
+Get a specific booking's details.
+
+**Endpoint:** `GET /bookings/:id`
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Booking retrieved successfully",
+  "data": {
+    "_id": "507f1f77bcf86cd799439011",
+    "counselorId": {...},
+    "guestName": "John Doe",
+    "bookingDate": "2025-11-01T00:00:00.000Z",
+    "bookingTime": "14:30",
+    "status": "confirmed",
+    ...
+  }
+}
+```
+
+**cURL Example:**
+```bash
+curl -X GET http://localhost:5000/api/v1/bookings/507f1f77bcf86cd799439011
+```
+
+---
+
+### 51. Get Bookings by Email (Public)
+
+Get all bookings for a specific email address. Useful for guest users.
+
+**Endpoint:** `GET /bookings/email`
+
+**Query Parameters:**
+- `email` (required): Email address
+- `page` (optional): Page number
+- `limit` (optional): Items per page
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Bookings retrieved successfully",
+  "data": {
+    "bookings": [...],
+    "pagination": {...}
+  }
+}
+```
+
+**cURL Example:**
+```bash
+curl -X GET "http://localhost:5000/api/v1/bookings/email?email=john@example.com&page=1&limit=10"
+```
+
+---
+
+### 52. Get Bookings by Status (Admin Only)
+
+Get bookings filtered by status.
+
+**⚠️ Requires: Admin Role + Verification**
+
+**Endpoint:** `GET /bookings/status`
+
+**Query Parameters:**
+- `status` (required): pending, confirmed, cancelled, completed, or no-show
+- `page`, `limit`, `sortBy`, `order` (optional)
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "confirmed bookings retrieved successfully",
+  "data": {
+    "bookings": [...],
+    "pagination": {...}
+  }
+}
+```
+
+**cURL Example:**
+```bash
+curl -X GET "http://localhost:5000/api/v1/bookings/status?status=confirmed&page=1" \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN"
+```
+
+---
+
+### 53. Get Upcoming Bookings (Admin Only)
+
+Get all upcoming confirmed bookings.
+
+**⚠️ Requires: Admin Role + Verification**
+
+**Endpoint:** `GET /bookings/upcoming`
+
+**Query Parameters:**
+- `limit` (optional): Number of bookings (default: 10, max: 50)
+
+**cURL Example:**
+```bash
+curl -X GET "http://localhost:5000/api/v1/bookings/upcoming?limit=20" \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN"
+```
+
+---
+
+### 54. Get Upcoming Bookings by Email (Public)
+
+Get upcoming bookings for a specific email address.
+
+**Endpoint:** `GET /bookings/upcoming/email`
+
+**Query Parameters:**
+- `email` (required): Email address
+
+**cURL Example:**
+```bash
+curl -X GET "http://localhost:5000/api/v1/bookings/upcoming/email?email=john@example.com"
+```
+
+---
+
+### 55. Get User Bookings
+
+Get all bookings for a specific user. Users can only view their own bookings.
+
+**⚠️ Requires: Authentication + Verification**
+
+**Endpoint:** `GET /bookings/user/:userId`
+
+**Headers:**
+```
+Authorization: Bearer USER_JWT_TOKEN
+```
+
+**cURL Example:**
+```bash
+curl -X GET "http://localhost:5000/api/v1/bookings/user/507f1f77bcf86cd799439011?page=1" \
+  -H "Authorization: Bearer USER_JWT_TOKEN"
+```
+
+---
+
+### 56. Get Upcoming User Bookings
+
+Get upcoming bookings for a specific user.
+
+**⚠️ Requires: Authentication + Verification**
+
+**Endpoint:** `GET /bookings/user/:userId/upcoming`
+
+**cURL Example:**
+```bash
+curl -X GET http://localhost:5000/api/v1/bookings/user/507f1f77bcf86cd799439011/upcoming \
+  -H "Authorization: Bearer USER_JWT_TOKEN"
+```
+
+---
+
+### 57. Get Counselor Bookings (Admin Only)
+
+Get all bookings for a specific counselor.
+
+**⚠️ Requires: Admin Role + Verification**
+
+**Endpoint:** `GET /bookings/counselor/:counselorId`
+
+**cURL Example:**
+```bash
+curl -X GET "http://localhost:5000/api/v1/bookings/counselor/507f1f77bcf86cd799439011?page=1" \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN"
+```
+
+---
+
+### 58. Get Counselor Bookings for Date (Admin Only)
+
+Get all bookings for a counselor on a specific date. Useful for checking availability.
+
+**⚠️ Requires: Admin Role + Verification**
+
+**Endpoint:** `GET /bookings/counselor/:counselorId/date`
+
+**Query Parameters:**
+- `date` (required): Date in YYYY-MM-DD format
+
+**cURL Example:**
+```bash
+curl -X GET "http://localhost:5000/api/v1/bookings/counselor/507f1f77bcf86cd799439011/date?date=2025-11-01" \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN"
+```
+
+---
+
+### 59. Get Booking Statistics (Admin Only)
+
+Get overview statistics for all bookings.
+
+**⚠️ Requires: Admin Role + Verification**
+
+**Endpoint:** `GET /bookings/stats`
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Booking statistics retrieved successfully",
+  "data": {
+    "total": 150,
+    "pending": 25,
+    "confirmed": 80,
+    "cancelled": 20,
+    "completed": 20,
+    "noShow": 5
+  }
+}
+```
+
+**cURL Example:**
+```bash
+curl -X GET http://localhost:5000/api/v1/bookings/stats \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN"
+```
+
+---
+
+### 60. Update Booking (Admin Only)
+
+Update booking details. Cannot update cancelled or completed bookings.
+
+**⚠️ Requires: Admin Role + Verification**
+
+**Endpoint:** `PATCH /bookings/:id`
+
+**Request Body:**
+```json
+{
+  "bookingDate": "2025-11-02",
+  "bookingTime": "15:00",
+  "duration": 90,
+  "sessionType": "online",
+  "notes": "Updated notes",
+  "status": "confirmed"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Booking updated successfully",
+  "data": {...}
+}
+```
+
+**cURL Example:**
+```bash
+curl -X PATCH http://localhost:5000/api/v1/bookings/507f1f77bcf86cd799439011 \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "confirmed"}'
+```
+
+---
+
+### 61. Confirm Booking (Admin Only)
+
+Change booking status from pending to confirmed.
+
+**⚠️ Requires: Admin Role + Verification**
+
+**Endpoint:** `PATCH /bookings/:id/confirm`
+
+**cURL Example:**
+```bash
+curl -X PATCH http://localhost:5000/api/v1/bookings/507f1f77bcf86cd799439011/confirm \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN"
+```
+
+---
+
+### 62. Cancel Booking (Admin Only)
+
+Cancel a booking. Google Calendar event will be deleted and cancellation email sent.
+
+**⚠️ Requires: Admin Role + Verification**
+
+**Endpoint:** `PATCH /bookings/:id/cancel`
+
+**Request Body:**
+```json
+{
+  "cancellationReason": "Emergency situation",
+  "cancelledBy": "admin"
+}
+```
+
+**cURL Example:**
+```bash
+curl -X PATCH http://localhost:5000/api/v1/bookings/507f1f77bcf86cd799439011/cancel \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"cancellationReason": "Emergency", "cancelledBy": "admin"}'
+```
+
+---
+
+### 63. Complete Booking (Admin Only)
+
+Mark a confirmed booking as completed.
+
+**⚠️ Requires: Admin Role + Verification**
+
+**Endpoint:** `PATCH /bookings/:id/complete`
+
+**cURL Example:**
+```bash
+curl -X PATCH http://localhost:5000/api/v1/bookings/507f1f77bcf86cd799439011/complete \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN"
+```
+
+---
+
+### 64. Mark Booking as No-Show (Admin Only)
+
+Mark a booking as no-show when the client doesn't show up.
+
+**⚠️ Requires: Admin Role + Verification**
+
+**Endpoint:** `PATCH /bookings/:id/no-show`
+
+**cURL Example:**
+```bash
+curl -X PATCH http://localhost:5000/api/v1/bookings/507f1f77bcf86cd799439011/no-show \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN"
+```
+
+---
+
+### 65. Delete Booking (Admin Only)
+
+Permanently delete a booking. Google Calendar event will be cancelled.
+
+**⚠️ Requires: Admin Role + Verification**
+
+**Endpoint:** `DELETE /bookings/:id`
+
+**cURL Example:**
+```bash
+curl -X DELETE http://localhost:5000/api/v1/bookings/507f1f77bcf86cd799439011 \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN"
+```
+
+---
+
+### 66. Send Booking Reminders (Admin Only)
+
+Manually trigger sending reminder emails for upcoming bookings. Typically called by a cron job.
+
+**⚠️ Requires: Admin Role + Verification**
+
+**Endpoint:** `POST /bookings/send-reminders`
+
+**cURL Example:**
+```bash
+curl -X POST http://localhost:5000/api/v1/bookings/send-reminders \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN"
+```
+
+---
+
+## Booking Features
+
+### Booking Statuses
+- **pending**: Initial status when booking is created
+- **confirmed**: Admin has confirmed the booking
+- **cancelled**: Booking was cancelled by user/admin/counselor
+- **completed**: Session was completed successfully
+- **no-show**: Client didn't show up for the session
+
+### Google Calendar Integration
+- Automatic event creation for online sessions
+- Google Meet link generation (if not provided)
+- Event updates when booking is modified
+- Event deletion when booking is cancelled
+- Configurable via environment variables:
+  - `GOOGLE_CLIENT_EMAIL`
+  - `GOOGLE_PRIVATE_KEY`
+  - `GOOGLE_CALENDAR_ID`
+  - `TIMEZONE`
+
+### Email Notifications
+Three types of automated emails via AWS SES:
+1. **Confirmation Email**: Sent when booking is created
+2. **Reminder Email**: Sent for bookings within 24 hours
+3. **Cancellation Email**: Sent when booking is cancelled
+
+Configure via environment variables:
+- `AWS_SES_FROM_EMAIL`
+- `AWS_SES_FROM_NAME`
+- `AWS_SES_REGION`
+
+### Availability Management
+- Prevents double-booking of counselors
+- Checks availability before creating/updating bookings
+- Get counselor's schedule for specific dates
+- Time slot validation
+
+### Guest vs Authenticated Users
+- **Guests**: Can create bookings and view by email
+- **Authenticated Users**: Can view their own bookings
+- **Admin**: Full access to all bookings and management
+
+### Virtual Fields
+The booking model includes helpful virtual fields:
+- `bookingDateTime`: Combined date and time
+- `endDateTime`: Calculated end time based on duration
+- `isUpcoming`: Boolean indicating if booking is in the future
+- `isPast`: Boolean indicating if booking is in the past
 
 ---
 
