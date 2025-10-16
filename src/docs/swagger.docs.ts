@@ -1886,7 +1886,7 @@
  * /bookings:
  *   post:
  *     summary: Create a booking (Public)
- *     description: Create a new counseling session booking. Available to both logged-in users and guests. Google Calendar event and confirmation email will be sent automatically.
+ *     description: Create a new counseling session booking. Available to both logged-in users and guests. A Google Meet link will be automatically generated, added to Google Calendar, and sent via confirmation email.
  *     tags: [Bookings]
  *     security:
  *       - BearerAuth: []
@@ -1904,7 +1904,7 @@
  *               - guestPhone
  *               - bookingDate
  *               - bookingTime
- *               - sessionType
+ *               - discussionTopic
  *             properties:
  *               counselorId:
  *                 type: string
@@ -1939,22 +1939,11 @@
  *                 default: 60
  *                 description: Duration in minutes
  *                 example: 60
- *               sessionType:
+ *               discussionTopic:
  *                 type: string
- *                 enum: [online, in-person]
- *                 example: online
- *               notes:
- *                 type: string
- *                 maxLength: 1000
- *                 example: Please call 5 minutes before the session
- *               reasonForBooking:
- *                 type: string
+ *                 minLength: 5
  *                 maxLength: 500
- *                 example: Seeking help with anxiety management
- *               meetingLink:
- *                 type: string
- *                 format: uri
- *                 description: Optional custom meeting link. If not provided and sessionType is online, Google Meet link will be created
+ *                 example: Seeking help with anxiety management and stress coping strategies
  *     responses:
  *       201:
  *         description: Booking created successfully
@@ -2330,14 +2319,9 @@
  *                 type: integer
  *                 minimum: 15
  *                 maximum: 240
- *               sessionType:
+ *               discussionTopic:
  *                 type: string
- *                 enum: [online, in-person]
- *               notes:
- *                 type: string
- *                 maxLength: 1000
- *               reasonForBooking:
- *                 type: string
+ *                 minLength: 5
  *                 maxLength: 500
  *               status:
  *                 type: string

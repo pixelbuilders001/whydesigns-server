@@ -14,10 +14,8 @@ export interface IBooking extends Document {
   bookingDate: Date;
   bookingTime: string; // Format: "HH:MM" (e.g., "14:30")
   duration: number; // Duration in minutes (default: 60)
-  sessionType: 'online' | 'in-person';
   // Additional information
-  notes?: string;
-  reasonForBooking?: string;
+  discussionTopic: string;
   // Status tracking
   status: BookingStatus;
   // Google Calendar integration
@@ -86,20 +84,12 @@ const bookingSchema = new Schema<IBooking>(
       min: [15, 'Duration must be at least 15 minutes'],
       max: [240, 'Duration cannot exceed 240 minutes'],
     },
-    sessionType: {
+    discussionTopic: {
       type: String,
-      enum: ['online', 'in-person'],
-      required: [true, 'Session type is required'],
-    },
-    notes: {
-      type: String,
+      required: [true, 'Discussion topic is required'],
       trim: true,
-      maxlength: [1000, 'Notes must not exceed 1000 characters'],
-    },
-    reasonForBooking: {
-      type: String,
-      trim: true,
-      maxlength: [500, 'Reason must not exceed 500 characters'],
+      minlength: [5, 'Discussion topic must be at least 5 characters'],
+      maxlength: [500, 'Discussion topic must not exceed 500 characters'],
     },
     status: {
       type: String,

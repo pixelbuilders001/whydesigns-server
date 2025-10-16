@@ -46,6 +46,43 @@ class BookingEmailService {
         day: 'numeric',
       });
 
+      // Generate .ics calendar file content
+      const bookingDateTime = new Date(booking.bookingDate);
+      const [hours, minutes] = booking.bookingTime.split(':');
+      bookingDateTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+      const endDateTime = new Date(bookingDateTime.getTime() + booking.duration * 60000);
+
+      const formatICSDate = (date: Date) => {
+        return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+      };
+
+      const icsContent = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Why Designers//Booking System//EN',
+        'CALSCALE:GREGORIAN',
+        'METHOD:REQUEST',
+        'BEGIN:VEVENT',
+        `UID:booking-${booking._id}@why-designers.com`,
+        `DTSTAMP:${formatICSDate(new Date())}`,
+        `DTSTART:${formatICSDate(bookingDateTime)}`,
+        `DTEND:${formatICSDate(endDateTime)}`,
+        `SUMMARY:Counseling Session with ${counselor.fullName}`,
+        `DESCRIPTION:Discussion Topic: ${booking.discussionTopic}${booking.meetingLink ? `\\n\\nJoin Meeting: ${booking.meetingLink}` : ''}`,
+        `LOCATION:${booking.meetingLink || 'Online'}`,
+        `ORGANIZER;CN=${counselor.fullName}:mailto:${config.AWS_SES_FROM_EMAIL}`,
+        `ATTENDEE;CN=${booking.guestName};RSVP=TRUE:mailto:${booking.guestEmail}`,
+        'STATUS:CONFIRMED',
+        'SEQUENCE:0',
+        'BEGIN:VALARM',
+        'TRIGGER:-PT30M',
+        'DESCRIPTION:Reminder',
+        'ACTION:DISPLAY',
+        'END:VALARM',
+        'END:VEVENT',
+        'END:VCALENDAR',
+      ].join('\r\n');
+
       const subject = `Booking Confirmation - ${counselor.fullName}`;
       const htmlBody = `
 <!DOCTYPE html>
@@ -77,14 +114,13 @@ class BookingEmailService {
         <p><strong>Date:</strong> ${bookingDate}</p>
         <p><strong>Time:</strong> ${booking.bookingTime}</p>
         <p><strong>Duration:</strong> ${booking.duration} minutes</p>
-        <p><strong>Session Type:</strong> ${booking.sessionType === 'online' ? 'Online' : 'In-Person'}</p>
+        <p><strong>Discussion Topic:</strong> ${booking.discussionTopic}</p>
         ${booking.meetingLink ? `<p><strong>Meeting Link:</strong> <a href="${booking.meetingLink}">${booking.meetingLink}</a></p>` : ''}
-        ${booking.reasonForBooking ? `<p><strong>Reason:</strong> ${booking.reasonForBooking}</p>` : ''}
       </div>
 
-      <p>Please arrive/join 5-10 minutes before your scheduled time.</p>
+      <p>Please join the meeting 5-10 minutes before your scheduled time.</p>
 
-      ${booking.sessionType === 'online' && booking.meetingLink ? `
+      ${booking.meetingLink ? `
       <p style="text-align: center; margin: 20px 0;">
         <a href="${booking.meetingLink}" class="button">Join Meeting</a>
       </p>
@@ -118,11 +154,10 @@ Booking Details:
 - Date: ${bookingDate}
 - Time: ${booking.bookingTime}
 - Duration: ${booking.duration} minutes
-- Session Type: ${booking.sessionType === 'online' ? 'Online' : 'In-Person'}
+- Discussion Topic: ${booking.discussionTopic}
 ${booking.meetingLink ? `- Meeting Link: ${booking.meetingLink}` : ''}
-${booking.reasonForBooking ? `- Reason: ${booking.reasonForBooking}` : ''}
 
-Please arrive/join 5-10 minutes before your scheduled time.
+Please join the meeting 5-10 minutes before your scheduled time.
 
 If you need to cancel or reschedule, please contact us as soon as possible.
 
@@ -132,31 +167,53 @@ Best regards,
 ${config.AWS_SES_FROM_NAME || 'Why Designers'}
       `;
 
-      const command = new SendEmailCommand({
-        Source: `${config.AWS_SES_FROM_NAME} <${config.AWS_SES_FROM_EMAIL}>`,
-        Destination: {
-          ToAddresses: [booking.guestEmail],
-        },
-        Message: {
-          Subject: {
-            Data: subject,
-            Charset: 'UTF-8',
-          },
-          Body: {
-            Html: {
-              Data: htmlBody,
-              Charset: 'UTF-8',
-            },
-            Text: {
-              Data: textBody,
-              Charset: 'UTF-8',
-            },
-          },
+      // Create email with .ics attachment using raw message format
+      const boundary = `----=_Part_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      const icsBase64 = Buffer.from(icsContent).toString('base64');
+
+      const rawMessage = [
+        `From: ${config.AWS_SES_FROM_NAME} <${config.AWS_SES_FROM_EMAIL}>`,
+        `To: ${booking.guestEmail}`,
+        `Subject: ${subject}`,
+        'MIME-Version: 1.0',
+        `Content-Type: multipart/mixed; boundary="${boundary}"`,
+        '',
+        `--${boundary}`,
+        'Content-Type: multipart/alternative; boundary="alt-boundary"',
+        '',
+        '--alt-boundary',
+        'Content-Type: text/plain; charset=UTF-8',
+        'Content-Transfer-Encoding: 7bit',
+        '',
+        textBody,
+        '',
+        '--alt-boundary',
+        'Content-Type: text/html; charset=UTF-8',
+        'Content-Transfer-Encoding: 7bit',
+        '',
+        htmlBody,
+        '',
+        '--alt-boundary--',
+        '',
+        `--${boundary}`,
+        'Content-Type: text/calendar; charset=UTF-8; method=REQUEST; name="invite.ics"',
+        'Content-Transfer-Encoding: base64',
+        'Content-Disposition: attachment; filename="invite.ics"',
+        '',
+        icsBase64,
+        '',
+        `--${boundary}--`,
+      ].join('\r\n');
+
+      const { SendRawEmailCommand } = await import('@aws-sdk/client-ses');
+      const command = new SendRawEmailCommand({
+        RawMessage: {
+          Data: Buffer.from(rawMessage),
         },
       });
 
       await this.sesClient.send(command);
-      console.log(`✅ Booking confirmation email sent to: ${booking.guestEmail}`);
+      console.log(`✅ Booking confirmation email with calendar invite sent to: ${booking.guestEmail}`);
       return true;
     } catch (error: any) {
       console.error('❌ Failed to send booking confirmation email:', error.message);
@@ -211,13 +268,13 @@ ${config.AWS_SES_FROM_NAME || 'Why Designers'}
         <p><strong>Date:</strong> ${bookingDate}</p>
         <p><strong>Time:</strong> ${booking.bookingTime}</p>
         <p><strong>Duration:</strong> ${booking.duration} minutes</p>
-        <p><strong>Session Type:</strong> ${booking.sessionType === 'online' ? 'Online' : 'In-Person'}</p>
+        <p><strong>Discussion Topic:</strong> ${booking.discussionTopic}</p>
         ${booking.meetingLink ? `<p><strong>Meeting Link:</strong> <a href="${booking.meetingLink}">${booking.meetingLink}</a></p>` : ''}
       </div>
 
-      <p>Please join/arrive 5-10 minutes before your scheduled time.</p>
+      <p>Please join the meeting 5-10 minutes before your scheduled time.</p>
 
-      ${booking.sessionType === 'online' && booking.meetingLink ? `
+      ${booking.meetingLink ? `
       <p style="text-align: center; margin: 20px 0;">
         <a href="${booking.meetingLink}" class="button">Join Meeting</a>
       </p>

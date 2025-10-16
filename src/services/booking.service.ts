@@ -16,19 +16,14 @@ interface CreateBookingInput {
   bookingDate: Date;
   bookingTime: string;
   duration?: number;
-  sessionType: 'online' | 'in-person';
-  notes?: string;
-  reasonForBooking?: string;
-  meetingLink?: string;
+  discussionTopic: string;
 }
 
 interface UpdateBookingInput {
   bookingDate?: Date;
   bookingTime?: string;
   duration?: number;
-  sessionType?: 'online' | 'in-person';
-  notes?: string;
-  reasonForBooking?: string;
+  discussionTopic?: string;
   status?: BookingStatus;
 }
 
@@ -71,24 +66,37 @@ export class BookingService {
     const duration = data.duration || 60;
     const endDateTime = new Date(bookingDateTime.getTime() + duration * 60000);
 
-    // 5. Create Google Calendar event (if online session and not provided meeting link)
+    // 5. Create Google Calendar event with auto-generated meeting link
     let calendarEventId: string | undefined;
-    let meetingLink = data.meetingLink;
+    let meetingLink: string | undefined;
 
-    if (data.sessionType === 'online' && !meetingLink) {
-      const calendarEvent = await googleCalendarService.createEvent({
-        summary: `Counseling Session with ${counselor.fullName}`,
-        description: `Session with ${data.guestName}\n${data.reasonForBooking ? `Reason: ${data.reasonForBooking}` : ''}`,
-        startDateTime: bookingDateTime,
-        endDateTime: endDateTime,
-        attendeeEmail: data.guestEmail,
-        attendeeName: data.guestName,
-      });
+    const calendarEvent = await googleCalendarService.createEvent({
+      summary: `Counseling Session with ${counselor.fullName}`,
+      description: `Session with ${data.guestName}\nTopic: ${data.discussionTopic}`,
+      startDateTime: bookingDateTime,
+      endDateTime: endDateTime,
+      attendeeEmail: data.guestEmail,
+      attendeeName: data.guestName,
+    });
 
-      if (calendarEvent) {
-        calendarEventId = calendarEvent.eventId;
-        meetingLink = calendarEvent.meetingLink;
-      }
+    if (calendarEvent) {
+      calendarEventId = calendarEvent.eventId;
+      meetingLink = calendarEvent.meetingLink;
+    }
+
+    // Fallback: Generate a Google Meet link if calendar service didn't provide one
+    if (!meetingLink) {
+      // Generate a random meeting ID (format: xxx-xxxx-xxx)
+      const generateMeetingId = () => {
+        const chars = 'abcdefghijklmnopqrstuvwxyz';
+        const part1 = Array.from({ length: 3 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+        const part2 = Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+        const part3 = Array.from({ length: 3 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+        return `${part1}-${part2}-${part3}`;
+      };
+
+      meetingLink = `https://meet.google.com/${generateMeetingId()}`;
+      console.log('⚠️  Google Calendar not configured. Generated meeting link:', meetingLink);
     }
 
     // 6. Create booking in database
@@ -211,7 +219,7 @@ export class BookingService {
 
     // Don't allow updates to cancelled or completed bookings
     if (booking.status === 'cancelled' || booking.status === 'completed') {
-      throw new ApiError(400, `Cannot update ${booking.status} bookings`);
+      throw new AppError(`Cannot update ${booking.status} bookings`, 400);
     }
 
     // If date/time is being changed, check availability

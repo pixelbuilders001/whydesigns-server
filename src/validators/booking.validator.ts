@@ -68,37 +68,16 @@ export const createBookingSchema = Joi.object({
       'number.min': 'Duration must be at least 15 minutes',
       'number.max': 'Duration cannot exceed 240 minutes',
     }),
-  sessionType: Joi.string()
-    .valid('online', 'in-person')
+  discussionTopic: Joi.string()
+    .trim()
+    .min(5)
+    .max(500)
     .required()
     .messages({
-      'string.base': 'Session type must be a string',
-      'any.only': 'Session type must be either "online" or "in-person"',
-      'any.required': 'Session type is required',
-    }),
-  notes: Joi.string()
-    .trim()
-    .max(1000)
-    .optional()
-    .messages({
-      'string.base': 'Notes must be a string',
-      'string.max': 'Notes must not exceed 1000 characters',
-    }),
-  reasonForBooking: Joi.string()
-    .trim()
-    .max(500)
-    .optional()
-    .messages({
-      'string.base': 'Reason for booking must be a string',
-      'string.max': 'Reason for booking must not exceed 500 characters',
-    }),
-  meetingLink: Joi.string()
-    .uri()
-    .trim()
-    .optional()
-    .messages({
-      'string.base': 'Meeting link must be a string',
-      'string.uri': 'Meeting link must be a valid URL',
+      'string.base': 'Discussion topic must be a string',
+      'string.min': 'Discussion topic must be at least 5 characters',
+      'string.max': 'Discussion topic must not exceed 500 characters',
+      'any.required': 'Discussion topic is required',
     }),
 });
 
@@ -129,28 +108,15 @@ export const updateBookingSchema = Joi.object({
       'number.min': 'Duration must be at least 15 minutes',
       'number.max': 'Duration cannot exceed 240 minutes',
     }),
-  sessionType: Joi.string()
-    .valid('online', 'in-person')
-    .optional()
-    .messages({
-      'string.base': 'Session type must be a string',
-      'any.only': 'Session type must be either "online" or "in-person"',
-    }),
-  notes: Joi.string()
+  discussionTopic: Joi.string()
     .trim()
-    .max(1000)
-    .optional()
-    .messages({
-      'string.base': 'Notes must be a string',
-      'string.max': 'Notes must not exceed 1000 characters',
-    }),
-  reasonForBooking: Joi.string()
-    .trim()
+    .min(5)
     .max(500)
     .optional()
     .messages({
-      'string.base': 'Reason for booking must be a string',
-      'string.max': 'Reason for booking must not exceed 500 characters',
+      'string.base': 'Discussion topic must be a string',
+      'string.min': 'Discussion topic must be at least 5 characters',
+      'string.max': 'Discussion topic must not exceed 500 characters',
     }),
   status: Joi.string()
     .valid('pending', 'confirmed', 'cancelled', 'completed', 'no-show')
