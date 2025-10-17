@@ -9,8 +9,8 @@ export class BookingRepository {
 
   async findById(id: string): Promise<IBooking | null> {
     return await Booking.findById(id)
-      .populate('counselorId', 'id fullName title avatarUrl specialties rating')
-      .populate('userId', 'firstName lastName email phoneNumber');
+      .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
+      .populate('userId', '_id firstName lastName email phoneNumber');
   }
 
   async findAll(options: PaginationOptions): Promise<{ bookings: IBooking[]; total: number }> {
@@ -22,8 +22,8 @@ export class BookingRepository {
 
     const [bookings, total] = await Promise.all([
       Booking.find()
-        .populate('counselorId', 'id fullName title avatarUrl specialties rating')
-        .populate('userId', 'firstName lastName email phoneNumber')
+        .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
+        .populate('userId', '_id firstName lastName email phoneNumber')
         .sort(sortOptions)
         .skip(skip)
         .limit(limit),
@@ -45,8 +45,8 @@ export class BookingRepository {
 
     const [bookings, total] = await Promise.all([
       Booking.find({ status })
-        .populate('counselorId', 'id fullName title avatarUrl specialties rating')
-        .populate('userId', 'firstName lastName email phoneNumber')
+        .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
+        .populate('userId', '_id firstName lastName email phoneNumber')
         .sort(sortOptions)
         .skip(skip)
         .limit(limit),
@@ -68,8 +68,8 @@ export class BookingRepository {
 
     const [bookings, total] = await Promise.all([
       Booking.find({ counselorId })
-        .populate('counselorId', 'id fullName title avatarUrl specialties rating')
-        .populate('userId', 'firstName lastName email phoneNumber')
+        .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
+        .populate('userId', '_id firstName lastName email phoneNumber')
         .sort(sortOptions)
         .skip(skip)
         .limit(limit),
@@ -91,8 +91,8 @@ export class BookingRepository {
 
     const [bookings, total] = await Promise.all([
       Booking.find({ userId })
-        .populate('counselorId', 'id fullName title avatarUrl specialties rating')
-        .populate('userId', 'firstName lastName email phoneNumber')
+        .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
+        .populate('userId', '_id firstName lastName email phoneNumber')
         .sort(sortOptions)
         .skip(skip)
         .limit(limit),
@@ -114,8 +114,8 @@ export class BookingRepository {
 
     const [bookings, total] = await Promise.all([
       Booking.find({ guestEmail: email.toLowerCase() })
-        .populate('counselorId', 'id fullName title avatarUrl specialties rating')
-        .populate('userId', 'firstName lastName email phoneNumber')
+        .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
+        .populate('userId', '_id firstName lastName email phoneNumber')
         .sort(sortOptions)
         .skip(skip)
         .limit(limit),
@@ -131,8 +131,8 @@ export class BookingRepository {
       bookingDate: { $gte: now },
       status: { $in: ['pending', 'confirmed'] },
     })
-      .populate('counselorId', 'id fullName title avatarUrl specialties rating')
-      .populate('userId', 'firstName lastName email phoneNumber')
+      .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
+      .populate('userId', '_id firstName lastName email phoneNumber')
       .sort({ bookingDate: 1, bookingTime: 1 })
       .limit(limit);
   }
@@ -144,7 +144,7 @@ export class BookingRepository {
       bookingDate: { $gte: now },
       status: { $in: ['pending', 'confirmed'] },
     })
-      .populate('counselorId', 'id fullName title avatarUrl specialties rating')
+      .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
       .sort({ bookingDate: 1, bookingTime: 1 });
   }
 
@@ -155,7 +155,7 @@ export class BookingRepository {
       bookingDate: { $gte: now },
       status: { $in: ['pending', 'confirmed'] },
     })
-      .populate('counselorId', 'id fullName title avatarUrl specialties rating')
+      .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
       .sort({ bookingDate: 1, bookingTime: 1 });
   }
 
@@ -166,7 +166,7 @@ export class BookingRepository {
       bookingDate: { $gte: now },
       status: { $in: ['pending', 'confirmed'] },
     })
-      .populate('userId', 'firstName lastName email phoneNumber')
+      .populate('userId', '_id firstName lastName email phoneNumber')
       .sort({ bookingDate: 1, bookingTime: 1 });
   }
 
@@ -175,8 +175,8 @@ export class BookingRepository {
       new: true,
       runValidators: true,
     })
-      .populate('counselorId', 'id fullName title avatarUrl specialties rating')
-      .populate('userId', 'firstName lastName email phoneNumber');
+      .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
+      .populate('userId', '_id firstName lastName email phoneNumber');
   }
 
   async delete(id: string): Promise<IBooking | null> {
@@ -260,8 +260,8 @@ export class BookingRepository {
       status: 'confirmed',
       reminderEmailSent: false,
     })
-      .populate('counselorId', 'id fullName title avatarUrl')
-      .populate('userId', 'firstName lastName email phoneNumber');
+      .populate('counselorId', '_id id fullName title avatarUrl')
+      .populate('userId', '_id firstName lastName email phoneNumber');
   }
 }
 

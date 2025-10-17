@@ -18,9 +18,8 @@ export interface IBooking extends Document {
   discussionTopic: string;
   // Status tracking
   status: BookingStatus;
-  // Google Calendar integration
-  googleCalendarEventId?: string;
-  meetingLink?: string; // For online sessions
+  // Video meeting
+  meetingLink?: string; // Daily.co video meeting link
   // Notifications
   confirmationEmailSent: boolean;
   reminderEmailSent: boolean;
@@ -96,10 +95,6 @@ const bookingSchema = new Schema<IBooking>(
       enum: ['pending', 'confirmed', 'cancelled', 'completed', 'no-show'],
       default: 'pending',
       index: true,
-    },
-    googleCalendarEventId: {
-      type: String,
-      trim: true,
     },
     meetingLink: {
       type: String,

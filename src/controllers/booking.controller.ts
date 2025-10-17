@@ -212,9 +212,15 @@ export class BookingController {
   // Confirm booking (Admin only)
   confirmBooking = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
-    const booking = await bookingService.confirmBooking(id);
+    const meetingLink = req.body?.meetingLink;
 
-    return ApiResponse.success(res, booking, 'Booking confirmed successfully');
+    if (!meetingLink) {
+      throw new AppError('Meeting link is required', 400);
+    }
+
+    const booking = await bookingService.confirmBooking(id, meetingLink);
+
+    return ApiResponse.success(res, booking, 'Booking confirmed and approval email sent to guest');
   });
 
   // Cancel booking (Admin only)

@@ -2486,11 +2486,10 @@ The `/counselors` endpoint supports:
 
 ## 📅 Booking Management
 
-The Booking module allows users (logged-in or guests) to book counseling sessions. It includes Google Calendar integration for automatic event creation and email notifications for confirmations, reminders, and cancellations.
+The Booking module allows users (logged-in or guests) to book counseling sessions with email notifications for confirmations, reminders, and cancellations.
 
 ### Key Features
 - **Public Booking**: Both authenticated users and guests can create bookings
-- **Google Calendar Integration**: Automatic event creation with Google Meet links (configurable)
 - **Email Notifications**: Confirmation, reminder, and cancellation emails via AWS SES
 - **Availability Check**: Prevents double-booking of counselors
 - **Status Management**: Track bookings through their lifecycle (pending → confirmed → completed)
@@ -2533,7 +2532,7 @@ Content-Type: application/json
 ```json
 {
   "success": true,
-  "message": "Booking created successfully. A confirmation email has been sent.",
+  "message": "Booking created successfully. A pending approval email has been sent.",
   "data": {
     "_id": "507f1f77bcf86cd799439011",
     "counselorId": {
@@ -2549,9 +2548,8 @@ Content-Type: application/json
     "bookingTime": "14:30",
     "duration": 60,
     "sessionType": "online",
-    "meetingLink": "https://meet.google.com/xxx-yyyy-zzz",
+    "meetingLink": "",
     "status": "pending",
-    "googleCalendarEventId": "calendar_event_id",
     "confirmationEmailSent": true,
     "createdAt": "2025-10-15T10:00:00.000Z"
   }
@@ -2891,25 +2889,59 @@ curl -X PATCH http://localhost:5000/api/v1/bookings/507f1f77bcf86cd799439011 \
 
 ---
 
-### 61. Confirm Booking (Admin Only)
+### 61. Confirm Booking with Meeting Link (Admin Only)
 
-Change booking status from pending to confirmed.
+Change booking status from pending to confirmed and provide a meeting link. This triggers an approval email to the guest with the meeting link.
 
 **⚠️ Requires: Admin Role + Verification**
 
 **Endpoint:** `PATCH /bookings/:id/confirm`
 
+**Headers:**
+```
+Authorization: Bearer ADMIN_JWT_TOKEN
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "meetingLink": "https://meet.google.com/abc-defg-hij"
+}
+```
+
+**Required Fields:**
+- `meetingLink` (valid URL) - The meeting link for the counseling session
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Booking confirmed and approval email sent to guest",
+  "data": {
+    "_id": "507f1f77bcf86cd799439011",
+    "status": "confirmed",
+    "meetingLink": "https://meet.google.com/abc-defg-hij",
+    ...
+  }
+}
+```
+
 **cURL Example:**
 ```bash
 curl -X PATCH http://localhost:5000/api/v1/bookings/507f1f77bcf86cd799439011/confirm \
-  -H "Authorization: Bearer ADMIN_JWT_TOKEN"
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"meetingLink": "https://meet.google.com/abc-defg-hij"}'
 ```
+
+**Note:** The meeting link is required for confirmation. Once confirmed, the guest will receive an approval email containing the meeting link and calendar invite (.ics file).
 
 ---
 
 ### 62. Cancel Booking (Admin Only)
 
-Cancel a booking. Google Calendar event will be deleted and cancellation email sent.
+Cancel a booking. Cancellation email will be sent.
 
 **⚠️ Requires: Admin Role + Verification**
 
@@ -2967,7 +2999,7 @@ curl -X PATCH http://localhost:5000/api/v1/bookings/507f1f77bcf86cd799439011/no-
 
 ### 65. Delete Booking (Admin Only)
 
-Permanently delete a booking. Google Calendar event will be cancelled.
+Permanently delete a booking.
 
 **⚠️ Requires: Admin Role + Verification**
 
@@ -3006,23 +3038,33 @@ curl -X POST http://localhost:5000/api/v1/bookings/send-reminders \
 - **completed**: Session was completed successfully
 - **no-show**: Client didn't show up for the session
 
-### Google Calendar Integration
-- Automatic event creation for online sessions
-- Google Meet link generation (if not provided)
-- Event updates when booking is modified
-- Event deletion when booking is cancelled
-- Configurable via environment variables:
-  - `GOOGLE_CLIENT_EMAIL`
-  - `GOOGLE_PRIVATE_KEY`
-  - `GOOGLE_CALENDAR_ID`
-  - `TIMEZONE`
-
 ### Email Notifications
-Three types of automated emails via AWS SES:
-1. **Confirmation Email**: Sent when booking is created
-2. **Reminder Email**: Sent for bookings within 24 hours
-3. **Cancellation Email**: Sent when booking is cancelled
 
+**Two-Stage Email Workflow:**
+
+The booking system uses a two-stage email process to ensure proper approval and meeting link distribution:
+
+#### Stage 1: Pending Approval Email (Initial Booking)
+When a user creates a booking, they immediately receive a **Pending Approval** email that:
+- Confirms their booking request has been received
+- Shows booking details (date, time, counselor, etc.)
+- Explains that the admin will review and approve the request
+- **Does not include a meeting link**
+- Includes a calendar invite (.ics file) without the meeting link
+
+#### Stage 2: Approval Email (Admin Confirmation)
+When an admin confirms the booking and provides a meeting link, the guest receives an **Approval** email that:
+- Confirms the booking is now approved
+- **Includes the meeting link** for joining the session
+- Provides instructions for joining the meeting
+- Includes an updated calendar invite (.ics file) with the meeting link
+- Shows important reminders (join early, test equipment, etc.)
+
+**Additional Automated Emails:**
+- **Reminder Email**: Sent for bookings within 24 hours
+- **Cancellation Email**: Sent when booking is cancelled
+
+**Email Configuration:**
 Configure via environment variables:
 - `AWS_SES_FROM_EMAIL`
 - `AWS_SES_FROM_NAME`

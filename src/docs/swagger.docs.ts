@@ -1886,7 +1886,12 @@
  * /bookings:
  *   post:
  *     summary: Create a booking (Public)
- *     description: Create a new counseling session booking. Available to both logged-in users and guests. A Google Meet link will be automatically generated, added to Google Calendar, and sent via confirmation email.
+ *     description: |
+ *       Create a new counseling session booking. Available to both logged-in users and guests.
+ *
+ *       **Two-Stage Email Workflow:**
+ *       - Upon booking creation, guest receives a "Pending Approval" email (without meeting link)
+ *       - Admin must confirm the booking with a meeting link to send the "Approval" email
  *     tags: [Bookings]
  *     security:
  *       - BearerAuth: []
@@ -2343,8 +2348,14 @@
  * @swagger
  * /bookings/{id}/confirm:
  *   patch:
- *     summary: Confirm booking (Admin only)
- *     description: Change booking status from pending to confirmed
+ *     summary: Confirm booking with meeting link (Admin only)
+ *     description: |
+ *       Change booking status from pending to confirmed and provide a meeting link.
+ *       This triggers an approval email to the guest with the meeting link and calendar invite (.ics file).
+ *
+ *       **Two-Stage Email Workflow:**
+ *       - Stage 1: User creates booking → receives "Pending Approval" email (no meeting link)
+ *       - Stage 2: Admin confirms with meeting link → user receives "Approval" email (with meeting link)
  *     tags: [Bookings]
  *     security:
  *       - BearerAuth: []
@@ -2354,11 +2365,48 @@
  *         required: true
  *         schema:
  *           type: string
+ *         description: Booking ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - meetingLink
+ *             properties:
+ *               meetingLink:
+ *                 type: string
+ *                 format: uri
+ *                 description: The meeting link for the counseling session (e.g., Google Meet, Zoom, etc.)
+ *                 example: https://meet.google.com/abc-defg-hij
  *     responses:
  *       200:
- *         description: Booking confirmed successfully
+ *         description: Booking confirmed and approval email sent to guest
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Booking confirmed and approval email sent to guest
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                     status:
+ *                       type: string
+ *                       example: confirmed
+ *                     meetingLink:
+ *                       type: string
+ *                       example: https://meet.google.com/abc-defg-hij
  *       400:
- *         description: Only pending bookings can be confirmed
+ *         description: Only pending bookings can be confirmed or meeting link is missing/invalid
  *       401:
  *         description: Unauthorized
  *       403:

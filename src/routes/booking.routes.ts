@@ -6,6 +6,7 @@ import {
   createBookingSchema,
   updateBookingSchema,
   cancelBookingSchema,
+  confirmBookingSchema,
   bookingPaginationSchema,
   statusQuerySchema,
   emailQuerySchema,
@@ -197,7 +198,7 @@ router.patch(
 
 /**
  * @route   PATCH /api/v1/bookings/:id/confirm
- * @desc    Confirm a booking
+ * @desc    Confirm a booking with meeting link
  * @access  Admin
  */
 router.patch(
@@ -205,6 +206,7 @@ router.patch(
   authenticate,
   authorize('ADMIN'),
   requireVerification,
+  validate(confirmBookingSchema),
   bookingController.confirmBooking
 );
 

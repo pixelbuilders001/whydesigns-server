@@ -4,7 +4,10 @@ import { ValidationError } from '../utils/AppError';
 
 export const validate = (schema: Joi.ObjectSchema) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    const { error, value } = schema.validate(req.body, {
+    // Ensure req.body is an object (handle undefined/null cases)
+    const bodyToValidate = req.body || {};
+
+    const { error, value } = schema.validate(bodyToValidate, {
       abortEarly: false,
       stripUnknown: true,
     });

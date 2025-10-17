@@ -1,12 +1,34 @@
 import { Request, Response, NextFunction } from 'express';
 import counselorService from '../services/counselor.service';
+import s3Service from '../services/s3.service';
 import { ApiResponse } from '../utils/ApiResponse';
 import { asyncHandler } from '../utils/asyncHandler';
 import { PaginationQuery } from '../types';
 
 export class CounselorController {
   createCounselor = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    const counselorData = req.body;
+    // Handle file upload if present
+    let avatarUrl = '';
+    if (req.file) {
+      avatarUrl = await s3Service.uploadFile(req.file, 'counselor-avatars');
+    }
+
+    // Parse specialties if it's a string (from form data)
+    let specialties = req.body.specialties;
+    if (typeof specialties === 'string') {
+      try {
+        specialties = JSON.parse(specialties);
+      } catch (e) {
+        // If not JSON, treat as comma-separated string
+        specialties = specialties.split(',').map((s: string) => s.trim());
+      }
+    }
+
+    const counselorData = {
+      ...req.body,
+      specialties,
+      avatarUrl: avatarUrl || req.body.avatarUrl || '',
+    };
 
     const counselor = await counselorService.createCounselor(counselorData);
 
@@ -61,7 +83,34 @@ export class CounselorController {
       return ApiResponse.error(res, 'Invalid counselor ID', 400);
     }
 
-    const updateData = req.body;
+    // Handle file upload if present
+    let avatarUrl = '';
+    if (req.file) {
+      avatarUrl = await s3Service.uploadFile(req.file, 'counselor-avatars');
+
+      // Get existing counselor to delete old avatar
+      const existingCounselor = await counselorService.getCounselorById(id);
+      if (existingCounselor.avatarUrl) {
+        await s3Service.deleteFile(existingCounselor.avatarUrl);
+      }
+    }
+
+    // Parse specialties if it's a string (from form data)
+    let specialties = req.body.specialties;
+    if (typeof specialties === 'string') {
+      try {
+        specialties = JSON.parse(specialties);
+      } catch (e) {
+        // If not JSON, treat as comma-separated string
+        specialties = specialties.split(',').map((s: string) => s.trim());
+      }
+    }
+
+    const updateData = {
+      ...req.body,
+      ...(specialties && { specialties }),
+      ...(avatarUrl && { avatarUrl }),
+    };
 
     const counselor = await counselorService.updateCounselor(id, updateData);
 

@@ -237,3 +237,16 @@ export const upcomingLimitSchema = Joi.object({
       'number.max': 'Limit cannot exceed 50',
     }),
 });
+
+// Confirm booking validation schema
+export const confirmBookingSchema = Joi.object({
+  meetingLink: Joi.string()
+    .uri()
+    .trim()
+    .required()
+    .messages({
+      'string.base': 'Meeting link must be a string',
+      'string.uri': 'Meeting link must be a valid URL',
+      'any.required': 'Meeting link is required to confirm booking',
+    }),
+});

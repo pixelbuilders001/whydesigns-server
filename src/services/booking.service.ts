@@ -1,6 +1,5 @@
 import bookingRepository from '../repositories/booking.repository';
 import counselorRepository from '../repositories/counselor.repository';
-import googleCalendarService from './googleCalendar.service';
 import bookingEmailService from './bookingEmail.service';
 import { IBooking, BookingStatus } from '../models/booking.model';
 import { ICounselor } from '../models/counselor.model';
@@ -62,55 +61,19 @@ export class BookingService {
       throw new AppError('Booking must be scheduled for a future date and time', 400);
     }
 
-    // 4. Calculate end time for calendar event
+    // 4. Set duration
     const duration = data.duration || 60;
-    const endDateTime = new Date(bookingDateTime.getTime() + duration * 60000);
 
-    // 5. Create Google Calendar event with auto-generated meeting link
-    let calendarEventId: string | undefined;
-    let meetingLink: string | undefined;
-
-    const calendarEvent = await googleCalendarService.createEvent({
-      summary: `Counseling Session with ${counselor.fullName}`,
-      description: `Session with ${data.guestName}\nTopic: ${data.discussionTopic}`,
-      startDateTime: bookingDateTime,
-      endDateTime: endDateTime,
-      attendeeEmail: data.guestEmail,
-      attendeeName: data.guestName,
-    });
-
-    if (calendarEvent) {
-      calendarEventId = calendarEvent.eventId;
-      meetingLink = calendarEvent.meetingLink;
-    }
-
-    // Fallback: Generate a Google Meet link if calendar service didn't provide one
-    if (!meetingLink) {
-      // Generate a random meeting ID (format: xxx-xxxx-xxx)
-      const generateMeetingId = () => {
-        const chars = 'abcdefghijklmnopqrstuvwxyz';
-        const part1 = Array.from({ length: 3 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-        const part2 = Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-        const part3 = Array.from({ length: 3 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-        return `${part1}-${part2}-${part3}`;
-      };
-
-      meetingLink = `https://meet.google.com/${generateMeetingId()}`;
-      console.log('⚠️  Google Calendar not configured. Generated meeting link:', meetingLink);
-    }
-
-    // 6. Create booking in database
+    // 5. Create booking in database
     const booking = await bookingRepository.create({
       ...data,
       duration,
-      googleCalendarEventId: calendarEventId,
-      meetingLink,
       status: 'pending',
       confirmationEmailSent: false,
       reminderEmailSent: false,
-    });
+    } as unknown as Partial<IBooking>);
 
-    // 7. Send confirmation email (non-blocking)
+    // 6. Send confirmation email (non-blocking)
     this.sendConfirmationEmail(booking, counselor).catch((error) => {
       console.error('Failed to send confirmation email:', error);
     });
@@ -227,29 +190,20 @@ export class BookingService {
       const newDate = data.bookingDate || booking.bookingDate;
       const newTime = data.bookingTime || booking.bookingTime;
 
+      // Extract counselor ID - handle both populated and non-populated cases
+      const counselorId = (booking.counselorId as any)?._id
+        ? (booking.counselorId as any)._id.toString()
+        : booking.counselorId.toString();
+
       // Check if the new slot is available (excluding current booking)
       const bookingsForSlot = await bookingRepository.checkAvailability(
-        booking.counselorId.toString(),
+        counselorId,
         newDate,
         newTime
       );
 
       if (!bookingsForSlot) {
         throw new AppError('This time slot is not available. Please choose another time.', 400);
-      }
-
-      // Update Google Calendar event if it exists
-      if (booking.googleCalendarEventId) {
-        const duration = data.duration || booking.duration;
-        const bookingDateTime = new Date(newDate);
-        const [hours, minutes] = newTime.split(':');
-        bookingDateTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
-        const endDateTime = new Date(bookingDateTime.getTime() + duration * 60000);
-
-        await googleCalendarService.updateEvent(booking.googleCalendarEventId, {
-          startDateTime: bookingDateTime,
-          endDateTime: endDateTime,
-        });
       }
     }
 
@@ -261,16 +215,43 @@ export class BookingService {
     return updatedBooking;
   }
 
-  async confirmBooking(id: string): Promise<IBooking> {
+  async confirmBooking(id: string, meetingLink: string): Promise<IBooking> {
     const booking = await this.getBookingById(id);
 
     if (booking.status !== 'pending') {
       throw new AppError('Only pending bookings can be confirmed', 400);
     }
 
-    const updatedBooking = await bookingRepository.update(id, { status: 'confirmed' });
+    if (!meetingLink || meetingLink.trim() === '') {
+      throw new AppError('Meeting link is required to confirm booking', 400);
+    }
+
+    const updatedBooking = await bookingRepository.update(id, {
+      status: 'confirmed',
+      meetingLink: meetingLink.trim()
+    });
     if (!updatedBooking) {
       throw new AppError('Booking not found', 404);
+    }
+
+    // Send approval email with meeting link (non-blocking)
+    // Extract counselor ID - handle both populated and non-populated cases
+    // If counselorId is populated (object with properties), extract the _id
+    // Otherwise, it's already an ObjectId
+    let counselorId: string;
+    if (typeof booking.counselorId === 'object' && booking.counselorId !== null) {
+      // It's populated - extract the MongoDB _id
+      counselorId = (booking.counselorId as any)._id?.toString() || (booking.counselorId as any).id?.toString();
+    } else {
+      // It's an ObjectId
+      counselorId = booking.counselorId.toString();
+    }
+
+    const counselor = await counselorRepository.findById(counselorId);
+    if (counselor) {
+      bookingEmailService.sendBookingApproval(updatedBooking, counselor).catch((error) => {
+        console.error('Failed to send approval email:', error);
+      });
     }
 
     return updatedBooking;
@@ -287,11 +268,6 @@ export class BookingService {
       throw new AppError('Cannot cancel completed bookings', 400);
     }
 
-    // Cancel Google Calendar event
-    if (booking.googleCalendarEventId) {
-      await googleCalendarService.cancelEvent(booking.googleCalendarEventId);
-    }
-
     const updatedBooking = await bookingRepository.update(id, {
       status: 'cancelled',
       cancellationReason: cancelData.cancellationReason,
@@ -304,7 +280,12 @@ export class BookingService {
     }
 
     // Send cancellation email (non-blocking)
-    const counselor = await counselorRepository.findById(booking.counselorId.toString());
+    // Extract counselor ID - handle both populated and non-populated cases
+    const counselorId = (booking.counselorId as any)?._id
+      ? (booking.counselorId as any)._id.toString()
+      : booking.counselorId.toString();
+
+    const counselor = await counselorRepository.findById(counselorId);
     if (counselor) {
       bookingEmailService.sendBookingCancellation(updatedBooking, counselor).catch((error) => {
         console.error('Failed to send cancellation email:', error);
@@ -345,13 +326,6 @@ export class BookingService {
   }
 
   async deleteBooking(id: string): Promise<void> {
-    const booking = await this.getBookingById(id);
-
-    // Cancel Google Calendar event if exists
-    if (booking.googleCalendarEventId) {
-      await googleCalendarService.cancelEvent(booking.googleCalendarEventId);
-    }
-
     await bookingRepository.delete(id);
   }
 
@@ -375,7 +349,12 @@ export class BookingService {
 
     for (const booking of bookings) {
       try {
-        const counselor = await counselorRepository.findById(booking.counselorId.toString());
+        // Extract counselor ID - handle both populated and non-populated cases
+        const counselorId = (booking.counselorId as any)?._id
+          ? (booking.counselorId as any)._id.toString()
+          : booking.counselorId.toString();
+
+        const counselor = await counselorRepository.findById(counselorId);
         if (counselor) {
           const emailSent = await bookingEmailService.sendBookingReminder(booking, counselor);
 

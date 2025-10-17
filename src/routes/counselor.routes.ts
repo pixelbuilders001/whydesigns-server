@@ -2,6 +2,7 @@ import { Router } from 'express';
 import counselorController from '../controllers/counselor.controller';
 import { authenticate, authorize, requireVerification } from '../middlewares/auth';
 import { validate, validateParams, validateQuery } from '../middlewares/validate';
+import { uploadSingle } from '../middlewares/upload';
 import {
   createCounselorSchema,
   updateCounselorSchema,
@@ -46,6 +47,7 @@ router.post(
   authenticate,
   authorize('ADMIN'),
   requireVerification,
+  uploadSingle('avatar'),
   validate(createCounselorSchema),
   counselorController.createCounselor
 );
@@ -57,6 +59,7 @@ router.patch(
   authorize('ADMIN'),
   requireVerification,
   validateParams(counselorIdParamSchema),
+  uploadSingle('avatar'),
   validate(updateCounselorSchema),
   counselorController.updateCounselor
 );
