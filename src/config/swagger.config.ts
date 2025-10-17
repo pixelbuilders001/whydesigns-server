@@ -309,6 +309,97 @@ const swaggerDefinition = {
           },
         },
       },
+      Material: {
+        type: 'object',
+        properties: {
+          _id: {
+            type: 'string',
+            description: 'Material ID',
+            example: '64abc123def456789',
+          },
+          name: {
+            type: 'string',
+            description: 'Material name',
+            example: 'Course Syllabus 2024',
+          },
+          description: {
+            type: 'string',
+            description: 'Material description',
+            example: 'Comprehensive course syllabus for the academic year 2024',
+          },
+          fileUrl: {
+            type: 'string',
+            format: 'uri',
+            description: 'S3 file URL',
+            example: 'https://s3.amazonaws.com/bucket/materials/file.pdf',
+          },
+          fileName: {
+            type: 'string',
+            description: 'Original file name',
+            example: 'syllabus-2024.pdf',
+          },
+          fileType: {
+            type: 'string',
+            description: 'MIME type of the file',
+            example: 'application/pdf',
+          },
+          fileSize: {
+            type: 'number',
+            description: 'File size in bytes',
+            example: 2048576,
+          },
+          category: {
+            type: 'string',
+            description: 'Material category',
+            example: 'Academic',
+          },
+          tags: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+            description: 'Tags for categorization',
+            example: ['syllabus', '2024', 'course'],
+          },
+          uploadedBy: {
+            type: 'object',
+            properties: {
+              _id: {
+                type: 'string',
+                example: '64xyz...',
+              },
+              name: {
+                type: 'string',
+                example: 'Admin User',
+              },
+              email: {
+                type: 'string',
+                example: 'admin@example.com',
+              },
+            },
+          },
+          downloadCount: {
+            type: 'number',
+            description: 'Number of times downloaded',
+            example: 42,
+          },
+          isActive: {
+            type: 'boolean',
+            description: 'Active status',
+            example: true,
+          },
+          createdAt: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Creation timestamp',
+          },
+          updatedAt: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Last update timestamp',
+          },
+        },
+      },
     },
   },
   tags: [
@@ -335,6 +426,18 @@ const swaggerDefinition = {
     {
       name: 'Blogs',
       description: 'Blog post management and publishing endpoints',
+    },
+    {
+      name: 'Counselors',
+      description: 'Counselor management endpoints',
+    },
+    {
+      name: 'Bookings',
+      description: 'Counseling session booking endpoints',
+    },
+    {
+      name: 'Materials',
+      description: 'Downloadable materials management endpoints (PDFs, documents, files)',
     },
   ],
 };

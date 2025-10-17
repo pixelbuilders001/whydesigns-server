@@ -4,6 +4,7 @@ import categoryRoutes from './category.routes';
 import blogRoutes from './blog.routes';
 import counselorRoutes from './counselor.routes';
 import bookingRoutes from './booking.routes';
+import materialRoutes from './material.routes';
 
 const router = Router();
 
@@ -22,5 +23,6 @@ router.use('/categories', categoryRoutes);
 router.use('/blogs', blogRoutes);
 router.use('/counselors', counselorRoutes);
 router.use('/bookings', bookingRoutes);
+router.use('/materials', materialRoutes);
 
 export default router;

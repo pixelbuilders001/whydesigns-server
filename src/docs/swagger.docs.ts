@@ -2560,4 +2560,505 @@
  *         description: Forbidden
  */
 
+// ============= Materials API Documentation =============
+
+/**
+ * @swagger
+ * /materials:
+ *   get:
+ *     summary: Get all materials
+ *     description: Get paginated list of all active materials. Public access - anyone can view and download materials.
+ *     tags: [Materials]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *           maximum: 100
+ *         description: Items per page
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           default: createdAt
+ *           enum: [name, createdAt, updatedAt, downloadCount, fileSize, category]
+ *         description: Field to sort by
+ *       - in: query
+ *         name: order
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: desc
+ *         description: Sort order
+ *     responses:
+ *       200:
+ *         description: Materials retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Material'
+ *                 meta:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ */
+
+/**
+ * @swagger
+ * /materials/search:
+ *   get:
+ *     summary: Search materials
+ *     description: Search materials by name, description, category, or tags
+ *     tags: [Materials]
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         required: true
+ *         schema:
+ *           type: string
+ *           minLength: 1
+ *         description: Search query
+ *         example: syllabus
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           default: createdAt
+ *       - in: query
+ *         name: order
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: desc
+ *     responses:
+ *       200:
+ *         description: Search results retrieved successfully
+ *       400:
+ *         description: Search query is required
+ */
+
+/**
+ * @swagger
+ * /materials/meta/categories:
+ *   get:
+ *     summary: Get all categories
+ *     description: Get list of all unique categories from active materials
+ *     tags: [Materials]
+ *     responses:
+ *       200:
+ *         description: Categories retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: [Academic, Resources, Templates, Guides]
+ */
+
+/**
+ * @swagger
+ * /materials/meta/tags:
+ *   get:
+ *     summary: Get all tags
+ *     description: Get list of all unique tags used in active materials
+ *     tags: [Materials]
+ *     responses:
+ *       200:
+ *         description: Tags retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: [syllabus, 2024, course, template, guide]
+ */
+
+/**
+ * @swagger
+ * /materials/meta/stats:
+ *   get:
+ *     summary: Get category statistics
+ *     description: Get material count by category
+ *     tags: [Materials]
+ *     responses:
+ *       200:
+ *         description: Statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       category:
+ *                         type: string
+ *                       count:
+ *                         type: number
+ */
+
+/**
+ * @swagger
+ * /materials/category/{category}:
+ *   get:
+ *     summary: Get materials by category
+ *     description: Get all materials in a specific category
+ *     tags: [Materials]
+ *     parameters:
+ *       - in: path
+ *         name: category
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Category name
+ *         example: Academic
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           default: createdAt
+ *       - in: query
+ *         name: order
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: desc
+ *     responses:
+ *       200:
+ *         description: Materials retrieved successfully
+ *       400:
+ *         description: Category is required
+ */
+
+/**
+ * @swagger
+ * /materials/{id}:
+ *   get:
+ *     summary: Get material by ID
+ *     description: Get a specific material's details by ID
+ *     tags: [Materials]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Material ID
+ *     responses:
+ *       200:
+ *         description: Material retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Material'
+ *       404:
+ *         description: Material not found
+ */
+
+/**
+ * @swagger
+ * /materials/{id}/download:
+ *   get:
+ *     summary: Download material
+ *     description: Track download and return material details with file URL. Public access.
+ *     tags: [Materials]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Material ID
+ *     responses:
+ *       200:
+ *         description: Material download tracked successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Material'
+ *       404:
+ *         description: Material not found
+ */
+
+/**
+ * @swagger
+ * /materials:
+ *   post:
+ *     summary: Create material (Admin only)
+ *     description: |
+ *       Upload a new material with file. Requires admin role and verification.
+ *
+ *       **Supported file types:**
+ *       - PDF: application/pdf
+ *       - MS Office: DOC, DOCX, XLS, XLSX, PPT, PPTX
+ *       - Text: TXT, CSV
+ *       - Archives: ZIP, RAR, 7Z
+ *       - Images: JPEG, PNG, GIF, WebP
+ *       - Other: JSON, XML
+ *
+ *       **Max file size:** 50MB
+ *     tags: [Materials]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - file
+ *               - name
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: Material file (PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, CSV, ZIP, RAR, 7Z, images - max 50MB)
+ *               name:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 200
+ *                 description: Material name
+ *                 example: Course Syllabus 2024
+ *               description:
+ *                 type: string
+ *                 maxLength: 1000
+ *                 description: Material description
+ *                 example: Comprehensive course syllabus for academic year 2024
+ *               category:
+ *                 type: string
+ *                 maxLength: 100
+ *                 description: Material category
+ *                 example: Academic
+ *               tags:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 maxItems: 10
+ *                 description: Tags for categorization (max 10 tags)
+ *                 example: [syllabus, 2024, course]
+ *     responses:
+ *       201:
+ *         description: Material uploaded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Material'
+ *       400:
+ *         description: Invalid file type, size, or missing required fields
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin access required
+ */
+
+/**
+ * @swagger
+ * /materials/{id}:
+ *   patch:
+ *     summary: Update material (Admin only)
+ *     description: |
+ *       Update material details and optionally replace the file.
+ *       Old file will be deleted from S3 when uploading a new one.
+ *     tags: [Materials]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Material ID
+ *     requestBody:
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: New material file (optional - only if replacing)
+ *               name:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 200
+ *               description:
+ *                 type: string
+ *                 maxLength: 1000
+ *               category:
+ *                 type: string
+ *                 maxLength: 100
+ *               tags:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 maxItems: 10
+ *               isActive:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Material updated successfully
+ *       400:
+ *         description: Invalid file type or size
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Material not found
+ */
+
+/**
+ * @swagger
+ * /materials/{id}:
+ *   delete:
+ *     summary: Delete material (Admin only)
+ *     description: Permanently delete a material. File will be deleted from S3.
+ *     tags: [Materials]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Material ID
+ *     responses:
+ *       200:
+ *         description: Material deleted successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Material not found
+ */
+
+/**
+ * @swagger
+ * /materials/{id}/deactivate:
+ *   post:
+ *     summary: Deactivate material (Admin only)
+ *     description: Soft delete a material (set isActive to false). File remains in S3.
+ *     tags: [Materials]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Material ID
+ *     responses:
+ *       200:
+ *         description: Material deactivated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Material'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Material not found
+ */
+
 export {};
