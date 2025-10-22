@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../types';
 import testimonialService from '../services/testimonial.service';
+import s3Service from '../services/s3.service';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
 import { AppError } from '../utils/AppError';
@@ -15,7 +16,31 @@ class TestimonialController {
     // userId is optional - can be null for guest testimonials
     const userId = req.user?.id || null;
 
-    const testimonial = await testimonialService.createTestimonial(userId, req.body);
+    // Handle profile image upload if provided
+    let profileImageUrl: string | undefined;
+    if (req.file) {
+      profileImageUrl = await s3Service.uploadFile(req.file, 'testimonials/profiles');
+    }
+
+    // Parse socialMedia if provided as JSON string
+    let socialMedia;
+    if (req.body['socialMedia.facebook'] || req.body['socialMedia.instagram'] ||
+        req.body['socialMedia.twitter'] || req.body['socialMedia.linkedin']) {
+      socialMedia = {
+        facebook: req.body['socialMedia.facebook'],
+        instagram: req.body['socialMedia.instagram'],
+        twitter: req.body['socialMedia.twitter'],
+        linkedin: req.body['socialMedia.linkedin'],
+      };
+    }
+
+    const testimonialData = {
+      ...req.body,
+      profileImage: profileImageUrl,
+      socialMedia,
+    };
+
+    const testimonial = await testimonialService.createTestimonial(userId, testimonialData);
 
     return ApiResponse.success(
       res,
@@ -236,7 +261,31 @@ class TestimonialController {
       throw new AppError('User not authenticated', 401);
     }
 
-    const testimonial = await testimonialService.updateTestimonial(id, userId, req.body, isAdmin);
+    // Handle profile image upload if provided
+    let profileImageUrl: string | undefined;
+    if (req.file) {
+      profileImageUrl = await s3Service.uploadFile(req.file, 'testimonials/profiles');
+    }
+
+    // Parse socialMedia if provided as JSON string
+    let socialMedia;
+    if (req.body['socialMedia.facebook'] || req.body['socialMedia.instagram'] ||
+        req.body['socialMedia.twitter'] || req.body['socialMedia.linkedin']) {
+      socialMedia = {
+        facebook: req.body['socialMedia.facebook'],
+        instagram: req.body['socialMedia.instagram'],
+        twitter: req.body['socialMedia.twitter'],
+        linkedin: req.body['socialMedia.linkedin'],
+      };
+    }
+
+    const updateData = {
+      ...req.body,
+      ...(profileImageUrl && { profileImage: profileImageUrl }),
+      ...(socialMedia && { socialMedia }),
+    };
+
+    const testimonial = await testimonialService.updateTestimonial(id, userId, updateData, isAdmin);
 
     return ApiResponse.success(
       res,

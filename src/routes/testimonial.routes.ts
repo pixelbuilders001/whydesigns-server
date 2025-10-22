@@ -2,6 +2,7 @@ import { Router } from 'express';
 import testimonialController from '../controllers/testimonial.controller';
 import { authenticate, authorize } from '../middlewares/auth';
 import { validate, validateQuery, validateParams } from '../middlewares/validate';
+import { uploadSingle } from '../middlewares/upload';
 import {
   createTestimonialSchema,
   updateTestimonialSchema,
@@ -71,6 +72,7 @@ router.get(
 // Create testimonial (Public - anyone can create)
 router.post(
   '/',
+  uploadSingle('profileImage'),
   validate(createTestimonialSchema),
   testimonialController.createTestimonial
 );
@@ -90,6 +92,7 @@ router.get(
 router.patch(
   '/:id',
   authenticate,
+  uploadSingle('profileImage'),
   validateParams(testimonialIdParamSchema),
   validate(updateTestimonialSchema),
   testimonialController.updateTestimonial

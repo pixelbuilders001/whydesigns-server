@@ -3213,9 +3213,77 @@
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
- *             $ref: '#/components/schemas/CreateTestimonialRequest'
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - city
+ *               - state
+ *               - rating
+ *               - message
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
+ *                 description: Name of the person giving testimonial
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Email address
+ *               city:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
+ *                 description: City name
+ *               state:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
+ *                 description: State name
+ *               country:
+ *                 type: string
+ *                 maxLength: 100
+ *                 description: Country name (optional, defaults to USA)
+ *               rating:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 5
+ *                 description: Rating from 1-5 stars
+ *               message:
+ *                 type: string
+ *                 minLength: 10
+ *                 maxLength: 2000
+ *                 description: Testimonial message
+ *               designation:
+ *                 type: string
+ *                 maxLength: 100
+ *                 description: Job designation (optional)
+ *               company:
+ *                 type: string
+ *                 maxLength: 100
+ *                 description: Company name (optional)
+ *               profileImage:
+ *                 type: string
+ *                 format: binary
+ *                 description: Profile image file (optional)
+ *               socialMedia.facebook:
+ *                 type: string
+ *                 description: Facebook profile URL (optional)
+ *               socialMedia.instagram:
+ *                 type: string
+ *                 description: Instagram profile URL (optional)
+ *               socialMedia.twitter:
+ *                 type: string
+ *                 description: Twitter/X profile URL (optional)
+ *               socialMedia.linkedin:
+ *                 type: string
+ *                 description: LinkedIn profile URL (optional)
+ *               displayOrder:
+ *                 type: integer
+ *                 description: Display order (optional, defaults to 0)
  *     responses:
  *       201:
  *         description: Testimonial created successfully
@@ -3499,33 +3567,87 @@
  *         schema:
  *           type: string
  *     requestBody:
- *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             properties:
  *               name:
  *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
+ *                 description: Name of the person giving testimonial
  *               email:
  *                 type: string
+ *                 format: email
+ *                 description: Email address
  *               city:
  *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
+ *                 description: City name
  *               state:
  *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
+ *                 description: State name
+ *               country:
+ *                 type: string
+ *                 maxLength: 100
+ *                 description: Country name
  *               rating:
- *                 type: number
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 5
+ *                 description: Rating from 1-5 stars
  *               message:
  *                 type: string
+ *                 minLength: 10
+ *                 maxLength: 2000
+ *                 description: Testimonial message
  *               designation:
  *                 type: string
+ *                 maxLength: 100
+ *                 description: Job designation
  *               company:
  *                 type: string
- *               socialMedia:
- *                 type: object
+ *                 maxLength: 100
+ *                 description: Company name
+ *               profileImage:
+ *                 type: string
+ *                 format: binary
+ *                 description: Profile image file (optional, replaces existing if provided)
+ *               socialMedia.facebook:
+ *                 type: string
+ *                 description: Facebook profile URL
+ *               socialMedia.instagram:
+ *                 type: string
+ *                 description: Instagram profile URL
+ *               socialMedia.twitter:
+ *                 type: string
+ *                 description: Twitter/X profile URL
+ *               socialMedia.linkedin:
+ *                 type: string
+ *                 description: LinkedIn profile URL
+ *               displayOrder:
+ *                 type: integer
+ *                 description: Display order
  *     responses:
  *       200:
  *         description: Testimonial updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Testimonial'
+ *       400:
+ *         description: Validation error
  *       401:
  *         description: Unauthorized
  *       403:
@@ -3717,6 +3839,839 @@
  *         description: Forbidden (Admin only)
  *       404:
  *         description: Testimonial not found
+ */
+
+/**
+ * @swagger
+ * /reels:
+ *   get:
+ *     summary: Get published reels
+ *     description: Retrieve all published and active reels with pagination and filtering
+ *     tags: [Reels]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of items per page
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [createdAt, publishedAt, viewCount, likeCount]
+ *         description: Field to sort by
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *         description: Sort order
+ *     responses:
+ *       200:
+ *         description: Reels retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Reel'
+ *                 meta:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ */
+
+/**
+ * @swagger
+ * /reels/search:
+ *   get:
+ *     summary: Search reels
+ *     description: Search reels by title, description, or tags
+ *     tags: [Reels]
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Search query
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *     responses:
+ *       200:
+ *         description: Search results retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Reel'
+ */
+
+/**
+ * @swagger
+ * /reels/trending/most-viewed:
+ *   get:
+ *     summary: Get most viewed reels
+ *     description: Retrieve reels sorted by view count
+ *     tags: [Reels]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of reels to retrieve
+ *     responses:
+ *       200:
+ *         description: Most viewed reels retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Reel'
+ */
+
+/**
+ * @swagger
+ * /reels/trending/most-liked:
+ *   get:
+ *     summary: Get most liked reels
+ *     description: Retrieve reels sorted by like count
+ *     tags: [Reels]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of reels to retrieve
+ *     responses:
+ *       200:
+ *         description: Most liked reels retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Reel'
+ */
+
+/**
+ * @swagger
+ * /reels/trending/recent:
+ *   get:
+ *     summary: Get recent reels
+ *     description: Retrieve recently published reels
+ *     tags: [Reels]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of reels to retrieve
+ *     responses:
+ *       200:
+ *         description: Recent reels retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Reel'
+ */
+
+/**
+ * @swagger
+ * /reels/meta/categories:
+ *   get:
+ *     summary: Get all categories
+ *     description: Retrieve list of all unique reel categories
+ *     tags: [Reels]
+ *     responses:
+ *       200:
+ *         description: Categories retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ */
+
+/**
+ * @swagger
+ * /reels/meta/tags:
+ *   get:
+ *     summary: Get all tags
+ *     description: Retrieve list of all unique reel tags
+ *     tags: [Reels]
+ *     responses:
+ *       200:
+ *         description: Tags retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ */
+
+/**
+ * @swagger
+ * /reels/category/{category}:
+ *   get:
+ *     summary: Get reels by category
+ *     description: Retrieve reels filtered by specific category
+ *     tags: [Reels]
+ *     parameters:
+ *       - in: path
+ *         name: category
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Category name
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *     responses:
+ *       200:
+ *         description: Reels retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Reel'
+ *       404:
+ *         description: No reels found for this category
+ */
+
+/**
+ * @swagger
+ * /reels/tags:
+ *   get:
+ *     summary: Get reels by tags
+ *     description: Retrieve reels filtered by one or more tags
+ *     tags: [Reels]
+ *     parameters:
+ *       - in: query
+ *         name: tags
+ *         required: true
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *         description: Comma-separated list of tags
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *     responses:
+ *       200:
+ *         description: Reels retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Reel'
+ */
+
+/**
+ * @swagger
+ * /reels/{id}:
+ *   get:
+ *     summary: Get reel by ID
+ *     description: Retrieve a specific reel by its ID
+ *     tags: [Reels]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Reel ID
+ *     responses:
+ *       200:
+ *         description: Reel retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Reel'
+ *       404:
+ *         description: Reel not found
+ */
+
+/**
+ * @swagger
+ * /reels/{id}/view:
+ *   post:
+ *     summary: Increment view count
+ *     description: Increment the view count for a specific reel
+ *     tags: [Reels]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Reel ID
+ *     responses:
+ *       200:
+ *         description: View count incremented successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     viewCount:
+ *                       type: integer
+ *       404:
+ *         description: Reel not found
+ */
+
+/**
+ * @swagger
+ * /reels/{id}/like:
+ *   post:
+ *     summary: Like reel
+ *     description: Increment the like count for a specific reel
+ *     tags: [Reels]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Reel ID
+ *     responses:
+ *       200:
+ *         description: Reel liked successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     likeCount:
+ *                       type: integer
+ *       404:
+ *         description: Reel not found
+ */
+
+/**
+ * @swagger
+ * /reels/{id}/unlike:
+ *   post:
+ *     summary: Unlike reel
+ *     description: Decrement the like count for a specific reel
+ *     tags: [Reels]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Reel ID
+ *     responses:
+ *       200:
+ *         description: Reel unliked successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     likeCount:
+ *                       type: integer
+ *       404:
+ *         description: Reel not found
+ */
+
+/**
+ * @swagger
+ * /reels:
+ *   post:
+ *     summary: Create reel (Admin only)
+ *     description: Upload and create a new reel with video and optional thumbnail
+ *     tags: [Reels]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - duration
+ *               - video
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 200
+ *                 description: Reel title
+ *               description:
+ *                 type: string
+ *                 maxLength: 1000
+ *                 description: Reel description
+ *               duration:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 180
+ *                 description: Video duration in seconds
+ *               category:
+ *                 type: string
+ *                 maxLength: 50
+ *                 description: Reel category
+ *               tags:
+ *                 type: string
+ *                 description: Comma-separated tags (max 10)
+ *               displayOrder:
+ *                 type: integer
+ *                 description: Display order for sorting
+ *               video:
+ *                 type: string
+ *                 format: binary
+ *                 description: Video file (required)
+ *               thumbnail:
+ *                 type: string
+ *                 format: binary
+ *                 description: Thumbnail image (optional)
+ *     responses:
+ *       201:
+ *         description: Reel created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Reel'
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ */
+
+/**
+ * @swagger
+ * /reels/all/reels:
+ *   get:
+ *     summary: Get all reels (Admin only)
+ *     description: Retrieve all reels including unpublished and inactive ones
+ *     tags: [Reels]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *     responses:
+ *       200:
+ *         description: All reels retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Reel'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ */
+
+/**
+ * @swagger
+ * /reels/stats/overview:
+ *   get:
+ *     summary: Get reel statistics (Admin only)
+ *     description: Retrieve comprehensive statistics about reels
+ *     tags: [Reels]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     totalReels:
+ *                       type: integer
+ *                     publishedReels:
+ *                       type: integer
+ *                     unpublishedReels:
+ *                       type: integer
+ *                     totalViews:
+ *                       type: integer
+ *                     totalLikes:
+ *                       type: integer
+ *                     averageViews:
+ *                       type: number
+ *                     averageLikes:
+ *                       type: number
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ */
+
+/**
+ * @swagger
+ * /reels/{id}:
+ *   patch:
+ *     summary: Update reel (Admin only)
+ *     description: Update an existing reel's details and optionally replace video/thumbnail
+ *     tags: [Reels]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Reel ID
+ *     requestBody:
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 200
+ *               description:
+ *                 type: string
+ *                 maxLength: 1000
+ *               duration:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 180
+ *               category:
+ *                 type: string
+ *                 maxLength: 50
+ *               tags:
+ *                 type: string
+ *                 description: Comma-separated tags
+ *               displayOrder:
+ *                 type: integer
+ *               video:
+ *                 type: string
+ *                 format: binary
+ *               thumbnail:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Reel updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Reel'
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Reel not found
+ */
+
+/**
+ * @swagger
+ * /reels/{id}/publish:
+ *   patch:
+ *     summary: Publish reel (Admin only)
+ *     description: Mark a reel as published and set publication timestamp
+ *     tags: [Reels]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Reel ID
+ *     responses:
+ *       200:
+ *         description: Reel published successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Reel'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Reel not found
+ */
+
+/**
+ * @swagger
+ * /reels/{id}/unpublish:
+ *   patch:
+ *     summary: Unpublish reel (Admin only)
+ *     description: Mark a reel as unpublished
+ *     tags: [Reels]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Reel ID
+ *     responses:
+ *       200:
+ *         description: Reel unpublished successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Reel'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Reel not found
+ */
+
+/**
+ * @swagger
+ * /reels/{id}/deactivate:
+ *   post:
+ *     summary: Deactivate reel (Admin only)
+ *     description: Mark a reel as inactive (soft delete)
+ *     tags: [Reels]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Reel ID
+ *     responses:
+ *       200:
+ *         description: Reel deactivated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Reel not found
+ */
+
+/**
+ * @swagger
+ * /reels/{id}:
+ *   delete:
+ *     summary: Delete reel (Admin only)
+ *     description: Permanently delete a reel and its associated files
+ *     tags: [Reels]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Reel ID
+ *     responses:
+ *       200:
+ *         description: Reel deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Reel not found
  */
 
 export {};

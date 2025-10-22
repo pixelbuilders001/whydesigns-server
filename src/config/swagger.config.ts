@@ -400,6 +400,296 @@ const swaggerDefinition = {
           },
         },
       },
+      Testimonial: {
+        type: 'object',
+        properties: {
+          _id: {
+            type: 'string',
+            description: 'Testimonial ID',
+            example: '64abc123def456789',
+          },
+          userId: {
+            type: 'object',
+            properties: {
+              _id: {
+                type: 'string',
+                example: '64xyz...',
+              },
+              firstName: {
+                type: 'string',
+                example: 'John',
+              },
+              lastName: {
+                type: 'string',
+                example: 'Doe',
+              },
+              email: {
+                type: 'string',
+                example: 'john@example.com',
+              },
+            },
+          },
+          name: {
+            type: 'string',
+            description: 'Name of the person giving testimonial',
+            example: 'John Doe',
+            minLength: 2,
+            maxLength: 100,
+          },
+          email: {
+            type: 'string',
+            format: 'email',
+            description: 'Email address',
+            example: 'john.doe@example.com',
+          },
+          city: {
+            type: 'string',
+            description: 'City name',
+            example: 'New York',
+            minLength: 2,
+            maxLength: 100,
+          },
+          state: {
+            type: 'string',
+            description: 'State name',
+            example: 'NY',
+            minLength: 2,
+            maxLength: 100,
+          },
+          country: {
+            type: 'string',
+            description: 'Country name',
+            example: 'USA',
+            maxLength: 100,
+          },
+          rating: {
+            type: 'integer',
+            description: 'Rating from 1-5 stars',
+            example: 5,
+            minimum: 1,
+            maximum: 5,
+          },
+          message: {
+            type: 'string',
+            description: 'Testimonial message',
+            example: 'Great service and excellent support!',
+            minLength: 10,
+            maxLength: 2000,
+          },
+          designation: {
+            type: 'string',
+            description: 'Job designation',
+            example: 'CEO',
+            maxLength: 100,
+          },
+          company: {
+            type: 'string',
+            description: 'Company name',
+            example: 'Tech Corp',
+            maxLength: 100,
+          },
+          profileImage: {
+            type: 'string',
+            format: 'uri',
+            description: 'Profile image URL',
+            example: 'https://s3.amazonaws.com/bucket/testimonials/profile.jpg',
+          },
+          isFavorite: {
+            type: 'boolean',
+            description: 'Favorite status (admin only)',
+            example: false,
+          },
+          isApproved: {
+            type: 'boolean',
+            description: 'Approval status',
+            example: false,
+          },
+          isActive: {
+            type: 'boolean',
+            description: 'Active status',
+            example: true,
+          },
+          socialMedia: {
+            type: 'object',
+            properties: {
+              facebook: {
+                type: 'string',
+                description: 'Facebook profile URL',
+                example: 'https://facebook.com/johndoe',
+              },
+              instagram: {
+                type: 'string',
+                description: 'Instagram profile URL',
+                example: 'https://instagram.com/johndoe',
+              },
+              twitter: {
+                type: 'string',
+                description: 'Twitter/X profile URL',
+                example: 'https://twitter.com/johndoe',
+              },
+              linkedin: {
+                type: 'string',
+                description: 'LinkedIn profile URL',
+                example: 'https://linkedin.com/in/johndoe',
+              },
+            },
+          },
+          displayOrder: {
+            type: 'integer',
+            description: 'Display order for sorting',
+            example: 0,
+          },
+          fullLocation: {
+            type: 'string',
+            description: 'Full location string',
+            example: 'New York, NY, USA',
+          },
+          createdAt: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Creation timestamp',
+          },
+          updatedAt: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Last update timestamp',
+          },
+        },
+      },
+      Reel: {
+        type: 'object',
+        properties: {
+          _id: {
+            type: 'string',
+            description: 'Reel ID',
+            example: '64abc123def456789',
+          },
+          title: {
+            type: 'string',
+            description: 'Reel title',
+            example: 'Amazing Design Showcase',
+            minLength: 2,
+            maxLength: 200,
+          },
+          description: {
+            type: 'string',
+            description: 'Reel description',
+            example: 'A showcase of modern design principles',
+            maxLength: 1000,
+          },
+          videoUrl: {
+            type: 'string',
+            format: 'uri',
+            description: 'Video file URL',
+            example: 'https://s3.amazonaws.com/bucket/reels/video.mp4',
+          },
+          thumbnailUrl: {
+            type: 'string',
+            format: 'uri',
+            description: 'Thumbnail image URL',
+            example: 'https://s3.amazonaws.com/bucket/reels/thumb.jpg',
+          },
+          duration: {
+            type: 'number',
+            description: 'Video duration in seconds (max 180)',
+            example: 60,
+            minimum: 1,
+            maximum: 180,
+          },
+          fileSize: {
+            type: 'number',
+            description: 'File size in bytes',
+            example: 5242880,
+          },
+          uploadedBy: {
+            type: 'object',
+            properties: {
+              _id: {
+                type: 'string',
+                example: '64xyz...',
+              },
+              firstName: {
+                type: 'string',
+                example: 'John',
+              },
+              lastName: {
+                type: 'string',
+                example: 'Doe',
+              },
+              email: {
+                type: 'string',
+                example: 'admin@example.com',
+              },
+            },
+          },
+          tags: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+            description: 'Tags for categorization (max 10)',
+            example: ['design', 'ui', 'inspiration'],
+          },
+          category: {
+            type: 'string',
+            description: 'Reel category',
+            example: 'UI/UX',
+            maxLength: 50,
+          },
+          viewCount: {
+            type: 'number',
+            description: 'Number of views',
+            example: 1250,
+            minimum: 0,
+          },
+          likeCount: {
+            type: 'number',
+            description: 'Number of likes',
+            example: 85,
+            minimum: 0,
+          },
+          isPublished: {
+            type: 'boolean',
+            description: 'Publication status',
+            example: true,
+          },
+          isActive: {
+            type: 'boolean',
+            description: 'Active status',
+            example: true,
+          },
+          displayOrder: {
+            type: 'number',
+            description: 'Display order for sorting',
+            example: 0,
+          },
+          publishedAt: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Publication timestamp',
+          },
+          fileSizeFormatted: {
+            type: 'string',
+            description: 'Formatted file size',
+            example: '5.00 MB',
+          },
+          durationFormatted: {
+            type: 'string',
+            description: 'Formatted duration',
+            example: '1:00',
+          },
+          createdAt: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Creation timestamp',
+          },
+          updatedAt: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Last update timestamp',
+          },
+        },
+      },
     },
   },
   tags: [
@@ -438,6 +728,14 @@ const swaggerDefinition = {
     {
       name: 'Materials',
       description: 'Downloadable materials management endpoints (PDFs, documents, files)',
+    },
+    {
+      name: 'Testimonials',
+      description: 'Customer testimonial management endpoints with approval workflow',
+    },
+    {
+      name: 'Reels',
+      description: 'Video reel management endpoints for short-form video content',
     },
   ],
 };
