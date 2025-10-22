@@ -31,19 +31,24 @@ export class BlogController {
   });
 
   getAllBlogs = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    const query = req.query as unknown as PaginationQuery & { search?: string; status?: BlogStatus; authorId?: string };
+    const query = req.query as unknown as PaginationQuery & { search?: string; status?: BlogStatus; authorId?: string; isActive?: string };
     const page = parseInt(query.page || '1', 10);
     const limit = parseInt(query.limit || '10', 10);
     const sortBy = query.sortBy || 'createdAt';
     const order = query.order || 'desc';
     const search = query.search;
 
+    // Build filters
+    const filters: any = {};
+    if (query.isActive !== undefined) filters.isActive = query.isActive === 'true';
+    if (query.status) filters.status = query.status;
+    if (query.authorId) filters.authorId = query.authorId;
+
     let result;
     if (search && search.trim() !== '') {
       result = await blogService.searchBlogs(search, { page, limit, sortBy, order });
     } else {
-      // Public endpoint - only show published blogs
-      result = await blogService.getPublishedBlogs({ page, limit, sortBy, order });
+      result = await blogService.getAllBlogs({ page, limit, sortBy, order }, filters);
     }
 
     return ApiResponse.paginated(

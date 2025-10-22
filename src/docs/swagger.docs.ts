@@ -1154,8 +1154,8 @@
  * @swagger
  * /blogs:
  *   get:
- *     summary: Get all published blogs
- *     description: Get paginated list of all published blogs (public access)
+ *     summary: Get all blogs
+ *     description: Get paginated list of blogs with optional filters (public access)
  *     tags: [Blogs]
  *     parameters:
  *       - in: query
@@ -1179,6 +1179,21 @@
  *           type: string
  *           enum: [asc, desc]
  *           default: desc
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *         description: Filter by active status. If not provided, returns all items. If true, returns only active items. If false, returns only inactive items.
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *         description: Filter by blog status (draft, published, etc.)
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search term for filtering blogs
  *     responses:
  *       200:
  *         description: Blogs retrieved successfully
@@ -1506,7 +1521,7 @@
  * /counselors:
  *   get:
  *     summary: Get all counselors
- *     description: Get paginated list of all active counselors. Supports search and filtering by specialty.
+ *     description: Get paginated list of counselors with optional filters. Supports search and filtering by specialty and active status.
  *     tags: [Counselors]
  *     parameters:
  *       - in: query
@@ -1546,11 +1561,10 @@
  *           type: string
  *         description: Filter by specialty
  *       - in: query
- *         name: includeInactive
+ *         name: isActive
  *         schema:
  *           type: boolean
- *           default: false
- *         description: Include inactive counselors (Admin only)
+ *         description: Filter by active status. If not provided, returns all items. If true, returns only active items. If false, returns only inactive items.
  *     responses:
  *       200:
  *         description: Counselors retrieved successfully
@@ -2567,7 +2581,7 @@
  * /materials:
  *   get:
  *     summary: Get all materials
- *     description: Get paginated list of all active materials. Public access - anyone can view and download materials.
+ *     description: Get paginated list of materials with optional filters. Public access - anyone can view and download materials.
  *     tags: [Materials]
  *     parameters:
  *       - in: query
@@ -2597,6 +2611,11 @@
  *           enum: [asc, desc]
  *           default: desc
  *         description: Sort order
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *         description: Filter by active status. If not provided, returns all items. If true, returns only active items. If false, returns only inactive items.
  *     responses:
  *       200:
  *         description: Materials retrieved successfully
@@ -3354,6 +3373,11 @@
  *         name: search
  *         schema:
  *           type: string
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *         description: Filter by active status. If not provided, returns all items. If true, returns only active items. If false, returns only inactive items.
  *     responses:
  *       200:
  *         description: Testimonials retrieved successfully
@@ -4376,7 +4400,7 @@
  * /reels/all/reels:
  *   get:
  *     summary: Get all reels (Admin only)
- *     description: Retrieve all reels including unpublished and inactive ones
+ *     description: Retrieve all reels with optional filters (admin access)
  *     tags: [Reels]
  *     security:
  *       - BearerAuth: []
@@ -4391,6 +4415,26 @@
  *         schema:
  *           type: integer
  *           default: 10
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *         description: Filter by active status. If not provided, returns all items. If true, returns only active items. If false, returns only inactive items.
+ *       - in: query
+ *         name: isPublished
+ *         schema:
+ *           type: boolean
+ *         description: Filter by published status
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *         description: Filter by category
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search term for filtering reels
  *     responses:
  *       200:
  *         description: All reels retrieved successfully

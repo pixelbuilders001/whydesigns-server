@@ -24,13 +24,14 @@ export class MaterialRepository {
   /**
    * Find all materials with pagination
    */
-  async findAll(options: PaginationOptions): Promise<{ items: IMaterial[]; total: number }> {
+  async findAll(options: PaginationOptions, filters: { isActive?: boolean } = {}): Promise<{ items: IMaterial[]; total: number }> {
     const { page, limit, sortBy, order } = options;
     const skip = (page - 1) * limit;
     const sortOrder = order === 'desc' ? -1 : 1;
     const sortOptions: any = { [sortBy]: sortOrder };
 
-    const filter = { isActive: true };
+    const filter: any = {};
+    if (filters.isActive !== undefined) filter.isActive = filters.isActive;
 
     const [items, total] = await Promise.all([
       Material.find(filter)

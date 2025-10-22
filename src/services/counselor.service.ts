@@ -58,11 +58,8 @@ export class CounselorService {
     return counselor;
   }
 
-  async getAllCounselors(options: PaginationOptions, includeInactive = false): Promise<{ counselors: ICounselor[]; total: number }> {
-    if (includeInactive) {
-      return await counselorRepository.findAllWithInactive(options);
-    }
-    return await counselorRepository.findAll(options);
+  async getAllCounselors(options: PaginationOptions, filters: { isActive?: boolean } = {}): Promise<{ counselors: ICounselor[]; total: number }> {
+    return await counselorRepository.findAll(options, filters);
   }
 
   async getCounselorById(id: number): Promise<ICounselor> {

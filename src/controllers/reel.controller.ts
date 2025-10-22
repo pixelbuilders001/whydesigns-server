@@ -77,9 +77,10 @@ class ReelController {
    * @access Private (Admin only)
    */
   getAllReels = asyncHandler(async (req: Request, res: Response) => {
-    const { page, limit, sortBy, sortOrder, isPublished, category, tags, search } = req.query;
+    const { page, limit, sortBy, sortOrder, isPublished, category, tags, search, isActive } = req.query;
 
     const filters: any = {};
+    if (isActive !== undefined) filters.isActive = isActive === 'true';
     if (isPublished !== undefined) filters.isPublished = isPublished === 'true';
     if (category) filters.category = String(category);
     if (tags) filters.tags = String(tags);

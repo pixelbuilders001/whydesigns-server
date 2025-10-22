@@ -36,14 +36,16 @@ export class CounselorController {
   });
 
   getAllCounselors = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    const query = req.query as unknown as PaginationQuery & { search?: string; specialty?: string; includeInactive?: string };
+    const query = req.query as unknown as PaginationQuery & { search?: string; specialty?: string; isActive?: string };
     const page = parseInt(query.page || '1', 10);
     const limit = parseInt(query.limit || '10', 10);
     const sortBy = query.sortBy || 'createdAt';
     const order = query.order || 'desc';
     const search = query.search;
     const specialty = query.specialty;
-    const includeInactive = query.includeInactive === 'true';
+
+    const filters: any = {};
+    if (query.isActive !== undefined) filters.isActive = query.isActive === 'true';
 
     let result;
     if (search && search.trim() !== '') {
@@ -51,7 +53,7 @@ export class CounselorController {
     } else if (specialty && specialty.trim() !== '') {
       result = await counselorService.getCounselorsBySpecialty(specialty, { page, limit, sortBy, order });
     } else {
-      result = await counselorService.getAllCounselors({ page, limit, sortBy, order }, includeInactive);
+      result = await counselorService.getAllCounselors({ page, limit, sortBy, order }, filters);
     }
 
     return ApiResponse.paginated(

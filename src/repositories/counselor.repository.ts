@@ -15,15 +15,16 @@ export class CounselorRepository {
     return await Counselor.findOne({ id, isActive: true });
   }
 
-  async findAll(options: PaginationOptions): Promise<{ counselors: ICounselor[]; total: number }> {
+  async findAll(options: PaginationOptions, filters: { isActive?: boolean } = {}): Promise<{ counselors: ICounselor[]; total: number }> {
     const { page, limit, sortBy, order } = options;
     const skip = (page - 1) * limit;
 
     const sortOrder = order === 'desc' ? -1 : 1;
     const sortOptions: any = { [sortBy]: sortOrder };
 
-    // Build filter - only show active counselors for public view
-    const filter: any = { isActive: true };
+    // Build filter
+    const filter: any = {};
+    if (filters.isActive !== undefined) filter.isActive = filters.isActive;
 
     const [counselors, total] = await Promise.all([
       Counselor.find(filter)
@@ -31,24 +32,6 @@ export class CounselorRepository {
         .skip(skip)
         .limit(limit),
       Counselor.countDocuments(filter),
-    ]);
-
-    return { counselors, total };
-  }
-
-  async findAllWithInactive(options: PaginationOptions): Promise<{ counselors: ICounselor[]; total: number }> {
-    const { page, limit, sortBy, order } = options;
-    const skip = (page - 1) * limit;
-
-    const sortOrder = order === 'desc' ? -1 : 1;
-    const sortOptions: any = { [sortBy]: sortOrder };
-
-    const [counselors, total] = await Promise.all([
-      Counselor.find()
-        .sort(sortOptions)
-        .skip(skip)
-        .limit(limit),
-      Counselor.countDocuments(),
     ]);
 
     return { counselors, total };

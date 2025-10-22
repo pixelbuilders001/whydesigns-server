@@ -56,9 +56,10 @@ class TestimonialController {
    * @access Public
    */
   getAllTestimonials = asyncHandler(async (req: Request, res: Response) => {
-    const { page, limit, sortBy, sortOrder, isApproved, isFavorite, rating, city, state, search } = req.query;
+    const { page, limit, sortBy, sortOrder, isApproved, isFavorite, rating, city, state, search, isActive } = req.query;
 
     const filters: any = {};
+    if (isActive !== undefined) filters.isActive = isActive === 'true';
     if (isApproved !== undefined) filters.isApproved = isApproved === 'true';
     if (isFavorite !== undefined) filters.isFavorite = isFavorite === 'true';
     if (rating) filters.rating = Number(rating);

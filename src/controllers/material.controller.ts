@@ -56,13 +56,16 @@ export class MaterialController {
    * @access Public
    */
   getAll = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    const query = req.query as unknown as PaginationQuery;
+    const query = req.query as unknown as PaginationQuery & { isActive?: string };
     const page = parseInt(query.page || '1', 10);
     const limit = parseInt(query.limit || '10', 10);
     const sortBy = query.sortBy || 'createdAt';
     const order = query.order || 'desc';
 
-    const result = await materialService.getAll({ page, limit, sortBy, order });
+    const filters: any = {};
+    if (query.isActive !== undefined) filters.isActive = query.isActive === 'true';
+
+    const result = await materialService.getAll({ page, limit, sortBy, order }, filters);
 
     return ApiResponse.paginated(
       res,

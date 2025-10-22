@@ -86,8 +86,8 @@ export class MaterialService {
   /**
    * Get all materials with pagination
    */
-  async getAll(options: PaginationOptions): Promise<{ items: IMaterial[]; total: number }> {
-    return await materialRepository.findAll(options);
+  async getAll(options: PaginationOptions, filters: { isActive?: boolean } = {}): Promise<{ items: IMaterial[]; total: number }> {
+    return await materialRepository.findAll(options, filters);
   }
 
   /**
