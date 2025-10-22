@@ -10,13 +10,11 @@ export const createTestimonialSchema = Joi.object({
     'string.empty': 'Email is required',
     'string.email': 'Please provide a valid email address',
   }),
-  city: Joi.string().min(2).max(100).required().messages({
-    'string.empty': 'City is required',
+  city: Joi.string().min(2).max(100).optional().allow('').messages({
     'string.min': 'City must be at least 2 characters long',
     'string.max': 'City cannot exceed 100 characters',
   }),
-  state: Joi.string().min(2).max(100).required().messages({
-    'string.empty': 'State is required',
+  state: Joi.string().min(2).max(100).optional().allow('').messages({
     'string.min': 'State must be at least 2 characters long',
     'string.max': 'State cannot exceed 100 characters',
   }),
@@ -83,11 +81,11 @@ export const updateTestimonialSchema = Joi.object({
   email: Joi.string().email().optional().messages({
     'string.email': 'Please provide a valid email address',
   }),
-  city: Joi.string().min(2).max(100).optional().messages({
+  city: Joi.string().min(2).max(100).optional().allow('').messages({
     'string.min': 'City must be at least 2 characters long',
     'string.max': 'City cannot exceed 100 characters',
   }),
-  state: Joi.string().min(2).max(100).optional().messages({
+  state: Joi.string().min(2).max(100).optional().allow('').messages({
     'string.min': 'State must be at least 2 characters long',
     'string.max': 'State cannot exceed 100 characters',
   }),

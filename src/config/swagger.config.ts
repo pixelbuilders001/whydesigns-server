@@ -444,22 +444,22 @@ const swaggerDefinition = {
           },
           city: {
             type: 'string',
-            description: 'City name',
-            example: 'New York',
+            description: 'City name (optional)',
+            example: 'Mumbai',
             minLength: 2,
             maxLength: 100,
           },
           state: {
             type: 'string',
-            description: 'State name',
-            example: 'NY',
+            description: 'State name (optional)',
+            example: 'Maharashtra',
             minLength: 2,
             maxLength: 100,
           },
           country: {
             type: 'string',
             description: 'Country name',
-            example: 'USA',
+            example: 'India',
             maxLength: 100,
           },
           rating: {
@@ -542,7 +542,7 @@ const swaggerDefinition = {
           fullLocation: {
             type: 'string',
             description: 'Full location string',
-            example: 'New York, NY, USA',
+            example: 'Mumbai, Maharashtra, India',
           },
           createdAt: {
             type: 'string',

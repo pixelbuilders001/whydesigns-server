@@ -3219,8 +3219,6 @@
  *             required:
  *               - name
  *               - email
- *               - city
- *               - state
  *               - rating
  *               - message
  *             properties:
@@ -3237,16 +3235,16 @@
  *                 type: string
  *                 minLength: 2
  *                 maxLength: 100
- *                 description: City name
+ *                 description: City name (optional)
  *               state:
  *                 type: string
  *                 minLength: 2
  *                 maxLength: 100
- *                 description: State name
+ *                 description: State name (optional)
  *               country:
  *                 type: string
  *                 maxLength: 100
- *                 description: Country name (optional, defaults to USA)
+ *                 description: Country name (optional, defaults to India)
  *               rating:
  *                 type: integer
  *                 minimum: 1

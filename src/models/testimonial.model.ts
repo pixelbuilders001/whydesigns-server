@@ -4,8 +4,8 @@ export interface ITestimonial extends Document {
   userId?: mongoose.Types.ObjectId;
   name: string;
   email: string;
-  city: string;
-  state: string;
+  city?: string;
+  state?: string;
   country?: string;
   rating: number;
   message: string;
@@ -55,14 +55,14 @@ const testimonialSchema = new Schema<ITestimonial>(
     },
     city: {
       type: String,
-      required: [true, 'City is required'],
+      required: false,
       trim: true,
       minlength: [2, 'City must be at least 2 characters long'],
       maxlength: [100, 'City cannot exceed 100 characters'],
     },
     state: {
       type: String,
-      required: [true, 'State is required'],
+      required: false,
       trim: true,
       minlength: [2, 'State must be at least 2 characters long'],
       maxlength: [100, 'State cannot exceed 100 characters'],
@@ -70,7 +70,7 @@ const testimonialSchema = new Schema<ITestimonial>(
     country: {
       type: String,
       trim: true,
-      default: 'USA',
+      default: 'India',
       maxlength: [100, 'Country cannot exceed 100 characters'],
     },
     rating: {
