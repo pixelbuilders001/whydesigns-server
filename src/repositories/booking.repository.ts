@@ -8,7 +8,7 @@ export class BookingRepository {
   }
 
   async findById(id: string): Promise<IBooking | null> {
-    return await Booking.findById(id)
+    return await Booking.findOne({ _id: id, isActive: true })
       .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
       .populate('userId', '_id firstName lastName email phoneNumber');
   }
@@ -21,13 +21,13 @@ export class BookingRepository {
     const sortOptions: any = { [sortBy]: sortOrder };
 
     const [bookings, total] = await Promise.all([
-      Booking.find()
+      Booking.find({ isActive: true })
         .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
         .populate('userId', '_id firstName lastName email phoneNumber')
         .sort(sortOptions)
         .skip(skip)
         .limit(limit),
-      Booking.countDocuments(),
+      Booking.countDocuments({ isActive: true }),
     ]);
 
     return { bookings, total };
@@ -44,13 +44,13 @@ export class BookingRepository {
     const sortOptions: any = { [sortBy]: sortOrder };
 
     const [bookings, total] = await Promise.all([
-      Booking.find({ status })
+      Booking.find({ status, isActive: true })
         .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
         .populate('userId', '_id firstName lastName email phoneNumber')
         .sort(sortOptions)
         .skip(skip)
         .limit(limit),
-      Booking.countDocuments({ status }),
+      Booking.countDocuments({ status, isActive: true }),
     ]);
 
     return { bookings, total };
@@ -67,13 +67,13 @@ export class BookingRepository {
     const sortOptions: any = { [sortBy]: sortOrder };
 
     const [bookings, total] = await Promise.all([
-      Booking.find({ counselorId })
+      Booking.find({ counselorId, isActive: true })
         .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
         .populate('userId', '_id firstName lastName email phoneNumber')
         .sort(sortOptions)
         .skip(skip)
         .limit(limit),
-      Booking.countDocuments({ counselorId }),
+      Booking.countDocuments({ counselorId, isActive: true }),
     ]);
 
     return { bookings, total };
@@ -90,13 +90,13 @@ export class BookingRepository {
     const sortOptions: any = { [sortBy]: sortOrder };
 
     const [bookings, total] = await Promise.all([
-      Booking.find({ userId })
+      Booking.find({ userId, isActive: true })
         .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
         .populate('userId', '_id firstName lastName email phoneNumber')
         .sort(sortOptions)
         .skip(skip)
         .limit(limit),
-      Booking.countDocuments({ userId }),
+      Booking.countDocuments({ userId, isActive: true }),
     ]);
 
     return { bookings, total };
@@ -113,13 +113,13 @@ export class BookingRepository {
     const sortOptions: any = { [sortBy]: sortOrder };
 
     const [bookings, total] = await Promise.all([
-      Booking.find({ guestEmail: email.toLowerCase() })
+      Booking.find({ guestEmail: email.toLowerCase(), isActive: true })
         .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
         .populate('userId', '_id firstName lastName email phoneNumber')
         .sort(sortOptions)
         .skip(skip)
         .limit(limit),
-      Booking.countDocuments({ guestEmail: email.toLowerCase() }),
+      Booking.countDocuments({ guestEmail: email.toLowerCase(), isActive: true }),
     ]);
 
     return { bookings, total };
@@ -130,6 +130,7 @@ export class BookingRepository {
     return await Booking.find({
       bookingDate: { $gte: now },
       status: { $in: ['pending', 'confirmed'] },
+      isActive: true,
     })
       .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
       .populate('userId', '_id firstName lastName email phoneNumber')
@@ -143,6 +144,7 @@ export class BookingRepository {
       userId,
       bookingDate: { $gte: now },
       status: { $in: ['pending', 'confirmed'] },
+      isActive: true,
     })
       .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
       .sort({ bookingDate: 1, bookingTime: 1 });
@@ -154,6 +156,7 @@ export class BookingRepository {
       guestEmail: email.toLowerCase(),
       bookingDate: { $gte: now },
       status: { $in: ['pending', 'confirmed'] },
+      isActive: true,
     })
       .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
       .sort({ bookingDate: 1, bookingTime: 1 });
@@ -165,6 +168,7 @@ export class BookingRepository {
       counselorId,
       bookingDate: { $gte: now },
       status: { $in: ['pending', 'confirmed'] },
+      isActive: true,
     })
       .populate('userId', '_id firstName lastName email phoneNumber')
       .sort({ bookingDate: 1, bookingTime: 1 });
@@ -180,6 +184,14 @@ export class BookingRepository {
   }
 
   async delete(id: string): Promise<IBooking | null> {
+    return await Booking.findByIdAndUpdate(
+      id,
+      { isActive: false },
+      { new: true }
+    );
+  }
+
+  async hardDelete(id: string): Promise<IBooking | null> {
     return await Booking.findByIdAndDelete(id);
   }
 
@@ -190,6 +202,7 @@ export class BookingRepository {
       bookingDate,
       bookingTime,
       status: { $in: ['pending', 'confirmed'] },
+      isActive: true,
     });
 
     return !existingBooking; // Available if no existing booking found
@@ -209,15 +222,16 @@ export class BookingRepository {
         $lte: endOfDay,
       },
       status: { $in: ['pending', 'confirmed'] },
+      isActive: true,
     }).sort({ bookingTime: 1 });
   }
 
   async countByStatus(status: BookingStatus): Promise<number> {
-    return await Booking.countDocuments({ status });
+    return await Booking.countDocuments({ status, isActive: true });
   }
 
   async countByCounselor(counselorId: string): Promise<number> {
-    return await Booking.countDocuments({ counselorId });
+    return await Booking.countDocuments({ counselorId, isActive: true });
   }
 
   async getBookingStats(): Promise<{
@@ -229,12 +243,12 @@ export class BookingRepository {
     noShow: number;
   }> {
     const [total, pending, confirmed, cancelled, completed, noShow] = await Promise.all([
-      Booking.countDocuments(),
-      Booking.countDocuments({ status: 'pending' }),
-      Booking.countDocuments({ status: 'confirmed' }),
-      Booking.countDocuments({ status: 'cancelled' }),
-      Booking.countDocuments({ status: 'completed' }),
-      Booking.countDocuments({ status: 'no-show' }),
+      Booking.countDocuments({ isActive: true }),
+      Booking.countDocuments({ status: 'pending', isActive: true }),
+      Booking.countDocuments({ status: 'confirmed', isActive: true }),
+      Booking.countDocuments({ status: 'cancelled', isActive: true }),
+      Booking.countDocuments({ status: 'completed', isActive: true }),
+      Booking.countDocuments({ status: 'no-show', isActive: true }),
     ]);
 
     return {
@@ -259,6 +273,7 @@ export class BookingRepository {
       },
       status: 'confirmed',
       reminderEmailSent: false,
+      isActive: true,
     })
       .populate('counselorId', '_id id fullName title avatarUrl')
       .populate('userId', '_id firstName lastName email phoneNumber');

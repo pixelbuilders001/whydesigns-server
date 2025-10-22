@@ -35,7 +35,7 @@ class TestimonialRepository {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return null;
     }
-    return await Testimonial.findById(id);
+    return await Testimonial.findOne({ _id: id, isActive: true });
   }
 
   /**
@@ -189,9 +189,23 @@ class TestimonialRepository {
   }
 
   /**
-   * Delete testimonial (hard delete)
+   * Delete testimonial (soft delete)
    */
   async delete(id: string): Promise<ITestimonial | null> {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return null;
+    }
+    return await Testimonial.findByIdAndUpdate(
+      id,
+      { isActive: false },
+      { new: true }
+    );
+  }
+
+  /**
+   * Hard delete testimonial
+   */
+  async hardDelete(id: string): Promise<ITestimonial | null> {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return null;
     }

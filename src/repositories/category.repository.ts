@@ -8,15 +8,15 @@ export class CategoryRepository {
   }
 
   async findById(id: string): Promise<ICategory | null> {
-    return await Category.findById(id).populate('createdBy', 'firstName lastName email');
+    return await Category.findOne({ _id: id, isActive: true }).populate('createdBy', 'firstName lastName email');
   }
 
   async findBySlug(slug: string): Promise<ICategory | null> {
-    return await Category.findOne({ slug }).populate('createdBy', 'firstName lastName email');
+    return await Category.findOne({ slug, isActive: true }).populate('createdBy', 'firstName lastName email');
   }
 
   async findByName(name: string): Promise<ICategory | null> {
-    return await Category.findOne({ name });
+    return await Category.findOne({ name, isActive: true });
   }
 
   async findAll(options: PaginationOptions): Promise<{ categories: ICategory[]; total: number }> {
@@ -68,6 +68,14 @@ export class CategoryRepository {
   }
 
   async delete(id: string): Promise<ICategory | null> {
+    return await Category.findByIdAndUpdate(
+      id,
+      { isActive: false },
+      { new: true }
+    ).populate('createdBy', 'firstName lastName email');
+  }
+
+  async hardDelete(id: string): Promise<ICategory | null> {
     return await Category.findByIdAndDelete(id);
   }
 

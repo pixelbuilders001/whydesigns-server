@@ -8,27 +8,27 @@ export class UserRepository {
   }
 
   async findById(id: string): Promise<IUser | null> {
-    return await User.findById(id).populate('roleId');
+    return await User.findOne({ _id: id, isActive: true }).populate('roleId');
   }
 
   async findByIdWithRole(id: string): Promise<IUser | null> {
-    return await User.findById(id).populate('roleId');
+    return await User.findOne({ _id: id, isActive: true }).populate('roleId');
   }
 
   async findByIdWithPassword(id: string): Promise<IUser | null> {
-    return await User.findById(id).select('+password');
+    return await User.findOne({ _id: id, isActive: true }).select('+password');
   }
 
   async findByEmail(email: string): Promise<IUser | null> {
-    return await User.findOne({ email }).populate('roleId');
+    return await User.findOne({ email, isActive: true }).populate('roleId');
   }
 
   async findByEmailWithPassword(email: string): Promise<IUser | null> {
-    return await User.findOne({ email }).select('+password +refreshToken').populate('roleId');
+    return await User.findOne({ email, isActive: true }).select('+password +refreshToken').populate('roleId');
   }
 
   async findByPhone(phoneNumber: string): Promise<IUser | null> {
-    return await User.findOne({ phoneNumber }).populate('roleId');
+    return await User.findOne({ phoneNumber, isActive: true }).populate('roleId');
   }
 
   async findAll(options: PaginationOptions): Promise<{ users: IUser[]; total: number }> {
@@ -39,7 +39,7 @@ export class UserRepository {
     const sortOptions: any = { [sortBy]: sortOrder };
 
     // Build filter
-    const filter: any = {};
+    const filter: any = { isActive: true };
 
     const [users, total] = await Promise.all([
       User.find(filter)
@@ -61,16 +61,24 @@ export class UserRepository {
   }
 
   async delete(id: string): Promise<IUser | null> {
+    return await User.findByIdAndUpdate(
+      id,
+      { isActive: false },
+      { new: true }
+    ).populate('roleId');
+  }
+
+  async hardDelete(id: string): Promise<IUser | null> {
     return await User.findByIdAndDelete(id);
   }
 
   async existsByEmail(email: string): Promise<boolean> {
-    const count = await User.countDocuments({ email });
+    const count = await User.countDocuments({ email, isActive: true });
     return count > 0;
   }
 
   async existsByPhone(phoneNumber: string): Promise<boolean> {
-    const count = await User.countDocuments({ phoneNumber });
+    const count = await User.countDocuments({ phoneNumber, isActive: true });
     return count > 0;
   }
 
@@ -92,7 +100,7 @@ export class UserRepository {
   }
 
   async findByRefreshToken(refreshToken: string): Promise<IUser | null> {
-    return await User.findOne({ refreshToken }).select('+refreshToken').populate('roleId');
+    return await User.findOne({ refreshToken, isActive: true }).select('+refreshToken').populate('roleId');
   }
 
   // Search and filter methods
@@ -104,6 +112,7 @@ export class UserRepository {
     const sortOptions: any = { [sortBy]: sortOrder };
 
     const searchFilter = {
+      isActive: true,
       $or: [
         { firstName: { $regex: query, $options: 'i' } },
         { lastName: { $regex: query, $options: 'i' } },
@@ -132,12 +141,12 @@ export class UserRepository {
     const sortOptions: any = { [sortBy]: sortOrder };
 
     const [users, total] = await Promise.all([
-      User.find({ roleId })
+      User.find({ roleId, isActive: true })
         .populate('roleId')
         .sort(sortOptions)
         .skip(skip)
         .limit(limit),
-      User.countDocuments({ roleId }),
+      User.countDocuments({ roleId, isActive: true }),
     ]);
 
     return { users, total };
@@ -151,12 +160,12 @@ export class UserRepository {
     const sortOptions: any = { [sortBy]: sortOrder };
 
     const [users, total] = await Promise.all([
-      User.find({ provider })
+      User.find({ provider, isActive: true })
         .populate('roleId')
         .sort(sortOptions)
         .skip(skip)
         .limit(limit),
-      User.countDocuments({ provider }),
+      User.countDocuments({ provider, isActive: true }),
     ]);
 
     return { users, total };

@@ -18,7 +18,7 @@ export class MaterialRepository {
    * Find material by ID
    */
   async findById(id: string): Promise<IMaterial | null> {
-    return await Material.findById(id).populate('uploadedBy', 'name email');
+    return await Material.findOne({ _id: id, isActive: true }).populate('uploadedBy', 'name email');
   }
 
   /**
@@ -141,9 +141,20 @@ export class MaterialRepository {
   }
 
   /**
-   * Delete material by ID (hard delete)
+   * Delete material by ID (soft delete)
    */
   async delete(id: string): Promise<IMaterial | null> {
+    return await Material.findByIdAndUpdate(
+      id,
+      { isActive: false },
+      { new: true }
+    ).populate('uploadedBy', 'name email');
+  }
+
+  /**
+   * Hard delete material by ID
+   */
+  async hardDelete(id: string): Promise<IMaterial | null> {
     return await Material.findByIdAndDelete(id);
   }
 

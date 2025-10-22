@@ -27,6 +27,8 @@ export interface IBooking extends Document {
   cancellationReason?: string;
   cancelledAt?: Date;
   cancelledBy?: 'user' | 'admin' | 'counselor';
+  // Soft delete
+  isActive: boolean;
   // Timestamps
   createdAt: Date;
   updatedAt: Date;
@@ -119,6 +121,11 @@ const bookingSchema = new Schema<IBooking>(
     cancelledBy: {
       type: String,
       enum: ['user', 'admin', 'counselor'],
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+      index: true,
     },
   },
   {

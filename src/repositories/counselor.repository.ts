@@ -8,11 +8,11 @@ export class CounselorRepository {
   }
 
   async findById(id: string): Promise<ICounselor | null> {
-    return await Counselor.findById(id);
+    return await Counselor.findOne({ _id: id, isActive: true });
   }
 
   async findByNumericId(id: number): Promise<ICounselor | null> {
-    return await Counselor.findOne({ id });
+    return await Counselor.findOne({ id, isActive: true });
   }
 
   async findAll(options: PaginationOptions): Promise<{ counselors: ICounselor[]; total: number }> {
@@ -69,10 +69,26 @@ export class CounselorRepository {
   }
 
   async delete(id: string): Promise<ICounselor | null> {
-    return await Counselor.findByIdAndDelete(id);
+    return await Counselor.findByIdAndUpdate(
+      id,
+      { isActive: false },
+      { new: true }
+    );
   }
 
   async deleteByNumericId(id: number): Promise<ICounselor | null> {
+    return await Counselor.findOneAndUpdate(
+      { id },
+      { isActive: false },
+      { new: true }
+    );
+  }
+
+  async hardDelete(id: string): Promise<ICounselor | null> {
+    return await Counselor.findByIdAndDelete(id);
+  }
+
+  async hardDeleteByNumericId(id: number): Promise<ICounselor | null> {
     return await Counselor.findOneAndDelete({ id });
   }
 

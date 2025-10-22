@@ -15,12 +15,12 @@ export class BlogRepository {
   }
 
   async findById(id: string): Promise<IBlog | null> {
-    return await Blog.findById(id)
+    return await Blog.findOne({ _id: id, isActive: true })
       .populate('authorId', 'firstName lastName email profilePicture');
   }
 
   async findBySlug(slug: string): Promise<IBlog | null> {
-    return await Blog.findOne({ slug })
+    return await Blog.findOne({ slug, isActive: true })
       .populate('authorId', 'firstName lastName email profilePicture');
   }
 
@@ -85,6 +85,10 @@ export class BlogRepository {
   }
 
   async delete(id: string): Promise<IBlog | null> {
+    return await this.update(id, { isActive: false });
+  }
+
+  async hardDelete(id: string): Promise<IBlog | null> {
     return await Blog.findByIdAndDelete(id);
   }
 
