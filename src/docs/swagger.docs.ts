@@ -3061,4 +3061,662 @@
  *         description: Material not found
  */
 
+/**
+ * @swagger
+ * tags:
+ *   name: Testimonials
+ *   description: Testimonial management endpoints
+ */
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Testimonial:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *           description: Testimonial ID
+ *         userId:
+ *           type: string
+ *           description: User ID who created the testimonial
+ *         name:
+ *           type: string
+ *           description: Name of the person giving testimonial
+ *         email:
+ *           type: string
+ *           description: Email of the person
+ *         city:
+ *           type: string
+ *           description: City
+ *         state:
+ *           type: string
+ *           description: State
+ *         country:
+ *           type: string
+ *           description: Country
+ *         rating:
+ *           type: number
+ *           minimum: 1
+ *           maximum: 5
+ *           description: Rating (1-5 stars)
+ *         message:
+ *           type: string
+ *           description: Testimonial message
+ *         designation:
+ *           type: string
+ *           description: Job designation
+ *         company:
+ *           type: string
+ *           description: Company name
+ *         profileImage:
+ *           type: string
+ *           description: Profile image URL
+ *         isFavorite:
+ *           type: boolean
+ *           description: Is this a favorite testimonial
+ *         isApproved:
+ *           type: boolean
+ *           description: Is this testimonial approved
+ *         isActive:
+ *           type: boolean
+ *           description: Is this testimonial active
+ *         socialMedia:
+ *           type: object
+ *           properties:
+ *             facebook:
+ *               type: string
+ *             instagram:
+ *               type: string
+ *             twitter:
+ *               type: string
+ *             linkedin:
+ *               type: string
+ *         displayOrder:
+ *           type: number
+ *           description: Display order for sorting
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *         fullLocation:
+ *           type: string
+ *           description: Full location (virtual field)
+ *     CreateTestimonialRequest:
+ *       type: object
+ *       required:
+ *         - name
+ *         - email
+ *         - city
+ *         - state
+ *         - rating
+ *         - message
+ *       properties:
+ *         name:
+ *           type: string
+ *           minLength: 2
+ *           maxLength: 100
+ *         email:
+ *           type: string
+ *           format: email
+ *         city:
+ *           type: string
+ *           minLength: 2
+ *           maxLength: 100
+ *         state:
+ *           type: string
+ *           minLength: 2
+ *           maxLength: 100
+ *         country:
+ *           type: string
+ *           maxLength: 100
+ *         rating:
+ *           type: number
+ *           minimum: 1
+ *           maximum: 5
+ *         message:
+ *           type: string
+ *           minLength: 10
+ *           maxLength: 2000
+ *         designation:
+ *           type: string
+ *           maxLength: 100
+ *         company:
+ *           type: string
+ *           maxLength: 100
+ *         profileImage:
+ *           type: string
+ *           format: uri
+ *         socialMedia:
+ *           type: object
+ *           properties:
+ *             facebook:
+ *               type: string
+ *             instagram:
+ *               type: string
+ *             twitter:
+ *               type: string
+ *             linkedin:
+ *               type: string
+ */
+
+/**
+ * @swagger
+ * /testimonials:
+ *   post:
+ *     summary: Create a new testimonial
+ *     description: Create a testimonial (public access - no authentication required). Testimonials require admin approval before being publicly visible.
+ *     tags: [Testimonials]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateTestimonialRequest'
+ *     responses:
+ *       201:
+ *         description: Testimonial created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Testimonial'
+ *       400:
+ *         description: Validation error
+ *   get:
+ *     summary: Get all testimonials with filters
+ *     description: Get testimonials with optional filters (public access)
+ *     tags: [Testimonials]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [createdAt, rating, displayOrder, name]
+ *           default: createdAt
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: desc
+ *       - in: query
+ *         name: isApproved
+ *         schema:
+ *           type: boolean
+ *       - in: query
+ *         name: isFavorite
+ *         schema:
+ *           type: boolean
+ *       - in: query
+ *         name: rating
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 5
+ *       - in: query
+ *         name: city
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: state
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Testimonials retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     testimonials:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Testimonial'
+ *                     total:
+ *                       type: integer
+ *                     page:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ */
+
+/**
+ * @swagger
+ * /testimonials/approved:
+ *   get:
+ *     summary: Get approved testimonials
+ *     description: Get all approved and active testimonials (public)
+ *     tags: [Testimonials]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [createdAt, rating, displayOrder, name]
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *     responses:
+ *       200:
+ *         description: Approved testimonials retrieved successfully
+ */
+
+/**
+ * @swagger
+ * /testimonials/favorites:
+ *   get:
+ *     summary: Get favorite testimonials
+ *     description: Get all favorite testimonials (public)
+ *     tags: [Testimonials]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Favorite testimonials retrieved successfully
+ */
+
+/**
+ * @swagger
+ * /testimonials/search:
+ *   get:
+ *     summary: Search testimonials
+ *     description: Search testimonials by keyword (public)
+ *     tags: [Testimonials]
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         required: true
+ *         schema:
+ *           type: string
+ *           minLength: 2
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Search results retrieved successfully
+ *       400:
+ *         description: Search query required
+ */
+
+/**
+ * @swagger
+ * /testimonials/location:
+ *   get:
+ *     summary: Get testimonials by location
+ *     description: Filter testimonials by city and/or state (public)
+ *     tags: [Testimonials]
+ *     parameters:
+ *       - in: query
+ *         name: city
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: state
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Testimonials retrieved by location
+ */
+
+/**
+ * @swagger
+ * /testimonials/rating/{rating}:
+ *   get:
+ *     summary: Get testimonials by rating
+ *     description: Filter testimonials by rating (public)
+ *     tags: [Testimonials]
+ *     parameters:
+ *       - in: path
+ *         name: rating
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 5
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Testimonials retrieved by rating
+ *       400:
+ *         description: Invalid rating
+ */
+
+/**
+ * @swagger
+ * /testimonials/{id}:
+ *   get:
+ *     summary: Get testimonial by ID
+ *     description: Get a specific testimonial by ID (public)
+ *     tags: [Testimonials]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Testimonial retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Testimonial'
+ *       404:
+ *         description: Testimonial not found
+ *   patch:
+ *     summary: Update testimonial
+ *     description: Update a testimonial (owner or admin only)
+ *     tags: [Testimonials]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               city:
+ *                 type: string
+ *               state:
+ *                 type: string
+ *               rating:
+ *                 type: number
+ *               message:
+ *                 type: string
+ *               designation:
+ *                 type: string
+ *               company:
+ *                 type: string
+ *               socialMedia:
+ *                 type: object
+ *     responses:
+ *       200:
+ *         description: Testimonial updated successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Testimonial not found
+ *   delete:
+ *     summary: Delete testimonial
+ *     description: Delete a testimonial (owner or admin only)
+ *     tags: [Testimonials]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Testimonial deleted successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Testimonial not found
+ */
+
+/**
+ * @swagger
+ * /testimonials/my/testimonials:
+ *   get:
+ *     summary: Get current user's testimonials
+ *     description: Get all testimonials created by the authenticated user
+ *     tags: [Testimonials]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User testimonials retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ */
+
+/**
+ * @swagger
+ * /testimonials/{id}/deactivate:
+ *   post:
+ *     summary: Deactivate testimonial
+ *     description: Soft delete a testimonial (owner or admin only)
+ *     tags: [Testimonials]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Testimonial deactivated successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Testimonial not found
+ */
+
+/**
+ * @swagger
+ * /testimonials/stats/overview:
+ *   get:
+ *     summary: Get testimonial statistics
+ *     description: Get overall testimonial statistics (admin only)
+ *     tags: [Testimonials]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                     approved:
+ *                       type: integer
+ *                     pending:
+ *                       type: integer
+ *                     favorites:
+ *                       type: integer
+ *                     averageRating:
+ *                       type: number
+ *                     ratingDistribution:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ */
+
+/**
+ * @swagger
+ * /testimonials/{id}/favorite:
+ *   patch:
+ *     summary: Toggle favorite status
+ *     description: Mark or unmark testimonial as favorite (admin only)
+ *     tags: [Testimonials]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Favorite status toggled successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Testimonial not found
+ */
+
+/**
+ * @swagger
+ * /testimonials/{id}/approve:
+ *   patch:
+ *     summary: Approve testimonial
+ *     description: Approve a pending testimonial (admin only)
+ *     tags: [Testimonials]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Testimonial approved successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Testimonial not found
+ */
+
+/**
+ * @swagger
+ * /testimonials/{id}/reject:
+ *   patch:
+ *     summary: Reject testimonial
+ *     description: Reject a testimonial (admin only)
+ *     tags: [Testimonials]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Testimonial rejected successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Testimonial not found
+ */
+
 export {};
