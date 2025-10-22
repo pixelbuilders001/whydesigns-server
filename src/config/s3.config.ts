@@ -53,3 +53,19 @@ export const MATERIAL_UPLOAD_CONFIG = {
     'text/xml', // .xml
   ],
 };
+
+// Video upload configuration for Reels
+export const VIDEO_UPLOAD_CONFIG = {
+  maxFileSize: 100 * 1024 * 1024, // 100MB for videos
+  allowedMimeTypes: [
+    'video/mp4',
+    'video/mpeg',
+    'video/quicktime', // .mov
+    'video/x-msvideo', // .avi
+    'video/x-ms-wmv', // .wmv
+    'video/webm',
+    'video/x-flv', // .flv
+    'video/3gpp', // .3gp
+    'video/x-matroska', // .mkv
+  ],
+};

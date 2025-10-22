@@ -1,5 +1,5 @@
 import multer from 'multer';
-import { S3_CONFIG, MATERIAL_UPLOAD_CONFIG } from '../config/s3.config';
+import { S3_CONFIG, MATERIAL_UPLOAD_CONFIG, VIDEO_UPLOAD_CONFIG } from '../config/s3.config';
 import { BadRequestError } from '../utils/AppError';
 
 // Configure multer to use memory storage (store file in buffer)
@@ -62,3 +62,58 @@ export const uploadMaterialSingle = (fieldName: string) => {
 export const uploadMaterialMultiple = (fieldName: string, maxCount: number = 5) => {
   return materialUpload.array(fieldName, maxCount);
 };
+
+// File filter function for videos
+const videoFileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  // Check if file type is allowed for videos
+  if (VIDEO_UPLOAD_CONFIG.allowedMimeTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new BadRequestError(`Invalid video file type. Allowed types: MP4, MOV, AVI, WMV, WebM, FLV, 3GP, MKV`));
+  }
+};
+
+// Create multer upload instance for videos
+export const videoUpload = multer({
+  storage: storage,
+  fileFilter: videoFileFilter,
+  limits: {
+    fileSize: VIDEO_UPLOAD_CONFIG.maxFileSize, // 100MB
+  },
+});
+
+// Single video upload middleware
+export const uploadVideoSingle = (fieldName: string) => {
+  return videoUpload.single(fieldName);
+};
+
+// Upload middleware for reels (video + optional thumbnail)
+export const uploadReelFiles = multer({
+  storage: storage,
+  limits: {
+    fileSize: VIDEO_UPLOAD_CONFIG.maxFileSize, // 100MB for video
+  },
+  fileFilter: (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+    // Check file field name to determine which filter to use
+    if (file.fieldname === 'video') {
+      // Video file
+      if (VIDEO_UPLOAD_CONFIG.allowedMimeTypes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new BadRequestError(`Invalid video file type. Allowed types: MP4, MOV, AVI, WMV, WebM, FLV, 3GP, MKV`));
+      }
+    } else if (file.fieldname === 'thumbnail') {
+      // Thumbnail image
+      if (S3_CONFIG.allowedMimeTypes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new BadRequestError(`Invalid thumbnail file type. Allowed types: ${S3_CONFIG.allowedMimeTypes.join(', ')}`));
+      }
+    } else {
+      cb(new BadRequestError('Invalid field name'));
+    }
+  },
+}).fields([
+  { name: 'video', maxCount: 1 },
+  { name: 'thumbnail', maxCount: 1 },
+]);

@@ -6,6 +6,7 @@ import counselorRoutes from './counselor.routes';
 import bookingRoutes from './booking.routes';
 import materialRoutes from './material.routes';
 import testimonialRoutes from './testimonial.routes';
+import reelRoutes from './reel.routes';
 
 const router = Router();
 
@@ -26,5 +27,6 @@ router.use('/counselors', counselorRoutes);
 router.use('/bookings', bookingRoutes);
 router.use('/materials', materialRoutes);
 router.use('/testimonials', testimonialRoutes);
+router.use('/reels', reelRoutes);
 
 export default router;

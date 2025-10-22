@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../types';
 import testimonialService from '../services/testimonial.service';
 import { asyncHandler } from '../utils/asyncHandler';
@@ -344,7 +344,7 @@ class TestimonialController {
    * @route GET /api/v1/testimonials/stats/overview
    * @access Private (Admin only)
    */
-  getTestimonialStats = asyncHandler(async (req: Request, res: Response) => {
+  getTestimonialStats = asyncHandler(async (_req: Request, res: Response) => {
     const stats = await testimonialService.getTestimonialStats();
 
     return ApiResponse.success(
