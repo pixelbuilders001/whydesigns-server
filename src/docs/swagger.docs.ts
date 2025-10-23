@@ -4716,4 +4716,374 @@
  *         description: Reel not found
  */
 
+// ============================================================================
+// LEADS
+// ============================================================================
+
+/**
+ * @swagger
+ * /leads:
+ *   post:
+ *     summary: Create a new lead
+ *     description: Create a new lead (Public endpoint for lead generation forms)
+ *     tags: [Leads]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - fullName
+ *               - email
+ *               - phone
+ *               - areaOfInterest
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
+ *                 example: John Doe
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: john.doe@example.com
+ *               phone:
+ *                 type: string
+ *                 example: +1234567890
+ *               areaOfInterest:
+ *                 type: string
+ *                 maxLength: 200
+ *                 example: Web Design
+ *     responses:
+ *       201:
+ *         description: Lead created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Lead'
+ *       400:
+ *         description: Validation error or email already exists
+ */
+
+/**
+ * @swagger
+ * /leads:
+ *   get:
+ *     summary: Get all leads (Admin only)
+ *     description: Retrieve all leads with filtering and pagination
+ *     tags: [Leads]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Items per page
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [createdAt, fullName, email, areaOfInterest]
+ *           default: createdAt
+ *         description: Field to sort by
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: desc
+ *         description: Sort order
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *         description: Filter by active status
+ *       - in: query
+ *         name: areaOfInterest
+ *         schema:
+ *           type: string
+ *         description: Filter by area of interest
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search in fullName and areaOfInterest
+ *     responses:
+ *       200:
+ *         description: Leads retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     leads:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Lead'
+ *                     total:
+ *                       type: integer
+ *                     page:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ */
+
+/**
+ * @swagger
+ * /leads/stats/overview:
+ *   get:
+ *     summary: Get lead statistics (Admin only)
+ *     description: Get statistics about leads (total, active, inactive)
+ *     tags: [Leads]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                       example: 100
+ *                     active:
+ *                       type: integer
+ *                       example: 85
+ *                     inactive:
+ *                       type: integer
+ *                       example: 15
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ */
+
+/**
+ * @swagger
+ * /leads/{id}:
+ *   get:
+ *     summary: Get lead by ID (Admin only)
+ *     description: Retrieve a single lead by ID
+ *     tags: [Leads]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Lead ID
+ *     responses:
+ *       200:
+ *         description: Lead retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Lead'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Lead not found
+ */
+
+/**
+ * @swagger
+ * /leads/{id}:
+ *   put:
+ *     summary: Update lead (Admin only)
+ *     description: Update a lead's information
+ *     tags: [Leads]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Lead ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
+ *                 example: John Doe
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: john.doe@example.com
+ *               phone:
+ *                 type: string
+ *                 example: +1234567890
+ *               areaOfInterest:
+ *                 type: string
+ *                 maxLength: 200
+ *                 example: Web Design
+ *     responses:
+ *       200:
+ *         description: Lead updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Lead'
+ *       400:
+ *         description: Validation error or email already exists
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Lead not found
+ */
+
+/**
+ * @swagger
+ * /leads/{id}:
+ *   delete:
+ *     summary: Delete lead (Admin only)
+ *     description: Permanently delete a lead
+ *     tags: [Leads]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Lead ID
+ *     responses:
+ *       200:
+ *         description: Lead deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Lead not found
+ */
+
+/**
+ * @swagger
+ * /leads/{id}/status:
+ *   patch:
+ *     summary: Update lead active status (Admin only)
+ *     description: Update the isActive status of a lead
+ *     tags: [Leads]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Lead ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - isActive
+ *             properties:
+ *               isActive:
+ *                 type: boolean
+ *                 example: false
+ *     responses:
+ *       200:
+ *         description: Lead status updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Lead'
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Lead not found
+ */
+
 export {};

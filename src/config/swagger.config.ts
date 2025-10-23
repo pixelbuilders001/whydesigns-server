@@ -690,6 +690,55 @@ const swaggerDefinition = {
           },
         },
       },
+      Lead: {
+        type: 'object',
+        properties: {
+          _id: {
+            type: 'string',
+            description: 'Lead ID',
+            example: '64abc123def456789',
+          },
+          fullName: {
+            type: 'string',
+            description: 'Full name of the lead',
+            example: 'John Doe',
+            minLength: 2,
+            maxLength: 100,
+          },
+          email: {
+            type: 'string',
+            format: 'email',
+            description: 'Email address',
+            example: 'john.doe@example.com',
+          },
+          phone: {
+            type: 'string',
+            description: 'Phone number with country code',
+            example: '+1234567890',
+          },
+          areaOfInterest: {
+            type: 'string',
+            description: 'Area of interest',
+            example: 'Web Design',
+            maxLength: 200,
+          },
+          isActive: {
+            type: 'boolean',
+            description: 'Active status',
+            example: true,
+          },
+          createdAt: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Creation timestamp',
+          },
+          updatedAt: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Last update timestamp',
+          },
+        },
+      },
     },
   },
   tags: [
@@ -736,6 +785,10 @@ const swaggerDefinition = {
     {
       name: 'Reels',
       description: 'Video reel management endpoints for short-form video content',
+    },
+    {
+      name: 'Leads',
+      description: 'Lead generation and management endpoints for capturing customer inquiries',
     },
   ],
 };

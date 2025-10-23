@@ -22,22 +22,27 @@ class TestimonialController {
       profileImageUrl = await s3Service.uploadFile(req.file, 'testimonials/profiles');
     }
 
-    // Parse socialMedia if provided as JSON string
+    // Parse socialMedia - support both JSON object and form-data format
     let socialMedia;
-    if (req.body['socialMedia.facebook'] || req.body['socialMedia.instagram'] ||
+
+    // Check if socialMedia is already an object (JSON format)
+    if (req.body.socialMedia && typeof req.body.socialMedia === 'object') {
+      socialMedia = req.body.socialMedia;
+    }
+    // Check for form-data format (socialMedia.facebook, socialMedia.instagram, etc.)
+    else if (req.body['socialMedia.facebook'] || req.body['socialMedia.instagram'] ||
         req.body['socialMedia.twitter'] || req.body['socialMedia.linkedin']) {
-      socialMedia = {
-        facebook: req.body['socialMedia.facebook'],
-        instagram: req.body['socialMedia.instagram'],
-        twitter: req.body['socialMedia.twitter'],
-        linkedin: req.body['socialMedia.linkedin'],
-      };
+      socialMedia = {};
+      if (req.body['socialMedia.facebook']) socialMedia.facebook = req.body['socialMedia.facebook'];
+      if (req.body['socialMedia.instagram']) socialMedia.instagram = req.body['socialMedia.instagram'];
+      if (req.body['socialMedia.twitter']) socialMedia.twitter = req.body['socialMedia.twitter'];
+      if (req.body['socialMedia.linkedin']) socialMedia.linkedin = req.body['socialMedia.linkedin'];
     }
 
     const testimonialData = {
       ...req.body,
       profileImage: profileImageUrl,
-      socialMedia,
+      ...(socialMedia && { socialMedia }),
     };
 
     const testimonial = await testimonialService.createTestimonial(userId, testimonialData);
@@ -268,16 +273,21 @@ class TestimonialController {
       profileImageUrl = await s3Service.uploadFile(req.file, 'testimonials/profiles');
     }
 
-    // Parse socialMedia if provided as JSON string
+    // Parse socialMedia - support both JSON object and form-data format
     let socialMedia;
-    if (req.body['socialMedia.facebook'] || req.body['socialMedia.instagram'] ||
+
+    // Check if socialMedia is already an object (JSON format)
+    if (req.body.socialMedia && typeof req.body.socialMedia === 'object') {
+      socialMedia = req.body.socialMedia;
+    }
+    // Check for form-data format (socialMedia.facebook, socialMedia.instagram, etc.)
+    else if (req.body['socialMedia.facebook'] || req.body['socialMedia.instagram'] ||
         req.body['socialMedia.twitter'] || req.body['socialMedia.linkedin']) {
-      socialMedia = {
-        facebook: req.body['socialMedia.facebook'],
-        instagram: req.body['socialMedia.instagram'],
-        twitter: req.body['socialMedia.twitter'],
-        linkedin: req.body['socialMedia.linkedin'],
-      };
+      socialMedia = {};
+      if (req.body['socialMedia.facebook']) socialMedia.facebook = req.body['socialMedia.facebook'];
+      if (req.body['socialMedia.instagram']) socialMedia.instagram = req.body['socialMedia.instagram'];
+      if (req.body['socialMedia.twitter']) socialMedia.twitter = req.body['socialMedia.twitter'];
+      if (req.body['socialMedia.linkedin']) socialMedia.linkedin = req.body['socialMedia.linkedin'];
     }
 
     const updateData = {
