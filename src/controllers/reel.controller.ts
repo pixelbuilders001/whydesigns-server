@@ -73,8 +73,8 @@ class ReelController {
 
   /**
    * Get all reels with filters
-   * @route GET /api/v1/reels/all
-   * @access Private (Admin only)
+   * @route GET /api/v1/reels
+   * @access Public (Use query params like isPublished=true, isActive=true to filter)
    */
   getAllReels = asyncHandler(async (req: Request, res: Response) => {
     const { page, limit, sortBy, sortOrder, isPublished, category, tags, search, isActive } = req.query;

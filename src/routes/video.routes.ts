@@ -18,11 +18,11 @@ const router = Router();
  * Public routes
  */
 
-// Get published videos
+// Get all videos with filters (use isPublished=true for published videos)
 router.get(
   '/',
   validateQuery(getVideosQuerySchema),
-  videoController.getPublishedVideos
+  videoController.getAllVideos
 );
 
 // Search videos
@@ -119,15 +119,6 @@ router.post(
   authorize('ADMIN'),
   uploadVideoFiles,
   videoController.createVideo
-);
-
-// Get all videos (including unpublished)
-router.get(
-  '/all/videos',
-  authenticate,
-  authorize('ADMIN'),
-  validateQuery(getVideosQuerySchema),
-  videoController.getAllVideos
 );
 
 // Get statistics

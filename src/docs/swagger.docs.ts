@@ -3224,6 +3224,138 @@
  *               type: string
  *             linkedin:
  *               type: string
+ *     Reel:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *           description: Reel ID
+ *         title:
+ *           type: string
+ *           description: Reel title
+ *         description:
+ *           type: string
+ *           description: Reel description
+ *         videoUrl:
+ *           type: string
+ *           description: Video URL
+ *         thumbnailUrl:
+ *           type: string
+ *           description: Thumbnail URL
+ *         duration:
+ *           type: integer
+ *           description: Video duration in seconds
+ *         fileSize:
+ *           type: integer
+ *           description: File size in bytes
+ *         uploadedBy:
+ *           type: object
+ *           description: User who uploaded the reel
+ *         tags:
+ *           type: array
+ *           items:
+ *             type: string
+ *           description: Reel tags
+ *         category:
+ *           type: string
+ *           description: Reel category
+ *         viewCount:
+ *           type: integer
+ *           description: Number of views
+ *         likeCount:
+ *           type: integer
+ *           description: Number of likes
+ *         isPublished:
+ *           type: boolean
+ *           description: Is this reel published
+ *         publishedAt:
+ *           type: string
+ *           format: date-time
+ *           description: Date when reel was published
+ *         isActive:
+ *           type: boolean
+ *           description: Is this reel active
+ *         displayOrder:
+ *           type: integer
+ *           description: Display order for sorting
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *         fileSizeFormatted:
+ *           type: string
+ *           description: Formatted file size (virtual field)
+ *         durationFormatted:
+ *           type: string
+ *           description: Formatted duration (virtual field)
+ *     Video:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *           description: Video ID
+ *         title:
+ *           type: string
+ *           description: Video title
+ *         description:
+ *           type: string
+ *           description: Video description
+ *         videoUrl:
+ *           type: string
+ *           description: Video URL
+ *         thumbnailUrl:
+ *           type: string
+ *           description: Thumbnail URL
+ *         duration:
+ *           type: integer
+ *           description: Video duration in seconds
+ *         fileSize:
+ *           type: integer
+ *           description: File size in bytes
+ *         uploadedBy:
+ *           type: object
+ *           description: User who uploaded the video
+ *         tags:
+ *           type: array
+ *           items:
+ *             type: string
+ *           description: Video tags
+ *         category:
+ *           type: string
+ *           description: Video category
+ *         viewCount:
+ *           type: integer
+ *           description: Number of views
+ *         likeCount:
+ *           type: integer
+ *           description: Number of likes
+ *         isPublished:
+ *           type: boolean
+ *           description: Is this video published
+ *         publishedAt:
+ *           type: string
+ *           format: date-time
+ *           description: Date when video was published
+ *         isActive:
+ *           type: boolean
+ *           description: Is this video active
+ *         displayOrder:
+ *           type: integer
+ *           description: Display order for sorting
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *         fileSizeFormatted:
+ *           type: string
+ *           description: Formatted file size (virtual field)
+ *         durationFormatted:
+ *           type: string
+ *           description: Formatted duration (virtual field)
  */
 
 /**
@@ -3904,8 +4036,8 @@
  * @swagger
  * /reels:
  *   get:
- *     summary: Get published reels
- *     description: Retrieve all published and active reels with pagination and filtering
+ *     summary: Get all reels with filters
+ *     description: Retrieve reels with optional filtering by published status, active status, category, etc. Use isPublished=true to get only published reels.
  *     tags: [Reels]
  *     parameters:
  *       - in: query
@@ -3932,6 +4064,26 @@
  *           type: string
  *           enum: [asc, desc]
  *         description: Sort order
+ *       - in: query
+ *         name: isPublished
+ *         schema:
+ *           type: boolean
+ *         description: Filter by published status
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *         description: Filter by active status. If not provided, returns all items. If true, returns only active items. If false, returns only inactive items.
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *         description: Filter by category
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search term for filtering reels
  *     responses:
  *       200:
  *         description: Reels retrieved successfully
@@ -4434,66 +4586,6 @@
 
 /**
  * @swagger
- * /reels/all/reels:
- *   get:
- *     summary: Get all reels (Admin only)
- *     description: Retrieve all reels with optional filters (admin access)
- *     tags: [Reels]
- *     security:
- *       - BearerAuth: []
- *     parameters:
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           default: 1
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 10
- *       - in: query
- *         name: isActive
- *         schema:
- *           type: boolean
- *         description: Filter by active status. If not provided, returns all items. If true, returns only active items. If false, returns only inactive items.
- *       - in: query
- *         name: isPublished
- *         schema:
- *           type: boolean
- *         description: Filter by published status
- *       - in: query
- *         name: category
- *         schema:
- *           type: string
- *         description: Filter by category
- *       - in: query
- *         name: search
- *         schema:
- *           type: string
- *         description: Search term for filtering reels
- *     responses:
- *       200:
- *         description: All reels retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Reel'
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden (Admin only)
- */
-
-/**
- * @swagger
  * /reels/stats/overview:
  *   get:
  *     summary: Get reel statistics (Admin only)
@@ -4762,8 +4854,8 @@
  * @swagger
  * /videos:
  *   get:
- *     summary: Get published videos
- *     description: Retrieve all published and active videos with pagination and filtering
+ *     summary: Get all videos with filters
+ *     description: Retrieve videos with optional filtering by published status, active status, category, etc. Use isPublished=true to get only published videos.
  *     tags: [Videos]
  *     parameters:
  *       - in: query
@@ -4790,6 +4882,26 @@
  *           type: string
  *           enum: [asc, desc]
  *         description: Sort order
+ *       - in: query
+ *         name: isPublished
+ *         schema:
+ *           type: boolean
+ *         description: Filter by published status
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *         description: Filter by active status. If not provided, returns all items. If true, returns only active items. If false, returns only inactive items.
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *         description: Filter by category
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search term for filtering videos
  *     responses:
  *       200:
  *         description: Videos retrieved successfully
@@ -5283,66 +5395,6 @@
  *                   $ref: '#/components/schemas/Video'
  *       400:
  *         description: Validation error
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden (Admin only)
- */
-
-/**
- * @swagger
- * /videos/all/videos:
- *   get:
- *     summary: Get all videos (Admin only)
- *     description: Retrieve all videos with optional filters (admin access)
- *     tags: [Videos]
- *     security:
- *       - BearerAuth: []
- *     parameters:
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           default: 1
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 10
- *       - in: query
- *         name: isActive
- *         schema:
- *           type: boolean
- *         description: Filter by active status. If not provided, returns all items. If true, returns only active items. If false, returns only inactive items.
- *       - in: query
- *         name: isPublished
- *         schema:
- *           type: boolean
- *         description: Filter by published status
- *       - in: query
- *         name: category
- *         schema:
- *           type: string
- *         description: Filter by category
- *       - in: query
- *         name: search
- *         schema:
- *           type: string
- *         description: Search term for filtering videos
- *     responses:
- *       200:
- *         description: All videos retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Video'
  *       401:
  *         description: Unauthorized
  *       403:

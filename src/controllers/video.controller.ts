@@ -73,8 +73,8 @@ class VideoController {
 
   /**
    * Get all videos with filters
-   * @route GET /api/v1/videos/all
-   * @access Private (Admin only)
+   * @route GET /api/v1/videos
+   * @access Public (Use query params like isPublished=true, isActive=true to filter)
    */
   getAllVideos = asyncHandler(async (req: Request, res: Response) => {
     const { page, limit, sortBy, sortOrder, isPublished, category, tags, search, isActive } = req.query;

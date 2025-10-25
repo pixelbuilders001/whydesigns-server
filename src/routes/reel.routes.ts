@@ -18,11 +18,11 @@ const router = Router();
  * Public routes
  */
 
-// Get published reels
+// Get all reels with filters (use isPublished=true for published reels)
 router.get(
   '/',
   validateQuery(getReelsQuerySchema),
-  reelController.getPublishedReels
+  reelController.getAllReels
 );
 
 // Search reels
@@ -119,15 +119,6 @@ router.post(
   authorize('ADMIN'),
   uploadReelFiles,
   reelController.createReel
-);
-
-// Get all reels (including unpublished)
-router.get(
-  '/all/reels',
-  authenticate,
-  authorize('ADMIN'),
-  validateQuery(getReelsQuerySchema),
-  reelController.getAllReels
 );
 
 // Get statistics
