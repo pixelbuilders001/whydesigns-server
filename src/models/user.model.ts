@@ -29,15 +29,11 @@ const userSchema = new Schema<IUser>(
     firstName: {
       type: String,
       trim: true,
-      minlength: [2, 'First name must be at least 2 characters'],
-      maxlength: [50, 'First name must not exceed 50 characters'],
       default: '',
     },
     lastName: {
       type: String,
       trim: true,
-      minlength: [2, 'Last name must be at least 2 characters'],
-      maxlength: [50, 'Last name must not exceed 50 characters'],
       default: '',
     },
     roleId: {
@@ -47,14 +43,6 @@ const userSchema = new Schema<IUser>(
     },
     dateOfBirth: {
       type: Date,
-      validate: {
-        validator: function (value: Date) {
-          // Only validate if value is provided
-          if (!value) return true;
-          return value < new Date();
-        },
-        message: 'Date of birth must be in the past',
-      },
     },
     email: {
       type: String,
@@ -75,7 +63,6 @@ const userSchema = new Schema<IUser>(
     phoneNumber: {
       type: String,
       trim: true,
-      match: [/^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/, 'Please provide a valid phone number'],
       default: '',
     },
     isEmailVerified: {

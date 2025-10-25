@@ -1,13 +1,11 @@
 import Joi from 'joi';
 
 export const registerSchema = Joi.object({
-  firstName: Joi.string().min(2).max(50).optional().allow('').messages({
-    'string.min': 'First name must be at least 2 characters',
-    'string.max': 'First name must not exceed 50 characters',
+  firstName: Joi.string().optional().allow('').messages({
+    'string.base': 'First name must be a string',
   }),
-  lastName: Joi.string().min(2).max(50).optional().allow('').messages({
-    'string.min': 'Last name must be at least 2 characters',
-    'string.max': 'Last name must not exceed 50 characters',
+  lastName: Joi.string().optional().allow('').messages({
+    'string.base': 'Last name must be a string',
   }),
   email: Joi.string().email().required().messages({
     'string.empty': 'Email is required',
@@ -17,22 +15,17 @@ export const registerSchema = Joi.object({
     'string.empty': 'Password is required',
     'string.min': 'Password must be at least 6 characters',
   }),
-  phoneNumber: Joi.string()
-    .pattern(/^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/)
-    .optional()
-    .allow('')
-    .messages({
-      'string.pattern.base': 'Please provide a valid phone number',
-    }),
-  dateOfBirth: Joi.date().max('now').optional().messages({
-    'date.base': 'Please provide a valid date of birth',
-    'date.max': 'Date of birth must be in the past',
+  phoneNumber: Joi.string().optional().allow('').messages({
+    'string.base': 'Phone number must be a string',
   }),
-  gender: Joi.string().valid('male', 'female', 'other').optional().messages({
-    'any.only': 'Gender must be male, female, or other',
+  dateOfBirth: Joi.date().optional().messages({
+    'date.base': 'Please provide a valid date of birth',
+  }),
+  gender: Joi.string().optional().messages({
+    'string.base': 'Gender must be a string',
   }),
   address: Joi.string().optional().allow(''),
-  profilePicture: Joi.string().uri().optional().allow(''),
+  profilePicture: Joi.string().optional().allow(''),
 });
 
 export const loginSchema = Joi.object({

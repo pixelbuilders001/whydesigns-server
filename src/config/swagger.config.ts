@@ -73,7 +73,6 @@ const swaggerDefinition = {
           },
           gender: {
             type: 'string',
-            enum: ['male', 'female', 'other'],
             description: 'User gender',
             example: 'male',
           },
@@ -140,16 +139,12 @@ const swaggerDefinition = {
         properties: {
           firstName: {
             type: 'string',
-            minLength: 2,
-            maxLength: 50,
-            description: 'Optional - First name (min 2, max 50 characters)',
+            description: 'Optional - First name',
             example: 'John',
           },
           lastName: {
             type: 'string',
-            minLength: 2,
-            maxLength: 50,
-            description: 'Optional - Last name (min 2, max 50 characters)',
+            description: 'Optional - Last name',
             example: 'Doe',
           },
           email: {
@@ -166,7 +161,7 @@ const swaggerDefinition = {
           },
           phoneNumber: {
             type: 'string',
-            description: 'Optional - Phone number with country code',
+            description: 'Optional - Phone number',
             example: '+1234567890',
           },
           dateOfBirth: {
@@ -177,8 +172,7 @@ const swaggerDefinition = {
           },
           gender: {
             type: 'string',
-            enum: ['male', 'female', 'other'],
-            description: 'Optional - Gender (male, female, or other)',
+            description: 'Optional - Gender',
             example: 'male',
           },
           address: {
@@ -188,7 +182,6 @@ const swaggerDefinition = {
           },
           profilePicture: {
             type: 'string',
-            format: 'uri',
             description: 'Optional - Profile picture URL',
             example: 'https://example.com/profile.jpg',
           },
