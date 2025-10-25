@@ -4716,6 +4716,864 @@
  *         description: Reel not found
  */
 
+
+// ============================================================================
+// VIDEOS
+// ============================================================================
+
+/**
+ * @swagger
+ * /videos:
+ *   get:
+ *     summary: Get published videos
+ *     description: Retrieve all published and active videos with pagination and filtering
+ *     tags: [Videos]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of items per page
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [createdAt, publishedAt, viewCount, likeCount]
+ *         description: Field to sort by
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *         description: Sort order
+ *     responses:
+ *       200:
+ *         description: Videos retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Video'
+ *                 meta:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ */
+
+/**
+ * @swagger
+ * /videos/search:
+ *   get:
+ *     summary: Search videos
+ *     description: Search videos by title, description, or tags
+ *     tags: [Videos]
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Search query
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *     responses:
+ *       200:
+ *         description: Search results retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Video'
+ */
+
+/**
+ * @swagger
+ * /videos/trending/most-viewed:
+ *   get:
+ *     summary: Get most viewed videos
+ *     description: Retrieve videos sorted by view count
+ *     tags: [Videos]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of videos to retrieve
+ *     responses:
+ *       200:
+ *         description: Most viewed videos retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Video'
+ */
+
+/**
+ * @swagger
+ * /videos/trending/most-liked:
+ *   get:
+ *     summary: Get most liked videos
+ *     description: Retrieve videos sorted by like count
+ *     tags: [Videos]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of videos to retrieve
+ *     responses:
+ *       200:
+ *         description: Most liked videos retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Video'
+ */
+
+/**
+ * @swagger
+ * /videos/trending/recent:
+ *   get:
+ *     summary: Get recent videos
+ *     description: Retrieve recently published videos
+ *     tags: [Videos]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of videos to retrieve
+ *     responses:
+ *       200:
+ *         description: Recent videos retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Video'
+ */
+
+/**
+ * @swagger
+ * /videos/meta/categories:
+ *   get:
+ *     summary: Get all categories
+ *     description: Retrieve list of all unique video categories
+ *     tags: [Videos]
+ *     responses:
+ *       200:
+ *         description: Categories retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ */
+
+/**
+ * @swagger
+ * /videos/meta/tags:
+ *   get:
+ *     summary: Get all tags
+ *     description: Retrieve list of all unique video tags
+ *     tags: [Videos]
+ *     responses:
+ *       200:
+ *         description: Tags retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ */
+
+/**
+ * @swagger
+ * /videos/category/{category}:
+ *   get:
+ *     summary: Get videos by category
+ *     description: Retrieve videos filtered by specific category
+ *     tags: [Videos]
+ *     parameters:
+ *       - in: path
+ *         name: category
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Category name
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *     responses:
+ *       200:
+ *         description: Videos retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Video'
+ *       404:
+ *         description: No videos found for this category
+ */
+
+/**
+ * @swagger
+ * /videos/tags:
+ *   get:
+ *     summary: Get videos by tags
+ *     description: Retrieve videos filtered by one or more tags
+ *     tags: [Videos]
+ *     parameters:
+ *       - in: query
+ *         name: tags
+ *         required: true
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *         description: Comma-separated list of tags
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *     responses:
+ *       200:
+ *         description: Videos retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Video'
+ */
+
+/**
+ * @swagger
+ * /videos/{id}:
+ *   get:
+ *     summary: Get video by ID
+ *     description: Retrieve a specific video by its ID
+ *     tags: [Videos]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Video ID
+ *     responses:
+ *       200:
+ *         description: Video retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Video'
+ *       404:
+ *         description: Video not found
+ */
+
+/**
+ * @swagger
+ * /videos/{id}/view:
+ *   post:
+ *     summary: Increment view count
+ *     description: Increment the view count for a specific video
+ *     tags: [Videos]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Video ID
+ *     responses:
+ *       200:
+ *         description: View count incremented successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     viewCount:
+ *                       type: integer
+ *       404:
+ *         description: Video not found
+ */
+
+/**
+ * @swagger
+ * /videos/{id}/like:
+ *   post:
+ *     summary: Like video
+ *     description: Increment the like count for a specific video
+ *     tags: [Videos]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Video ID
+ *     responses:
+ *       200:
+ *         description: Video liked successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     likeCount:
+ *                       type: integer
+ *       404:
+ *         description: Video not found
+ */
+
+/**
+ * @swagger
+ * /videos/{id}/unlike:
+ *   post:
+ *     summary: Unlike video
+ *     description: Decrement the like count for a specific video
+ *     tags: [Videos]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Video ID
+ *     responses:
+ *       200:
+ *         description: Video unliked successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     likeCount:
+ *                       type: integer
+ *       404:
+ *         description: Video not found
+ */
+
+/**
+ * @swagger
+ * /videos:
+ *   post:
+ *     summary: Create video (Admin only)
+ *     description: Upload and create a new video with video and optional thumbnail
+ *     tags: [Videos]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - duration
+ *               - video
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 200
+ *                 description: Video title
+ *               description:
+ *                 type: string
+ *                 maxLength: 2000
+ *                 description: Video description
+ *               duration:
+ *                 type: integer
+ *                 minimum: 1
+ *                 description: Video duration in seconds
+ *               category:
+ *                 type: string
+ *                 maxLength: 50
+ *                 description: Video category
+ *               tags:
+ *                 type: string
+ *                 description: Comma-separated tags (max 20)
+ *               displayOrder:
+ *                 type: integer
+ *                 description: Display order for sorting
+ *               video:
+ *                 type: string
+ *                 format: binary
+ *                 description: Video file (required)
+ *               thumbnail:
+ *                 type: string
+ *                 format: binary
+ *                 description: Thumbnail image (optional)
+ *     responses:
+ *       201:
+ *         description: Video created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Video'
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ */
+
+/**
+ * @swagger
+ * /videos/all/videos:
+ *   get:
+ *     summary: Get all videos (Admin only)
+ *     description: Retrieve all videos with optional filters (admin access)
+ *     tags: [Videos]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *         description: Filter by active status. If not provided, returns all items. If true, returns only active items. If false, returns only inactive items.
+ *       - in: query
+ *         name: isPublished
+ *         schema:
+ *           type: boolean
+ *         description: Filter by published status
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *         description: Filter by category
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search term for filtering videos
+ *     responses:
+ *       200:
+ *         description: All videos retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Video'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ */
+
+/**
+ * @swagger
+ * /videos/stats/overview:
+ *   get:
+ *     summary: Get video statistics (Admin only)
+ *     description: Retrieve comprehensive statistics about videos
+ *     tags: [Videos]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     totalVideos:
+ *                       type: integer
+ *                     publishedVideos:
+ *                       type: integer
+ *                     unpublishedVideos:
+ *                       type: integer
+ *                     totalViews:
+ *                       type: integer
+ *                     totalLikes:
+ *                       type: integer
+ *                     averageViews:
+ *                       type: number
+ *                     averageLikes:
+ *                       type: number
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ */
+
+/**
+ * @swagger
+ * /videos/{id}:
+ *   patch:
+ *     summary: Update video (Admin only)
+ *     description: Update an existing video's details and optionally replace video/thumbnail
+ *     tags: [Videos]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Video ID
+ *     requestBody:
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 200
+ *               description:
+ *                 type: string
+ *                 maxLength: 1000
+ *               duration:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 180
+ *               category:
+ *                 type: string
+ *                 maxLength: 50
+ *               tags:
+ *                 type: string
+ *                 description: Comma-separated tags
+ *               displayOrder:
+ *                 type: integer
+ *               video:
+ *                 type: string
+ *                 format: binary
+ *               thumbnail:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Video updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Video'
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Video not found
+ */
+
+/**
+ * @swagger
+ * /videos/{id}/publish:
+ *   patch:
+ *     summary: Publish video (Admin only)
+ *     description: Mark a video as published and set publication timestamp
+ *     tags: [Videos]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Video ID
+ *     responses:
+ *       200:
+ *         description: Video published successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Video'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Video not found
+ */
+
+/**
+ * @swagger
+ * /videos/{id}/unpublish:
+ *   patch:
+ *     summary: Unpublish video (Admin only)
+ *     description: Mark a video as unpublished
+ *     tags: [Videos]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Video ID
+ *     responses:
+ *       200:
+ *         description: Video unpublished successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Video'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Video not found
+ */
+
+/**
+ * @swagger
+ * /videos/{id}/deactivate:
+ *   post:
+ *     summary: Deactivate video (Admin only)
+ *     description: Mark a video as inactive (soft delete)
+ *     tags: [Videos]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Video ID
+ *     responses:
+ *       200:
+ *         description: Video deactivated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Video not found
+ */
+
+/**
+ * @swagger
+ * /videos/{id}:
+ *   delete:
+ *     summary: Delete video (Admin only)
+ *     description: Permanently delete a video and its associated files
+ *     tags: [Videos]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Video ID
+ *     responses:
+ *       200:
+ *         description: Video deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Video not found
+ */
+
+
 // ============================================================================
 // LEADS
 // ============================================================================

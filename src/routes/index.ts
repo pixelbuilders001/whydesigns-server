@@ -7,6 +7,7 @@ import bookingRoutes from './booking.routes';
 import materialRoutes from './material.routes';
 import testimonialRoutes from './testimonial.routes';
 import reelRoutes from './reel.routes';
+import videoRoutes from './video.routes';
 import leadRoutes from './lead.routes';
 
 const router = Router();
@@ -29,6 +30,7 @@ router.use('/bookings', bookingRoutes);
 router.use('/materials', materialRoutes);
 router.use('/testimonials', testimonialRoutes);
 router.use('/reels', reelRoutes);
+router.use('/videos', videoRoutes);
 router.use('/leads', leadRoutes);
 
 export default router;

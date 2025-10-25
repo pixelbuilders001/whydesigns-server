@@ -117,3 +117,34 @@ export const uploadReelFiles = multer({
   { name: 'video', maxCount: 1 },
   { name: 'thumbnail', maxCount: 1 },
 ]);
+
+// Upload middleware for videos (video + optional thumbnail)
+export const uploadVideoFiles = multer({
+  storage: storage,
+  limits: {
+    fileSize: VIDEO_UPLOAD_CONFIG.maxFileSize, // 100MB for video
+  },
+  fileFilter: (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+    // Check file field name to determine which filter to use
+    if (file.fieldname === 'video') {
+      // Video file
+      if (VIDEO_UPLOAD_CONFIG.allowedMimeTypes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new BadRequestError(`Invalid video file type. Allowed types: MP4, MOV, AVI, WMV, WebM, FLV, 3GP, MKV`));
+      }
+    } else if (file.fieldname === 'thumbnail') {
+      // Thumbnail image
+      if (S3_CONFIG.allowedMimeTypes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new BadRequestError(`Invalid thumbnail file type. Allowed types: ${S3_CONFIG.allowedMimeTypes.join(', ')}`));
+      }
+    } else {
+      cb(new BadRequestError('Invalid field name'));
+    }
+  },
+}).fields([
+  { name: 'video', maxCount: 1 },
+  { name: 'thumbnail', maxCount: 1 },
+]);

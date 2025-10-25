@@ -683,6 +683,139 @@ const swaggerDefinition = {
           },
         },
       },
+      Video: {
+        type: 'object',
+        properties: {
+          _id: {
+            type: 'string',
+            description: 'Video ID',
+            example: '64abc123def456789',
+          },
+          title: {
+            type: 'string',
+            description: 'Video title',
+            example: 'Complete Design Tutorial',
+            minLength: 2,
+            maxLength: 200,
+          },
+          description: {
+            type: 'string',
+            description: 'Video description',
+            example: 'A comprehensive tutorial on modern design techniques',
+            maxLength: 2000,
+          },
+          videoUrl: {
+            type: 'string',
+            format: 'uri',
+            description: 'Video file URL',
+            example: 'https://s3.amazonaws.com/bucket/videos/video.mp4',
+          },
+          thumbnailUrl: {
+            type: 'string',
+            format: 'uri',
+            description: 'Thumbnail image URL',
+            example: 'https://s3.amazonaws.com/bucket/videos/thumb.jpg',
+          },
+          duration: {
+            type: 'number',
+            description: 'Video duration in seconds',
+            example: 300,
+            minimum: 1,
+          },
+          fileSize: {
+            type: 'number',
+            description: 'File size in bytes',
+            example: 52428800,
+          },
+          uploadedBy: {
+            type: 'object',
+            properties: {
+              _id: {
+                type: 'string',
+                example: '64xyz...',
+              },
+              firstName: {
+                type: 'string',
+                example: 'John',
+              },
+              lastName: {
+                type: 'string',
+                example: 'Doe',
+              },
+              email: {
+                type: 'string',
+                example: 'admin@example.com',
+              },
+            },
+          },
+          tags: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+            description: 'Tags for categorization (max 20)',
+            example: ['design', 'tutorial', 'ui', 'ux'],
+          },
+          category: {
+            type: 'string',
+            description: 'Video category',
+            example: 'Tutorials',
+            maxLength: 50,
+          },
+          viewCount: {
+            type: 'number',
+            description: 'Number of views',
+            example: 5000,
+            minimum: 0,
+          },
+          likeCount: {
+            type: 'number',
+            description: 'Number of likes',
+            example: 250,
+            minimum: 0,
+          },
+          isPublished: {
+            type: 'boolean',
+            description: 'Publication status',
+            example: true,
+          },
+          isActive: {
+            type: 'boolean',
+            description: 'Active status',
+            example: true,
+          },
+          displayOrder: {
+            type: 'number',
+            description: 'Display order for sorting',
+            example: 0,
+          },
+          publishedAt: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Publication timestamp',
+          },
+          fileSizeFormatted: {
+            type: 'string',
+            description: 'Formatted file size',
+            example: '50.00 MB',
+          },
+          durationFormatted: {
+            type: 'string',
+            description: 'Formatted duration',
+            example: '5:00',
+          },
+          createdAt: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Creation timestamp',
+          },
+          updatedAt: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Last update timestamp',
+          },
+        },
+      },
       Lead: {
         type: 'object',
         properties: {
@@ -784,6 +917,10 @@ const swaggerDefinition = {
     {
       name: 'Reels',
       description: 'Video reel management endpoints for short-form video content',
+    },
+    {
+      name: 'Videos',
+      description: 'Video management endpoints for full-length video content',
     },
     {
       name: 'Leads',
