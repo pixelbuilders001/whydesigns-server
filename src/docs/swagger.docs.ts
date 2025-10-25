@@ -6189,10 +6189,525 @@ export {};
  *                         active:
  *                           type: integer
  *                           example: 7
+ *                     banners:
+ *                       type: object
+ *                       properties:
+ *                         total:
+ *                           type: integer
+ *                           example: 5
+ *                         published:
+ *                           type: integer
+ *                           example: 1
+ *                         unpublished:
+ *                           type: integer
+ *                           example: 4
+ *                         totalBannersCount:
+ *                           type: integer
+ *                           example: 15
  *                     timestamp:
  *                       type: string
  *                       format: date-time
  *                       example: 2025-10-25T12:00:00.000Z
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ */
+
+// ============================================================================
+// BANNERS
+// ============================================================================
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     BannerItem:
+ *       type: object
+ *       properties:
+ *         imageUrl:
+ *           type: string
+ *           description: Banner image URL
+ *         link:
+ *           type: string
+ *           description: Link where banner redirects (optional)
+ *         altText:
+ *           type: string
+ *           description: Alternative text for image
+ *         displayOrder:
+ *           type: integer
+ *           description: Display order
+ *     Banner:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *           description: Banner group ID
+ *         title:
+ *           type: string
+ *           description: Banner group title
+ *         description:
+ *           type: string
+ *           description: Banner group description
+ *         banners:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/BannerItem'
+ *           description: Array of banner items (1-10 items)
+ *         isPublished:
+ *           type: boolean
+ *           description: Is this banner group published
+ *         publishedAt:
+ *           type: string
+ *           format: date-time
+ *           description: Date when banner group was published
+ *         isActive:
+ *           type: boolean
+ *           description: Is this banner group active
+ *         createdBy:
+ *           type: object
+ *           description: User who created the banner group
+ *         totalBanners:
+ *           type: integer
+ *           description: Total number of banners in the group (virtual field)
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ */
+
+/**
+ * @swagger
+ * /banners:
+ *   get:
+ *     summary: Get all banner groups with filters
+ *     description: Retrieve banner groups with optional filtering by published status, active status, etc. Use isPublished=true to get only published banner groups.
+ *     tags: [Banners]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of items per page
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [createdAt, publishedAt, title]
+ *         description: Field to sort by
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *         description: Sort order
+ *       - in: query
+ *         name: isPublished
+ *         schema:
+ *           type: boolean
+ *         description: Filter by published status
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *         description: Filter by active status
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search term for filtering banner groups
+ *     responses:
+ *       200:
+ *         description: Banner groups retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     banners:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Banner'
+ *                     total:
+ *                       type: integer
+ *                     page:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ */
+
+/**
+ * @swagger
+ * /banners/published:
+ *   get:
+ *     summary: Get published banner group
+ *     description: Retrieve the currently published banner group (only one can be published at a time)
+ *     tags: [Banners]
+ *     responses:
+ *       200:
+ *         description: Published banner group retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Banner'
+ */
+
+/**
+ * @swagger
+ * /banners/{id}:
+ *   get:
+ *     summary: Get banner group by ID
+ *     description: Retrieve a specific banner group by its ID
+ *     tags: [Banners]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Banner group ID
+ *     responses:
+ *       200:
+ *         description: Banner group retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Banner'
+ *       404:
+ *         description: Banner group not found
+ */
+
+/**
+ * @swagger
+ * /banners:
+ *   post:
+ *     summary: Create banner group (Admin only)
+ *     description: Upload multiple banner images and create a banner group (1-10 banners)
+ *     tags: [Banners]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - banners
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
+ *                 description: Banner group title
+ *               description:
+ *                 type: string
+ *                 maxLength: 500
+ *                 description: Banner group description (optional)
+ *               banners:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *                 description: Banner images (1-10 images)
+ *               bannersMetadata:
+ *                 type: string
+ *                 description: JSON string array with metadata for each banner (link, altText, displayOrder)
+ *     responses:
+ *       201:
+ *         description: Banner group created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Banner'
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ */
+
+/**
+ * @swagger
+ * /banners/{id}:
+ *   patch:
+ *     summary: Update banner group (Admin only)
+ *     description: Update banner group details and optionally replace banner images
+ *     tags: [Banners]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Banner group ID
+ *     requestBody:
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
+ *               description:
+ *                 type: string
+ *                 maxLength: 500
+ *               banners:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *                 description: New banner images (optional, replaces existing)
+ *               bannersMetadata:
+ *                 type: string
+ *                 description: JSON string array with metadata for each banner
+ *               isActive:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Banner group updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Banner'
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Banner group not found
+ */
+
+/**
+ * @swagger
+ * /banners/{id}/publish:
+ *   patch:
+ *     summary: Publish banner group (Admin only)
+ *     description: Publish a banner group (automatically unpublishes all other banner groups)
+ *     tags: [Banners]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Banner group ID
+ *     responses:
+ *       200:
+ *         description: Banner group published successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Banner'
+ *       400:
+ *         description: Cannot publish inactive banner group
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Banner group not found
+ */
+
+/**
+ * @swagger
+ * /banners/{id}/unpublish:
+ *   patch:
+ *     summary: Unpublish banner group (Admin only)
+ *     description: Unpublish a banner group
+ *     tags: [Banners]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Banner group ID
+ *     responses:
+ *       200:
+ *         description: Banner group unpublished successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Banner'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Banner group not found
+ */
+
+/**
+ * @swagger
+ * /banners/{id}/deactivate:
+ *   post:
+ *     summary: Deactivate banner group (Admin only)
+ *     description: Mark a banner group as inactive (soft delete)
+ *     tags: [Banners]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Banner group ID
+ *     responses:
+ *       200:
+ *         description: Banner group deactivated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Banner'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Banner group not found
+ */
+
+/**
+ * @swagger
+ * /banners/{id}:
+ *   delete:
+ *     summary: Delete banner group (Admin only)
+ *     description: Permanently delete a banner group and its associated images
+ *     tags: [Banners]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Banner group ID
+ *     responses:
+ *       200:
+ *         description: Banner group deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Banner group not found
+ */
+
+/**
+ * @swagger
+ * /banners/stats/overview:
+ *   get:
+ *     summary: Get banner statistics (Admin only)
+ *     description: Retrieve comprehensive statistics about banner groups
+ *     tags: [Banners]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                       description: Total banner groups
+ *                     published:
+ *                       type: integer
+ *                       description: Published banner groups
+ *                     unpublished:
+ *                       type: integer
+ *                       description: Unpublished banner groups
+ *                     active:
+ *                       type: integer
+ *                       description: Active banner groups
+ *                     inactive:
+ *                       type: integer
+ *                       description: Inactive banner groups
+ *                     totalBannersCount:
+ *                       type: integer
+ *                       description: Total number of individual banners across all groups
  *       401:
  *         description: Unauthorized
  *       403:

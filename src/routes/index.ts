@@ -10,6 +10,7 @@ import reelRoutes from './reel.routes';
 import videoRoutes from './video.routes';
 import leadRoutes from './lead.routes';
 import summaryRoutes from './summary.routes';
+import bannerRoutes from './banner.routes';
 
 const router = Router();
 
@@ -34,5 +35,6 @@ router.use('/reels', reelRoutes);
 router.use('/videos', videoRoutes);
 router.use('/leads', leadRoutes);
 router.use('/summary', summaryRoutes);
+router.use('/banners', bannerRoutes);
 
 export default router;

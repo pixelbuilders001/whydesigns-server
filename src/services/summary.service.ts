@@ -8,6 +8,7 @@ import materialRepository from '../repositories/material.repository';
 import bookingRepository from '../repositories/booking.repository';
 import counselorRepository from '../repositories/counselor.repository';
 import categoryRepository from '../repositories/category.repository';
+import bannerRepository from '../repositories/banner.repository';
 
 class SummaryService {
   /**
@@ -27,6 +28,7 @@ class SummaryService {
         bookingStats,
         counselorStats,
         categoryStats,
+        bannerStats,
       ] = await Promise.all([
         this.getUserStats(),
         this.getBlogStats(),
@@ -38,6 +40,7 @@ class SummaryService {
         this.getBookingStats(),
         this.getCounselorStats(),
         this.getCategoryStats(),
+        this.getBannerStats(),
       ]);
 
       return {
@@ -51,6 +54,7 @@ class SummaryService {
         bookings: bookingStats,
         counselors: counselorStats,
         categories: categoryStats,
+        banners: bannerStats,
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
@@ -146,6 +150,14 @@ class SummaryService {
    */
   private async getCategoryStats(): Promise<any> {
     const stats = await categoryRepository.getStats();
+    return stats;
+  }
+
+  /**
+   * Get banner statistics
+   */
+  private async getBannerStats(): Promise<any> {
+    const stats = await bannerRepository.getStats();
     return stats;
   }
 }
