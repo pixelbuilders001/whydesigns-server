@@ -209,6 +209,48 @@ export class MaterialRepository {
       { $sort: { count: -1 } },
     ]);
   }
+
+  /**
+   * Publish material
+   */
+  async publish(id: string): Promise<IMaterial | null> {
+    return await this.update(id, { isPublished: true, publishedAt: new Date() });
+  }
+
+  /**
+   * Unpublish material
+   */
+  async unpublish(id: string): Promise<IMaterial | null> {
+    return await this.update(id, { isPublished: false });
+  }
+
+  /**
+   * Get material statistics
+   */
+  async getStats(): Promise<any> {
+    const [total, published, unpublished, totalDownloads, categories] = await Promise.all([
+      Material.countDocuments({ isActive: true }),
+      Material.countDocuments({ isActive: true, isPublished: true }),
+      Material.countDocuments({ isActive: true, isPublished: false }),
+      Material.aggregate([
+        { $match: { isActive: true } },
+        { $group: { _id: null, total: { $sum: '$downloadCount' } } },
+      ]),
+      Material.aggregate([
+        { $match: { isActive: true } },
+        { $group: { _id: '$category', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+      ]),
+    ]);
+
+    return {
+      total,
+      published,
+      unpublished,
+      totalDownloads: totalDownloads.length > 0 ? totalDownloads[0].total : 0,
+      categories,
+    };
+  }
 }
 
 export default new MaterialRepository();

@@ -47,7 +47,7 @@ export class BlogService {
       content,
       excerpt: blogExcerpt,
       featuredImage: featuredImage || '',
-      authorId,
+      authorId: authorId as any,
       tags: tags || [],
       status: status || 'draft',
     });
@@ -194,6 +194,29 @@ export class BlogService {
     }
 
     return publishedBlog;
+  }
+
+  async unpublishBlog(id: string, userId: string, userRole: string): Promise<IBlog> {
+    const blog = await blogRepository.findById(id);
+    if (!blog) {
+      throw new NotFoundError('Blog not found');
+    }
+
+    // Check authorization - only author or admin can unpublish
+    if (blog.authorId.toString() !== userId && userRole !== 'ADMIN') {
+      throw new ForbiddenError('You do not have permission to unpublish this blog');
+    }
+
+    if (blog.status !== 'published') {
+      throw new BadRequestError('Blog is not published');
+    }
+
+    const unpublishedBlog = await blogRepository.unpublishBlog(id);
+    if (!unpublishedBlog) {
+      throw new NotFoundError('Blog not found');
+    }
+
+    return unpublishedBlog;
   }
 
   async deleteBlog(id: string, userId: string, userRole: string): Promise<void> {

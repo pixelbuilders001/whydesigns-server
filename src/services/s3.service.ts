@@ -1,4 +1,4 @@
-import { PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { s3Client, S3_CONFIG } from '../config/s3.config';
 import { InternalServerError } from '../utils/AppError';

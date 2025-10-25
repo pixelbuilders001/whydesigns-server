@@ -244,7 +244,7 @@ export class BookingService {
       counselorId = (booking.counselorId as any)._id?.toString() || (booking.counselorId as any).id?.toString();
     } else {
       // It's an ObjectId
-      counselorId = booking.counselorId.toString();
+      counselorId = (booking.counselorId as any).toString();
     }
 
     const counselor = await counselorRepository.findById(counselorId);
@@ -337,7 +337,7 @@ export class BookingService {
     completed: number;
     noShow: number;
   }> {
-    return await bookingRepository.getBookingStats();
+    return await bookingRepository.getStats();
   }
 
   async getCounselorBookingsForDate(counselorId: string, date: Date): Promise<IBooking[]> {

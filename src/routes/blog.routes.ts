@@ -96,6 +96,16 @@ router.post(
   blogController.publishBlog
 );
 
+// Unpublish blog (ADMIN only)
+router.post(
+  '/:id/unpublish',
+  authenticate,
+  authorize('ADMIN'),
+  requireVerification,
+  validateParams(blogIdParamSchema),
+  blogController.unpublishBlog
+);
+
 // Delete blog - hard delete (ADMIN only)
 router.delete(
   '/:id',

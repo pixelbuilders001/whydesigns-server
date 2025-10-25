@@ -10,13 +10,11 @@ export const errorHandler = (
 ) => {
   let statusCode = 500;
   let message = 'Internal Server Error';
-  let isOperational = false;
 
   // Handle custom AppError
   if (err instanceof AppError) {
     statusCode = err.statusCode;
     message = err.message;
-    isOperational = err.isOperational;
   }
 
   // Handle Mongoose validation errors

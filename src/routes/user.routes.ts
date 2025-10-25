@@ -11,7 +11,6 @@ import {
   changePasswordSchema,
   verifyEmailSchema,
   resendOTPSchema,
-  verifyPhoneSchema,
   paginationSchema,
   idParamSchema,
   forgotPasswordSchema,

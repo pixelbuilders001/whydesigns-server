@@ -280,6 +280,30 @@ export class MaterialController {
 
     return ApiResponse.success(res, stats, 'Statistics retrieved successfully');
   });
+
+  /**
+   * Publish material
+   * PATCH /materials/:id/publish
+   * @access Private (Admin only)
+   */
+  publishMaterial = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+    const material = await materialService.publishMaterial(id);
+
+    return ApiResponse.success(res, material, 'Material published successfully');
+  });
+
+  /**
+   * Unpublish material
+   * PATCH /materials/:id/unpublish
+   * @access Private (Admin only)
+   */
+  unpublishMaterial = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+    const material = await materialService.unpublishMaterial(id);
+
+    return ApiResponse.success(res, material, 'Material unpublished successfully');
+  });
 }
 
 export default new MaterialController();

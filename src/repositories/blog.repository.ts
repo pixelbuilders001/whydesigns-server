@@ -11,7 +11,11 @@ export interface BlogFilters {
 export class BlogRepository {
   async create(blogData: Partial<IBlog>): Promise<IBlog> {
     const blog = await Blog.create(blogData);
-    return await this.findById(blog._id);
+    const createdBlog = await this.findById(blog._id);
+    if (!createdBlog) {
+      throw new Error('Failed to create blog');
+    }
+    return createdBlog;
   }
 
   async findById(id: string): Promise<IBlog | null> {
@@ -102,6 +106,10 @@ export class BlogRepository {
 
   async publishBlog(id: string): Promise<IBlog | null> {
     return await this.update(id, { status: 'published', publishedAt: new Date() });
+  }
+
+  async unpublishBlog(id: string): Promise<IBlog | null> {
+    return await this.update(id, { status: 'draft' });
   }
 
   async archiveBlog(id: string): Promise<IBlog | null> {
@@ -212,6 +220,33 @@ export class BlogRepository {
       { $sort: { _id: 1 } },
     ]);
     return result.map((r) => r._id);
+  }
+
+  async getStats(): Promise<any> {
+    const [total, published, draft, archived, totalViews] = await Promise.all([
+      Blog.countDocuments({ isActive: true }),
+      Blog.countDocuments({ status: 'published', isActive: true }),
+      Blog.countDocuments({ status: 'draft', isActive: true }),
+      Blog.countDocuments({ status: 'archived', isActive: true }),
+      Blog.aggregate([
+        { $match: { isActive: true } },
+        { $group: { _id: null, total: { $sum: '$viewCount' } } },
+      ]),
+    ]);
+
+    const avgViews = await Blog.aggregate([
+      { $match: { status: 'published', isActive: true } },
+      { $group: { _id: null, average: { $avg: '$viewCount' } } },
+    ]);
+
+    return {
+      total,
+      published,
+      draft,
+      archived,
+      totalViews: totalViews.length > 0 ? totalViews[0].total : 0,
+      averageViews: avgViews.length > 0 ? avgViews[0].average.toFixed(2) : 0,
+    };
   }
 }
 

@@ -131,7 +131,7 @@ export class BlogController {
 
   getBlogsByTags = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const tagsParam = req.query.tags;
-    const tags = Array.isArray(tagsParam) ? tagsParam : [tagsParam as string];
+    const tags = Array.isArray(tagsParam) ? (tagsParam as string[]) : [tagsParam as string];
 
     const query = req.query as unknown as PaginationQuery;
     const page = parseInt(query.page || '1', 10);
@@ -214,6 +214,20 @@ export class BlogController {
     const blog = await blogService.publishBlog(id, userId, userRole);
 
     return ApiResponse.success(res, blog, 'Blog published successfully');
+  });
+
+  unpublishBlog = asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+    const userId = req.user?.id;
+    const userRole = req.user?.role || '';
+
+    if (!userId) {
+      return ApiResponse.error(res, 'Unauthorized', 401);
+    }
+
+    const blog = await blogService.unpublishBlog(id, userId, userRole);
+
+    return ApiResponse.success(res, blog, 'Blog unpublished successfully');
   });
 
   deleteBlog = asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {

@@ -16,7 +16,9 @@ export interface IMaterial extends Document {
   tags: string[];
   uploadedBy: mongoose.Types.ObjectId;
   downloadCount: number;
+  isPublished: boolean;
   isActive: boolean;
+  publishedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -86,9 +88,18 @@ const materialSchema = new Schema<IMaterial>(
       default: 0,
       min: [0, 'Download count cannot be negative'],
     },
+    isPublished: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
     isActive: {
       type: Boolean,
       default: true,
+    },
+    publishedAt: {
+      type: Date,
+      default: null,
     },
   },
   {
@@ -96,7 +107,7 @@ const materialSchema = new Schema<IMaterial>(
     toJSON: {
       virtuals: true,
       transform: function (doc, ret) {
-        delete ret.__v;
+        delete (ret as any).__v;
         return ret;
       },
     },
@@ -111,12 +122,15 @@ materialSchema.index({ name: 1 });
 materialSchema.index({ category: 1 });
 materialSchema.index({ tags: 1 });
 materialSchema.index({ isActive: 1 });
+materialSchema.index({ isPublished: 1 });
+materialSchema.index({ publishedAt: -1 });
 materialSchema.index({ createdAt: -1 });
 materialSchema.index({ uploadedBy: 1 });
 materialSchema.index({ fileType: 1 });
 
 // Compound index for category + active
 materialSchema.index({ category: 1, isActive: 1 });
+materialSchema.index({ isPublished: 1, isActive: 1 });
 
 // Text index for search functionality
 materialSchema.index({ name: 'text', description: 'text', tags: 'text' });
@@ -137,6 +151,14 @@ materialSchema.virtual('uploader', {
   localField: 'uploadedBy',
   foreignField: '_id',
   justOne: true,
+});
+
+// Pre-save hook to set publishedAt when publishing
+materialSchema.pre('save', function (next) {
+  if (this.isModified('isPublished') && this.isPublished && !this.publishedAt) {
+    this.publishedAt = new Date();
+  }
+  next();
 });
 
 /**

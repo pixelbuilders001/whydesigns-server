@@ -193,6 +193,23 @@ export class CounselorRepository {
     });
     return Array.from(specialtiesSet).sort();
   }
+
+  async getStats(): Promise<any> {
+    const [total, active, inactive] = await Promise.all([
+      Counselor.countDocuments(),
+      Counselor.countDocuments({ isActive: true }),
+      Counselor.countDocuments({ isActive: false }),
+    ]);
+
+    const avgRating = await this.getAverageRating();
+
+    return {
+      total,
+      active,
+      inactive,
+      averageRating: avgRating.toFixed(2),
+    };
+  }
 }
 
 export default new CounselorRepository();

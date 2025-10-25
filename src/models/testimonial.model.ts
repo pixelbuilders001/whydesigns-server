@@ -13,8 +13,9 @@ export interface ITestimonial extends Document {
   company?: string;
   profileImage?: string;
   isFavorite: boolean;
-  isApproved: boolean;
+  isPublished: boolean;
   isActive: boolean;
+  publishedAt?: Date;
   socialMedia?: {
     facebook?: string;
     instagram?: string;
@@ -106,7 +107,7 @@ const testimonialSchema = new Schema<ITestimonial>(
       default: false,
       index: true,
     },
-    isApproved: {
+    isPublished: {
       type: Boolean,
       default: false,
       index: true,
@@ -115,6 +116,10 @@ const testimonialSchema = new Schema<ITestimonial>(
       type: Boolean,
       default: true,
       index: true,
+    },
+    publishedAt: {
+      type: Date,
+      default: null,
     },
     socialMedia: {
       facebook: {
@@ -171,7 +176,8 @@ testimonialSchema.virtual('fullLocation').get(function () {
 // Indexes for better query performance
 testimonialSchema.index({ rating: -1 });
 testimonialSchema.index({ createdAt: -1 });
-testimonialSchema.index({ isFavorite: 1, isApproved: 1, isActive: 1 });
+testimonialSchema.index({ publishedAt: -1 });
+testimonialSchema.index({ isFavorite: 1, isPublished: 1, isActive: 1 });
 testimonialSchema.index({ city: 1, state: 1 });
 testimonialSchema.index({ name: 'text', message: 'text' });
 
@@ -189,6 +195,14 @@ testimonialSchema.pre('findOne', function (next) {
     path: 'userId',
     select: 'firstName lastName email profilePicture',
   });
+  next();
+});
+
+// Pre-save hook to set publishedAt when publishing
+testimonialSchema.pre('save', function (next) {
+  if (this.isModified('isPublished') && this.isPublished && !this.publishedAt) {
+    this.publishedAt = new Date();
+  }
   next();
 });
 

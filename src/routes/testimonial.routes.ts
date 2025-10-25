@@ -19,11 +19,11 @@ const router = Router();
  * Public routes
  */
 
-// Get approved testimonials (public view)
+// Get published testimonials (public view)
 router.get(
-  '/approved',
+  '/published',
   validateQuery(getTestimonialsQuerySchema),
-  testimonialController.getApprovedTestimonials
+  testimonialController.getPublishedTestimonials
 );
 
 // Get favorite testimonials
@@ -135,22 +135,22 @@ router.patch(
   testimonialController.toggleFavorite
 );
 
-// Approve testimonial
+// Publish testimonial
 router.patch(
-  '/:id/approve',
+  '/:id/publish',
   authenticate,
   authorize('ADMIN'),
   validateParams(testimonialIdParamSchema),
-  testimonialController.approveTestimonial
+  testimonialController.publishTestimonial
 );
 
-// Reject testimonial
+// Unpublish testimonial
 router.patch(
-  '/:id/reject',
+  '/:id/unpublish',
   authenticate,
   authorize('ADMIN'),
   validateParams(testimonialIdParamSchema),
-  testimonialController.rejectTestimonial
+  testimonialController.unpublishTestimonial
 );
 
 export default router;

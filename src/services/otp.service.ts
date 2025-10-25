@@ -1,6 +1,6 @@
-import { OTP, IOTP } from '../models/otp.model';
+import { OTP } from '../models/otp.model';
 import emailService from './email.service';
-import { BadRequestError, NotFoundError } from '../utils/AppError';
+import { BadRequestError } from '../utils/AppError';
 import crypto from 'crypto';
 
 export class OTPService {

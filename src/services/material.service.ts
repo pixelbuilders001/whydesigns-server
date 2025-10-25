@@ -1,7 +1,7 @@
 import materialRepository from '../repositories/material.repository';
 import { IMaterial } from '../models/material.model';
 import { PaginationOptions } from '../types';
-import { NotFoundError, BadRequestError } from '../utils/AppError';
+import { NotFoundError, BadRequestError, AppError } from '../utils/AppError';
 
 /**
  * Interface for creating a material
@@ -257,6 +257,48 @@ export class MaterialService {
    */
   async getCategoryStats(): Promise<{ category: string; count: number }[]> {
     return await materialRepository.getCountByCategory();
+  }
+
+  /**
+   * Publish material (Admin only)
+   */
+  async publishMaterial(id: string): Promise<IMaterial> {
+    const material = await materialRepository.findById(id);
+    if (!material) {
+      throw new AppError('Material not found', 404);
+    }
+
+    if (material.isPublished) {
+      throw new AppError('Material is already published', 400);
+    }
+
+    const published = await materialRepository.publish(id);
+    if (!published) {
+      throw new AppError('Failed to publish material', 500);
+    }
+
+    return published;
+  }
+
+  /**
+   * Unpublish material (Admin only)
+   */
+  async unpublishMaterial(id: string): Promise<IMaterial> {
+    const material = await materialRepository.findById(id);
+    if (!material) {
+      throw new AppError('Material not found', 404);
+    }
+
+    if (!material.isPublished) {
+      throw new AppError('Material is not published', 400);
+    }
+
+    const unpublished = await materialRepository.unpublish(id);
+    if (!unpublished) {
+      throw new AppError('Failed to unpublish material', 500);
+    }
+
+    return unpublished;
   }
 }
 

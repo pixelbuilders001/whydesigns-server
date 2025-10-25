@@ -23,7 +23,7 @@ class TestimonialController {
     }
 
     // Parse socialMedia - support both JSON object and form-data format
-    let socialMedia;
+    let socialMedia: any;
 
     // Check if socialMedia is already an object (JSON format)
     if (req.body.socialMedia && typeof req.body.socialMedia === 'object') {
@@ -61,11 +61,11 @@ class TestimonialController {
    * @access Public
    */
   getAllTestimonials = asyncHandler(async (req: Request, res: Response) => {
-    const { page, limit, sortBy, sortOrder, isApproved, isFavorite, rating, city, state, search, isActive } = req.query;
+    const { page, limit, sortBy, sortOrder, isPublishd, isFavorite, rating, city, state, search, isActive } = req.query;
 
     const filters: any = {};
     if (isActive !== undefined) filters.isActive = isActive === 'true';
-    if (isApproved !== undefined) filters.isApproved = isApproved === 'true';
+    if (isPublishd !== undefined) filters.isPublishd = isPublishd === 'true';
     if (isFavorite !== undefined) filters.isFavorite = isFavorite === 'true';
     if (rating) filters.rating = Number(rating);
     if (city) filters.city = String(city);
@@ -89,11 +89,11 @@ class TestimonialController {
   });
 
   /**
-   * Get approved testimonials (public)
-   * @route GET /api/v1/testimonials/approved
+   * Get published testimonials (public)
+   * @route GET /api/v1/testimonials/published
    * @access Public
    */
-  getApprovedTestimonials = asyncHandler(async (req: Request, res: Response) => {
+  getPublishedTestimonials = asyncHandler(async (req: Request, res: Response) => {
     const { page, limit, sortBy, sortOrder } = req.query;
 
     const options = {
@@ -103,12 +103,12 @@ class TestimonialController {
       sortOrder: (sortOrder as 'asc' | 'desc') || 'desc',
     };
 
-    const result = await testimonialService.getApprovedTestimonials(options);
+    const result = await testimonialService.getPublishedTestimonials(options);
 
     return ApiResponse.success(
       res,
       result,
-      'Approved testimonials retrieved successfully'
+      'Publishd testimonials retrieved successfully'
     );
   });
 
@@ -274,7 +274,7 @@ class TestimonialController {
     }
 
     // Parse socialMedia - support both JSON object and form-data format
-    let socialMedia;
+    let socialMedia: any;
 
     // Check if socialMedia is already an object (JSON format)
     if (req.body.socialMedia && typeof req.body.socialMedia === 'object') {
@@ -368,34 +368,34 @@ class TestimonialController {
   });
 
   /**
-   * Approve testimonial
-   * @route PATCH /api/v1/testimonials/:id/approve
+   * Publish testimonial
+   * @route PATCH /api/v1/testimonials/:id/publish
    * @access Private (Admin only)
    */
-  approveTestimonial = asyncHandler(async (req: Request, res: Response) => {
+  publishTestimonial = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const testimonial = await testimonialService.approveTestimonial(id);
+    const testimonial = await testimonialService.publishTestimonial(id);
 
     return ApiResponse.success(
       res,
       testimonial,
-      'Testimonial approved successfully'
+      'Testimonial published successfully'
     );
   });
 
   /**
-   * Reject testimonial
-   * @route PATCH /api/v1/testimonials/:id/reject
+   * Unpublish testimonial
+   * @route PATCH /api/v1/testimonials/:id/unpublish
    * @access Private (Admin only)
    */
-  rejectTestimonial = asyncHandler(async (req: Request, res: Response) => {
+  unpublishTestimonial = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const testimonial = await testimonialService.rejectTestimonial(id);
+    const testimonial = await testimonialService.unpublishTestimonial(id);
 
     return ApiResponse.success(
       res,
       testimonial,
-      'Testimonial rejected successfully'
+      'Testimonial unpublished successfully'
     );
   });
 

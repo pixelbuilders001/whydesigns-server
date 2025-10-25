@@ -35,12 +35,12 @@ class TestimonialService {
   }
 
   /**
-   * Get approved testimonials (public view)
+   * Get published testimonials (public view)
    */
-  async getApprovedTestimonials(
+  async getPublishedTestimonials(
     options: PaginationOptions = {}
   ): Promise<{ testimonials: ITestimonial[]; total: number; page: number; totalPages: number }> {
-    return await testimonialRepository.findApproved(options);
+    return await testimonialRepository.findPublished(options);
   }
 
   /**
@@ -107,7 +107,7 @@ class TestimonialService {
 
     // Don't allow user to change approval or favorite status (admin only)
     if (!isAdmin) {
-      delete updateData.isApproved;
+      delete updateData.isPublished;
       delete updateData.isFavorite;
       delete updateData.displayOrder;
     }
@@ -165,10 +165,10 @@ class TestimonialService {
   }
 
   /**
-   * Approve testimonial (admin only)
+   * Publish testimonial (admin only)
    */
-  async approveTestimonial(id: string): Promise<ITestimonial> {
-    const testimonial = await testimonialRepository.approve(id);
+  async publishTestimonial(id: string): Promise<ITestimonial> {
+    const testimonial = await testimonialRepository.publish(id);
     if (!testimonial) {
       throw new AppError('Testimonial not found', 404);
     }
@@ -176,10 +176,10 @@ class TestimonialService {
   }
 
   /**
-   * Reject testimonial (admin only)
+   * Unpublish testimonial (admin only)
    */
-  async rejectTestimonial(id: string): Promise<ITestimonial> {
-    const testimonial = await testimonialRepository.reject(id);
+  async unpublishTestimonial(id: string): Promise<ITestimonial> {
+    const testimonial = await testimonialRepository.unpublish(id);
     if (!testimonial) {
       throw new AppError('Testimonial not found', 404);
     }
@@ -201,7 +201,7 @@ class TestimonialService {
     options: PaginationOptions = {}
   ): Promise<{ testimonials: ITestimonial[]; total: number; page: number; totalPages: number }> {
     return await testimonialRepository.findAll(
-      { search: searchTerm, isActive: true, isApproved: true },
+      { search: searchTerm, isActive: true, isPublished: true },
       options
     );
   }

@@ -41,7 +41,7 @@ export class CategoryService {
       name,
       slug: categorySlug,
       description: description || '',
-      createdBy,
+      createdBy: createdBy as any,
     });
 
     return category;

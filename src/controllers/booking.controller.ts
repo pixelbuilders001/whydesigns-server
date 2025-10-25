@@ -3,11 +3,11 @@ import bookingService from '../services/booking.service';
 import { ApiResponse } from '../utils/ApiResponse';
 import { asyncHandler } from '../utils/asyncHandler';
 import { AppError } from '../utils/AppError';
-import { PaginationOptions } from '../types';
+import { PaginationOptions, AuthenticatedRequest } from '../types';
 
 export class BookingController {
   // Create a new booking (public - for both logged-in and guest users)
-  createBooking = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  createBooking = asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     const userId = req.user?.id; // Optional - will be undefined for guests
 
     const bookingData = {
@@ -100,7 +100,7 @@ export class BookingController {
   });
 
   // Get bookings by user (User or Admin)
-  getBookingsByUser = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  getBookingsByUser = asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     const { userId } = req.params;
 
     // Users can only view their own bookings unless they're admin
@@ -159,7 +159,7 @@ export class BookingController {
   });
 
   // Get upcoming bookings by user
-  getUpcomingBookingsByUser = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  getUpcomingBookingsByUser = asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     const { userId } = req.params;
 
     // Users can only view their own bookings unless they're admin

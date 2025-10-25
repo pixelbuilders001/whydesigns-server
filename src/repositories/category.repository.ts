@@ -139,6 +139,20 @@ export class CategoryRepository {
 
     return { categories, total };
   }
+
+  async getStats(): Promise<any> {
+    const [total, active, inactive] = await Promise.all([
+      Category.countDocuments(),
+      this.countActive(),
+      this.countInactive(),
+    ]);
+
+    return {
+      total,
+      active,
+      inactive,
+    };
+  }
 }
 
 export default new CategoryRepository();

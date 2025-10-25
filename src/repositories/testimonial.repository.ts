@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 
 export interface TestimonialFilters {
   isActive?: boolean;
-  isApproved?: boolean;
+  isPublished?: boolean;
   isFavorite?: boolean;
   rating?: number;
   city?: string;
@@ -55,8 +55,8 @@ class TestimonialRepository {
       query.isActive = filters.isActive;
     }
 
-    if (filters.isApproved !== undefined) {
-      query.isApproved = filters.isApproved;
+    if (filters.isPublished !== undefined) {
+      query.isPublished = filters.isPublished;
     }
 
     if (filters.isFavorite !== undefined) {
@@ -101,13 +101,13 @@ class TestimonialRepository {
   }
 
   /**
-   * Find approved testimonials (public)
+   * Find published testimonials (public)
    */
-  async findApproved(
+  async findPublished(
     options: PaginationOptions = {}
   ): Promise<{ testimonials: ITestimonial[]; total: number; page: number; totalPages: number }> {
     return this.findAll(
-      { isActive: true, isApproved: true },
+      { isActive: true, isPublished: true },
       options
     );
   }
@@ -119,7 +119,7 @@ class TestimonialRepository {
     options: PaginationOptions = {}
   ): Promise<{ testimonials: ITestimonial[]; total: number; page: number; totalPages: number }> {
     return this.findAll(
-      { isActive: true, isApproved: true, isFavorite: true },
+      { isActive: true, isPublished: true, isFavorite: true },
       { ...options, sortBy: 'displayOrder' }
     );
   }
@@ -142,7 +142,7 @@ class TestimonialRepository {
     options: PaginationOptions = {}
   ): Promise<{ testimonials: ITestimonial[]; total: number; page: number; totalPages: number }> {
     return this.findAll(
-      { isActive: true, isApproved: true, rating },
+      { isActive: true, isPublished: true, rating },
       options
     );
   }
@@ -155,7 +155,7 @@ class TestimonialRepository {
     state?: string,
     options: PaginationOptions = {}
   ): Promise<{ testimonials: ITestimonial[]; total: number; page: number; totalPages: number }> {
-    const filters: TestimonialFilters = { isActive: true, isApproved: true };
+    const filters: TestimonialFilters = { isActive: true, isPublished: true };
     if (city) filters.city = city;
     if (state) filters.state = state;
     return this.findAll(filters, options);
@@ -226,30 +226,30 @@ class TestimonialRepository {
   }
 
   /**
-   * Approve testimonial
+   * Publish testimonial
    */
-  async approve(id: string): Promise<ITestimonial | null> {
-    return await this.update(id, { isApproved: true });
+  async publish(id: string): Promise<ITestimonial | null> {
+    return await this.update(id, { isPublished: true, publishedAt: new Date() });
   }
 
   /**
-   * Reject testimonial
+   * Unpublish testimonial
    */
-  async reject(id: string): Promise<ITestimonial | null> {
-    return await this.update(id, { isApproved: false });
+  async unpublish(id: string): Promise<ITestimonial | null> {
+    return await this.update(id, { isPublished: false });
   }
 
   /**
    * Get testimonial statistics
    */
   async getStats(): Promise<any> {
-    const [total, approved, pending, favorites, ratingStats] = await Promise.all([
+    const [total, published, unpublished, favorites, ratingStats] = await Promise.all([
       Testimonial.countDocuments({ isActive: true }),
-      Testimonial.countDocuments({ isActive: true, isApproved: true }),
-      Testimonial.countDocuments({ isActive: true, isApproved: false }),
+      Testimonial.countDocuments({ isActive: true, isPublished: true }),
+      Testimonial.countDocuments({ isActive: true, isPublished: false }),
       Testimonial.countDocuments({ isActive: true, isFavorite: true }),
       Testimonial.aggregate([
-        { $match: { isActive: true, isApproved: true } },
+        { $match: { isActive: true, isPublished: true } },
         {
           $group: {
             _id: '$rating',
@@ -261,7 +261,7 @@ class TestimonialRepository {
     ]);
 
     const avgRating = await Testimonial.aggregate([
-      { $match: { isActive: true, isApproved: true } },
+      { $match: { isActive: true, isPublished: true } },
       {
         $group: {
           _id: null,
@@ -272,8 +272,8 @@ class TestimonialRepository {
 
     return {
       total,
-      approved,
-      pending,
+      published,
+      unpublished,
       favorites,
       averageRating: avgRating.length > 0 ? avgRating[0].averageRating.toFixed(2) : 0,
       ratingDistribution: ratingStats,

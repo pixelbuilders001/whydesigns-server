@@ -60,7 +60,7 @@ export class UserService {
     // Create user with USER roleId
     const user = await userRepository.create({
       ...userData,
-      roleId: role._id,
+      roleId: role._id as any,
       provider: 'local',
     });
 
@@ -451,16 +451,17 @@ export class UserService {
   }
 
   private generateToken(user: IUser): string {
+    const options: jwt.SignOptions = {
+      expiresIn: config.JWT_EXPIRE as any,
+    };
     return jwt.sign(
       {
         id: user._id,
         email: user.email,
         roleId: user.roleId,
       },
-      config.JWT_SECRET,
-      {
-        expiresIn: config.JWT_EXPIRE,
-      }
+      config.JWT_SECRET as string,
+      options
     );
   }
 

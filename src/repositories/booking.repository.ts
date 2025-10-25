@@ -234,7 +234,7 @@ export class BookingRepository {
     return await Booking.countDocuments({ counselorId, isActive: true });
   }
 
-  async getBookingStats(): Promise<{
+  async getStats(): Promise<{
     total: number;
     pending: number;
     confirmed: number;

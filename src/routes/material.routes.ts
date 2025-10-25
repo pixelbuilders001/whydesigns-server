@@ -137,6 +137,34 @@ router.patch(
 );
 
 /**
+ * @route   PATCH /api/materials/:id/publish
+ * @desc    Publish material
+ * @access  Admin only
+ */
+router.patch(
+  '/:id/publish',
+  authenticate,
+  authorize('ADMIN'),
+  requireVerification,
+  validateParams(materialIdParamSchema),
+  materialController.publishMaterial
+);
+
+/**
+ * @route   PATCH /api/materials/:id/unpublish
+ * @desc    Unpublish material
+ * @access  Admin only
+ */
+router.patch(
+  '/:id/unpublish',
+  authenticate,
+  authorize('ADMIN'),
+  requireVerification,
+  validateParams(materialIdParamSchema),
+  materialController.unpublishMaterial
+);
+
+/**
  * @route   DELETE /api/materials/:id
  * @desc    Delete material by ID (hard delete)
  * @access  Admin only
