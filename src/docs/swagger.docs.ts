@@ -4755,6 +4755,10 @@
  *                 type: string
  *                 maxLength: 200
  *                 example: Web Design
+ *               message:
+ *                 type: string
+ *                 maxLength: 1000
+ *                 example: I would like to know more about your design courses
  *     responses:
  *       201:
  *         description: Lead created successfully
@@ -4974,6 +4978,10 @@
  *                 type: string
  *                 maxLength: 200
  *                 example: Web Design
+ *               message:
+ *                 type: string
+ *                 maxLength: 1000
+ *                 example: I would like to know more about your design courses
  *     responses:
  *       200:
  *         description: Lead updated successfully

@@ -21,6 +21,9 @@ export const createLeadSchema = Joi.object({
     'string.empty': 'Area of interest is required',
     'string.max': 'Area of interest cannot exceed 200 characters',
   }),
+  message: Joi.string().max(1000).optional().allow('').messages({
+    'string.max': 'Message cannot exceed 1000 characters',
+  }),
 });
 
 export const updateLeadSchema = Joi.object({
@@ -39,6 +42,9 @@ export const updateLeadSchema = Joi.object({
     }),
   areaOfInterest: Joi.string().max(200).optional().messages({
     'string.max': 'Area of interest cannot exceed 200 characters',
+  }),
+  message: Joi.string().max(1000).optional().allow('').messages({
+    'string.max': 'Message cannot exceed 1000 characters',
   }),
 }).min(1);
 

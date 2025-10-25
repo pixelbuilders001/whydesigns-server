@@ -715,6 +715,12 @@ const swaggerDefinition = {
             example: 'Web Design',
             maxLength: 200,
           },
+          message: {
+            type: 'string',
+            description: 'Optional message from the lead',
+            example: 'I would like to know more about your design courses',
+            maxLength: 1000,
+          },
           isActive: {
             type: 'boolean',
             description: 'Active status',

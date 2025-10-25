@@ -5,6 +5,7 @@ export interface ILead extends Document {
   email: string;
   phone: string;
   areaOfInterest: string;
+  message?: string;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -43,6 +44,11 @@ const leadSchema = new Schema<ILead>(
       required: [true, 'Area of interest is required'],
       trim: true,
       maxlength: [200, 'Area of interest cannot exceed 200 characters'],
+    },
+    message: {
+      type: String,
+      trim: true,
+      maxlength: [1000, 'Message cannot exceed 1000 characters'],
     },
     isActive: {
       type: Boolean,
