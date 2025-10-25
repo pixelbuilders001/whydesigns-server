@@ -1,11 +1,9 @@
 import { Router } from 'express';
 import bannerController from '../controllers/banner.controller';
 import { authenticate, authorize } from '../middlewares/auth';
-import { validate, validateQuery, validateParams } from '../middlewares/validate';
+import { validateQuery, validateParams } from '../middlewares/validate';
 import { uploadMultiple } from '../middlewares/upload';
 import {
-  createBannerSchema,
-  updateBannerSchema,
   getBannersQuerySchema,
   bannerIdParamSchema,
 } from '../validators/banner.validator';
@@ -46,7 +44,6 @@ router.post(
   authenticate,
   authorize('ADMIN'),
   uploadMultiple('banners', 10),
-  validate(createBannerSchema),
   bannerController.createBanner
 );
 
@@ -65,7 +62,6 @@ router.patch(
   authorize('ADMIN'),
   validateParams(bannerIdParamSchema),
   uploadMultiple('banners', 10),
-  validate(updateBannerSchema),
   bannerController.updateBanner
 );
 

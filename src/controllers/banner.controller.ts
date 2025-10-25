@@ -18,6 +18,19 @@ class BannerController {
       throw new AppError('User not authenticated', 401);
     }
 
+    // Validate required fields
+    if (!req.body.title || req.body.title.trim().length < 2) {
+      throw new AppError('Title is required and must be at least 2 characters long', 400);
+    }
+
+    if (req.body.title.length > 100) {
+      throw new AppError('Title cannot exceed 100 characters', 400);
+    }
+
+    if (req.body.description && req.body.description.length > 500) {
+      throw new AppError('Description cannot exceed 500 characters', 400);
+    }
+
     // Handle multiple banner image uploads
     const files = req.files as Express.Multer.File[];
 

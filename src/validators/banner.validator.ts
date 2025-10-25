@@ -9,32 +9,9 @@ export const createBannerSchema = Joi.object({
   description: Joi.string().max(500).optional().allow('').messages({
     'string.max': 'Description cannot exceed 500 characters',
   }),
-  banners: Joi.array()
-    .items(
-      Joi.object({
-        imageUrl: Joi.string().uri().required().messages({
-          'string.empty': 'Banner image URL is required',
-          'string.uri': 'Banner image URL must be a valid URL',
-        }),
-        link: Joi.string().uri().optional().allow('').messages({
-          'string.uri': 'Link must be a valid URL',
-        }),
-        altText: Joi.string().max(200).optional().allow('').messages({
-          'string.max': 'Alt text cannot exceed 200 characters',
-        }),
-        displayOrder: Joi.number().min(0).optional().default(0).messages({
-          'number.min': 'Display order cannot be negative',
-        }),
-      })
-    )
-    .min(1)
-    .max(10)
-    .required()
-    .messages({
-      'array.min': 'At least one banner is required',
-      'array.max': 'Cannot have more than 10 banners in a group',
-      'any.required': 'Banners array is required',
-    }),
+  bannersMetadata: Joi.string().optional().allow('').messages({
+    'string.base': 'Banners metadata must be a JSON string',
+  }),
 });
 
 export const updateBannerSchema = Joi.object({
@@ -45,33 +22,11 @@ export const updateBannerSchema = Joi.object({
   description: Joi.string().max(500).optional().allow('').messages({
     'string.max': 'Description cannot exceed 500 characters',
   }),
-  banners: Joi.array()
-    .items(
-      Joi.object({
-        imageUrl: Joi.string().uri().required().messages({
-          'string.empty': 'Banner image URL is required',
-          'string.uri': 'Banner image URL must be a valid URL',
-        }),
-        link: Joi.string().uri().optional().allow('').messages({
-          'string.uri': 'Link must be a valid URL',
-        }),
-        altText: Joi.string().max(200).optional().allow('').messages({
-          'string.max': 'Alt text cannot exceed 200 characters',
-        }),
-        displayOrder: Joi.number().min(0).optional().default(0).messages({
-          'number.min': 'Display order cannot be negative',
-        }),
-      })
-    )
-    .min(1)
-    .max(10)
-    .optional()
-    .messages({
-      'array.min': 'At least one banner is required',
-      'array.max': 'Cannot have more than 10 banners in a group',
-    }),
+  bannersMetadata: Joi.string().optional().allow('').messages({
+    'string.base': 'Banners metadata must be a JSON string',
+  }),
   isActive: Joi.boolean().optional(),
-}).min(1);
+});
 
 export const getBannersQuerySchema = Joi.object({
   page: Joi.number().min(1).optional().default(1).messages({
