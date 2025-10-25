@@ -184,15 +184,15 @@ export class BookingRepository {
   }
 
   async delete(id: string): Promise<IBooking | null> {
+    return await Booking.findByIdAndDelete(id);
+  }
+
+  async softDelete(id: string): Promise<IBooking | null> {
     return await Booking.findByIdAndUpdate(
       id,
       { isActive: false },
       { new: true }
     );
-  }
-
-  async hardDelete(id: string): Promise<IBooking | null> {
-    return await Booking.findByIdAndDelete(id);
   }
 
   async checkAvailability(counselorId: string, bookingDate: Date, bookingTime: string): Promise<boolean> {

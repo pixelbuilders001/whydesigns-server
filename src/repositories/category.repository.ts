@@ -68,14 +68,6 @@ export class CategoryRepository {
   }
 
   async delete(id: string): Promise<ICategory | null> {
-    return await Category.findByIdAndUpdate(
-      id,
-      { isActive: false },
-      { new: true }
-    ).populate('createdBy', 'firstName lastName email');
-  }
-
-  async hardDelete(id: string): Promise<ICategory | null> {
     return await Category.findByIdAndDelete(id);
   }
 

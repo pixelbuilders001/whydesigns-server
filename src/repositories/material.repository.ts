@@ -142,20 +142,9 @@ export class MaterialRepository {
   }
 
   /**
-   * Delete material by ID (soft delete)
+   * Delete material by ID (hard delete)
    */
   async delete(id: string): Promise<IMaterial | null> {
-    return await Material.findByIdAndUpdate(
-      id,
-      { isActive: false },
-      { new: true }
-    ).populate('uploadedBy', 'name email');
-  }
-
-  /**
-   * Hard delete material by ID
-   */
-  async hardDelete(id: string): Promise<IMaterial | null> {
     return await Material.findByIdAndDelete(id);
   }
 

@@ -3847,7 +3847,7 @@
  *         description: Testimonial not found
  *   delete:
  *     summary: Delete testimonial
- *     description: Delete a testimonial (owner or admin only)
+ *     description: Permanently delete a testimonial from the database (owner or admin only)
  *     tags: [Testimonials]
  *     security:
  *       - bearerAuth: []

@@ -175,7 +175,17 @@ class TestimonialRepository {
   }
 
   /**
-   * Delete testimonial (soft delete)
+   * Delete testimonial (hard delete)
+   */
+  async delete(id: string): Promise<ITestimonial | null> {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return null;
+    }
+    return await Testimonial.findByIdAndDelete(id);
+  }
+
+  /**
+   * Soft delete testimonial (deactivate)
    */
   async softDelete(id: string): Promise<ITestimonial | null> {
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -186,30 +196,6 @@ class TestimonialRepository {
       { isActive: false },
       { new: true }
     );
-  }
-
-  /**
-   * Delete testimonial (soft delete)
-   */
-  async delete(id: string): Promise<ITestimonial | null> {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return null;
-    }
-    return await Testimonial.findByIdAndUpdate(
-      id,
-      { isActive: false },
-      { new: true }
-    );
-  }
-
-  /**
-   * Hard delete testimonial
-   */
-  async hardDelete(id: string): Promise<ITestimonial | null> {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return null;
-    }
-    return await Testimonial.findByIdAndDelete(id);
   }
 
   /**

@@ -129,7 +129,7 @@ export class CounselorService {
       throw new NotFoundError('Counselor not found');
     }
 
-    await counselorRepository.deleteByNumericId(id);
+    await counselorRepository.hardDeleteByNumericId(id);
   }
 
   async softDeleteCounselor(id: number): Promise<ICounselor> {

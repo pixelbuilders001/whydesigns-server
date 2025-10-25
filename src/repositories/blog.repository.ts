@@ -89,10 +89,6 @@ export class BlogRepository {
   }
 
   async delete(id: string): Promise<IBlog | null> {
-    return await this.update(id, { isActive: false });
-  }
-
-  async hardDelete(id: string): Promise<IBlog | null> {
     return await Blog.findByIdAndDelete(id);
   }
 
