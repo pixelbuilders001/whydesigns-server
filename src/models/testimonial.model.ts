@@ -125,34 +125,18 @@ const testimonialSchema = new Schema<ITestimonial>(
       facebook: {
         type: String,
         trim: true,
-        match: [
-          /^(https?:\/\/)?(www\.)?facebook\.com\/.+/i,
-          'Please provide a valid Facebook URL',
-        ],
       },
       instagram: {
         type: String,
         trim: true,
-        match: [
-          /^(https?:\/\/)?(www\.)?instagram\.com\/.+/i,
-          'Please provide a valid Instagram URL',
-        ],
       },
       twitter: {
         type: String,
         trim: true,
-        match: [
-          /^(https?:\/\/)?(www\.)?(twitter\.com|x\.com)\/.+/i,
-          'Please provide a valid Twitter/X URL',
-        ],
       },
       linkedin: {
         type: String,
         trim: true,
-        match: [
-          /^(https?:\/\/)?(www\.)?linkedin\.com\/.+/i,
-          'Please provide a valid LinkedIn URL',
-        ],
       },
     },
     displayOrder: {

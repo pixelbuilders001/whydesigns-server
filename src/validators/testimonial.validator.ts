@@ -43,34 +43,63 @@ export const createTestimonialSchema = Joi.object({
   }),
   socialMedia: Joi.object({
     facebook: Joi.string()
-      .pattern(/^(https?:\/\/)?(www\.)?facebook\.com\/.+/i)
+      .uri()
       .optional()
       .allow('')
       .messages({
-        'string.pattern.base': 'Please provide a valid Facebook URL',
+        'string.uri': 'Please provide a valid URL',
       }),
     instagram: Joi.string()
-      .pattern(/^(https?:\/\/)?(www\.)?instagram\.com\/.+/i)
+      .uri()
       .optional()
       .allow('')
       .messages({
-        'string.pattern.base': 'Please provide a valid Instagram URL',
+        'string.uri': 'Please provide a valid URL',
       }),
     twitter: Joi.string()
-      .pattern(/^(https?:\/\/)?(www\.)?(twitter\.com|x\.com)\/.+/i)
+      .uri()
       .optional()
       .allow('')
       .messages({
-        'string.pattern.base': 'Please provide a valid Twitter/X URL',
+        'string.uri': 'Please provide a valid URL',
       }),
     linkedin: Joi.string()
-      .pattern(/^(https?:\/\/)?(www\.)?linkedin\.com\/.+/i)
+      .uri()
       .optional()
       .allow('')
       .messages({
-        'string.pattern.base': 'Please provide a valid LinkedIn URL',
+        'string.uri': 'Please provide a valid URL',
       }),
   }).optional(),
+  // Support form-data format (socialMedia.facebook, etc.)
+  'socialMedia.facebook': Joi.string()
+    .uri()
+    .optional()
+    .allow('')
+    .messages({
+      'string.uri': 'Please provide a valid URL',
+    }),
+  'socialMedia.instagram': Joi.string()
+    .uri()
+    .optional()
+    .allow('')
+    .messages({
+      'string.uri': 'Please provide a valid URL',
+    }),
+  'socialMedia.twitter': Joi.string()
+    .uri()
+    .optional()
+    .allow('')
+    .messages({
+      'string.uri': 'Please provide a valid URL',
+    }),
+  'socialMedia.linkedin': Joi.string()
+    .uri()
+    .optional()
+    .allow('')
+    .messages({
+      'string.uri': 'Please provide a valid URL',
+    }),
 });
 
 export const updateTestimonialSchema = Joi.object({
@@ -118,34 +147,63 @@ export const updateTestimonialSchema = Joi.object({
   }),
   socialMedia: Joi.object({
     facebook: Joi.string()
-      .pattern(/^(https?:\/\/)?(www\.)?facebook\.com\/.+/i)
+      .uri()
       .optional()
       .allow('')
       .messages({
-        'string.pattern.base': 'Please provide a valid Facebook URL',
+        'string.uri': 'Please provide a valid URL',
       }),
     instagram: Joi.string()
-      .pattern(/^(https?:\/\/)?(www\.)?instagram\.com\/.+/i)
+      .uri()
       .optional()
       .allow('')
       .messages({
-        'string.pattern.base': 'Please provide a valid Instagram URL',
+        'string.uri': 'Please provide a valid URL',
       }),
     twitter: Joi.string()
-      .pattern(/^(https?:\/\/)?(www\.)?(twitter\.com|x\.com)\/.+/i)
+      .uri()
       .optional()
       .allow('')
       .messages({
-        'string.pattern.base': 'Please provide a valid Twitter/X URL',
+        'string.uri': 'Please provide a valid URL',
       }),
     linkedin: Joi.string()
-      .pattern(/^(https?:\/\/)?(www\.)?linkedin\.com\/.+/i)
+      .uri()
       .optional()
       .allow('')
       .messages({
-        'string.pattern.base': 'Please provide a valid LinkedIn URL',
+        'string.uri': 'Please provide a valid URL',
       }),
   }).optional(),
+  // Support form-data format (socialMedia.facebook, etc.)
+  'socialMedia.facebook': Joi.string()
+    .uri()
+    .optional()
+    .allow('')
+    .messages({
+      'string.uri': 'Please provide a valid URL',
+    }),
+  'socialMedia.instagram': Joi.string()
+    .uri()
+    .optional()
+    .allow('')
+    .messages({
+      'string.uri': 'Please provide a valid URL',
+    }),
+  'socialMedia.twitter': Joi.string()
+    .uri()
+    .optional()
+    .allow('')
+    .messages({
+      'string.uri': 'Please provide a valid URL',
+    }),
+  'socialMedia.linkedin': Joi.string()
+    .uri()
+    .optional()
+    .allow('')
+    .messages({
+      'string.uri': 'Please provide a valid URL',
+    }),
 }).min(1);
 
 export const getTestimonialsQuerySchema = Joi.object({
