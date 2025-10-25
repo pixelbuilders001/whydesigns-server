@@ -6,6 +6,11 @@ export const createCounselorSchema = Joi.object({
     'string.min': 'Full name must be at least 2 characters',
     'string.max': 'Full name must not exceed 100 characters',
   }),
+  email: Joi.string().email().required().messages({
+    'string.empty': 'Email is required',
+    'string.email': 'Please provide a valid email address',
+    'any.required': 'Email is required',
+  }),
   title: Joi.string().max(100).required().messages({
     'string.empty': 'Title is required',
     'string.max': 'Title must not exceed 100 characters',
@@ -42,6 +47,9 @@ export const updateCounselorSchema = Joi.object({
   fullName: Joi.string().min(2).max(100).optional().messages({
     'string.min': 'Full name must be at least 2 characters',
     'string.max': 'Full name must not exceed 100 characters',
+  }),
+  email: Joi.string().email().optional().messages({
+    'string.email': 'Please provide a valid email address',
   }),
   title: Joi.string().max(100).optional().messages({
     'string.max': 'Title must not exceed 100 characters',

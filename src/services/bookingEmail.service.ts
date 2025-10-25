@@ -231,6 +231,7 @@ ${config.AWS_SES_FROM_NAME || 'Why Designers'}
 
   /**
    * Send booking approval email with meeting link (when admin confirms)
+   * Sends to both user and counselor
    */
   async sendBookingApproval(
     booking: IBooking,
@@ -243,6 +244,24 @@ ${config.AWS_SES_FROM_NAME || 'Why Designers'}
 
     if (!booking.meetingLink) {
       console.warn('⚠️  Cannot send approval email without meeting link');
+      return false;
+    }
+
+    // Send email to both user and counselor
+    const userEmailSent = await this.sendBookingApprovalToUser(booking, counselor);
+    const counselorEmailSent = await this.sendBookingApprovalToCounselor(booking, counselor);
+
+    return userEmailSent || counselorEmailSent;
+  }
+
+  /**
+   * Send booking approval email to user
+   */
+  private async sendBookingApprovalToUser(
+    booking: IBooking,
+    counselor: ICounselor
+  ): Promise<boolean> {
+    if (!this.sesClient) {
       return false;
     }
 
@@ -444,10 +463,226 @@ ${config.AWS_SES_FROM_NAME || 'Why Designers'}
       });
 
       await this.sesClient.send(command);
-      console.log(`✅ Booking approval email with meeting link sent to: ${booking.guestEmail}`);
+      console.log(`✅ Booking approval email with meeting link sent to user: ${booking.guestEmail}`);
       return true;
     } catch (error: any) {
-      console.error('❌ Failed to send booking approval email:', error.message);
+      console.error('❌ Failed to send booking approval email to user:', error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Send booking approval email to counselor
+   */
+  private async sendBookingApprovalToCounselor(
+    booking: IBooking,
+    counselor: ICounselor
+  ): Promise<boolean> {
+    if (!this.sesClient) {
+      return false;
+    }
+
+    if (!counselor.email) {
+      console.warn('⚠️  Counselor email not available, skipping counselor notification');
+      return false;
+    }
+
+    try {
+      const bookingDate = new Date(booking.bookingDate).toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+
+      // Generate .ics calendar file content with meeting link
+      const bookingDateTime = new Date(booking.bookingDate);
+      const [hours, minutes] = booking.bookingTime.split(':');
+      bookingDateTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+      const endDateTime = new Date(bookingDateTime.getTime() + booking.duration * 60000);
+
+      const formatICSDate = (date: Date) => {
+        return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+      };
+
+      const icsContent = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Why Designers//Booking System//EN',
+        'CALSCALE:GREGORIAN',
+        'METHOD:REQUEST',
+        'BEGIN:VEVENT',
+        `UID:booking-${booking._id}@why-designers.com`,
+        `DTSTAMP:${formatICSDate(new Date())}`,
+        `DTSTART:${formatICSDate(bookingDateTime)}`,
+        `DTEND:${formatICSDate(endDateTime)}`,
+        `SUMMARY:Counseling Session with ${booking.guestName}`,
+        `DESCRIPTION:Discussion Topic: ${booking.discussionTopic}\\n\\nJoin Meeting: ${booking.meetingLink}\\n\\nClient: ${booking.guestName}\\nEmail: ${booking.guestEmail}\\nPhone: ${booking.guestPhone}`,
+        `LOCATION:${booking.meetingLink}`,
+        `ORGANIZER;CN=${counselor.fullName}:mailto:${counselor.email}`,
+        `ATTENDEE;CN=${booking.guestName};RSVP=TRUE:mailto:${booking.guestEmail}`,
+        'STATUS:CONFIRMED',
+        'SEQUENCE:0',
+        'BEGIN:VALARM',
+        'TRIGGER:-PT30M',
+        'DESCRIPTION:Reminder',
+        'ACTION:DISPLAY',
+        'END:VALARM',
+        'END:VEVENT',
+        'END:VCALENDAR',
+      ].join('\r\n');
+
+      const subject = `New Booking Confirmed - ${booking.guestName}`;
+      const htmlBody = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background-color: #4CAF50; color: white; padding: 20px; text-align: center; }
+    .content { background-color: #f9f9f9; padding: 20px; border: 1px solid #ddd; }
+    .details { background-color: white; padding: 15px; margin: 15px 0; border-left: 4px solid #4CAF50; }
+    .footer { text-align: center; padding: 20px; font-size: 12px; color: #777; }
+    .button { display: inline-block; padding: 12px 30px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; }
+    .status-box { background-color: #D4EDDA; border: 1px solid #4CAF50; padding: 15px; border-radius: 5px; margin: 15px 0; }
+    .meeting-link { background-color: #E3F2FD; padding: 15px; border-radius: 5px; margin: 15px 0; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>✅ New Booking Confirmed!</h1>
+    </div>
+    <div class="content">
+      <p>Dear ${counselor.fullName},</p>
+      <p>You have a new confirmed counseling session scheduled.</p>
+
+      <div class="status-box">
+        <strong>✓ Status: Confirmed</strong>
+        <p style="margin: 10px 0 0 0; font-size: 14px;">The client has been notified and will join using the meeting link below.</p>
+      </div>
+
+      <div class="details">
+        <h3>Session Details</h3>
+        <p><strong>Client Name:</strong> ${booking.guestName}</p>
+        <p><strong>Client Email:</strong> ${booking.guestEmail}</p>
+        <p><strong>Client Phone:</strong> ${booking.guestPhone}</p>
+        <p><strong>Date:</strong> ${bookingDate}</p>
+        <p><strong>Time:</strong> ${booking.bookingTime}</p>
+        <p><strong>Duration:</strong> ${booking.duration} minutes</p>
+        <p><strong>Discussion Topic:</strong> ${booking.discussionTopic}</p>
+      </div>
+
+      <div class="meeting-link">
+        <h3 style="margin-top: 0;">📹 Join Your Session</h3>
+        <p><strong>Meeting Link:</strong></p>
+        <p><a href="${booking.meetingLink}" style="word-break: break-all; color: #2196F3;">${booking.meetingLink}</a></p>
+        <p style="text-align: center; margin: 20px 0;">
+          <a href="${booking.meetingLink}" class="button">Join Meeting Now</a>
+        </p>
+      </div>
+
+      <p><strong>Important Reminders:</strong></p>
+      <ul>
+        <li>Please join the meeting 5-10 minutes before the scheduled time</li>
+        <li>Make sure you have a stable internet connection</li>
+        <li>Test your audio and video before the session</li>
+        <li>Review the client's discussion topic before the meeting</li>
+      </ul>
+
+      <p>Best regards,<br>${config.AWS_SES_FROM_NAME || 'Why Designers'}</p>
+    </div>
+    <div class="footer">
+      <p>This is an automated message. Please do not reply to this email.</p>
+      <p>For support, contact us at ${config.AWS_SES_FROM_EMAIL}</p>
+    </div>
+  </div>
+</body>
+</html>
+      `;
+
+      const textBody = `
+New Booking Confirmed!
+
+Dear ${counselor.fullName},
+
+You have a new confirmed counseling session scheduled.
+
+Status: Confirmed
+
+Session Details:
+- Client Name: ${booking.guestName}
+- Client Email: ${booking.guestEmail}
+- Client Phone: ${booking.guestPhone}
+- Date: ${bookingDate}
+- Time: ${booking.bookingTime}
+- Duration: ${booking.duration} minutes
+- Discussion Topic: ${booking.discussionTopic}
+
+MEETING LINK:
+${booking.meetingLink}
+
+Important Reminders:
+- Please join the meeting 5-10 minutes before the scheduled time
+- Make sure you have a stable internet connection
+- Test your audio and video before the session
+- Review the client's discussion topic before the meeting
+
+Best regards,
+${config.AWS_SES_FROM_NAME || 'Why Designers'}
+      `;
+
+      // Create email with .ics attachment using raw message format
+      const boundary = `----=_Part_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      const icsBase64 = Buffer.from(icsContent).toString('base64');
+
+      const rawMessage = [
+        `From: ${config.AWS_SES_FROM_NAME} <${config.AWS_SES_FROM_EMAIL}>`,
+        `To: ${counselor.email}`,
+        `Subject: ${subject}`,
+        'MIME-Version: 1.0',
+        `Content-Type: multipart/mixed; boundary="${boundary}"`,
+        '',
+        `--${boundary}`,
+        'Content-Type: multipart/alternative; boundary="alt-boundary"',
+        '',
+        '--alt-boundary',
+        'Content-Type: text/plain; charset=UTF-8',
+        'Content-Transfer-Encoding: 7bit',
+        '',
+        textBody,
+        '',
+        '--alt-boundary',
+        'Content-Type: text/html; charset=UTF-8',
+        'Content-Transfer-Encoding: 7bit',
+        '',
+        htmlBody,
+        '',
+        '--alt-boundary--',
+        '',
+        `--${boundary}`,
+        'Content-Type: text/calendar; charset=UTF-8; method=REQUEST; name="invite.ics"',
+        'Content-Transfer-Encoding: base64',
+        'Content-Disposition: attachment; filename="invite.ics"',
+        '',
+        icsBase64,
+        '',
+        `--${boundary}--`,
+      ].join('\r\n');
+
+      const { SendRawEmailCommand } = await import('@aws-sdk/client-ses');
+      const command = new SendRawEmailCommand({
+        RawMessage: {
+          Data: Buffer.from(rawMessage),
+        },
+      });
+
+      await this.sesClient.send(command);
+      console.log(`✅ Booking approval email with meeting link sent to counselor: ${counselor.email}`);
+      return true;
+    } catch (error: any) {
+      console.error('❌ Failed to send booking approval email to counselor:', error.message);
       return false;
     }
   }

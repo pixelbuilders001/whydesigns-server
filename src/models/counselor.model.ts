@@ -4,6 +4,7 @@ export interface ICounselor extends Document {
   _id: string;
   id: number;
   fullName: string;
+  email: string;
   title: string;
   yearsOfExperience: number;
   bio: string;
@@ -40,6 +41,15 @@ const counselorSchema = new Schema<ICounselor>(
       trim: true,
       minlength: [2, 'Full name must be at least 2 characters'],
       maxlength: [100, 'Full name must not exceed 100 characters'],
+    },
+    email: {
+      type: String,
+      required: [true, 'Email is required'],
+      trim: true,
+      lowercase: true,
+      unique: true,
+      match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please provide a valid email'],
+      index: true,
     },
     title: {
       type: String,
@@ -103,6 +113,7 @@ const counselorSchema = new Schema<ICounselor>(
 
 // Indexes for better query performance
 counselorSchema.index({ id: 1 }, { unique: true });
+counselorSchema.index({ email: 1 }, { unique: true });
 counselorSchema.index({ fullName: 'text', bio: 'text', title: 'text' }); // Text index for search
 counselorSchema.index({ isActive: 1 });
 counselorSchema.index({ rating: -1 });
