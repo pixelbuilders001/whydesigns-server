@@ -5953,3 +5953,161 @@
  */
 
 export {};
+// ============================================================================
+// SUMMARY
+// ============================================================================
+
+/**
+ * @swagger
+ * /summary/dashboard:
+ *   get:
+ *     summary: Get dashboard summary (Admin only)
+ *     description: Retrieve aggregated statistics from all modules for the admin dashboard
+ *     tags: [Summary]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Dashboard summary retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Dashboard summary retrieved successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     users:
+ *                       type: object
+ *                       properties:
+ *                         total:
+ *                           type: integer
+ *                           example: 150
+ *                         active:
+ *                           type: integer
+ *                           example: 145
+ *                         inactive:
+ *                           type: integer
+ *                           example: 5
+ *                     blogs:
+ *                       type: object
+ *                       properties:
+ *                         total:
+ *                           type: integer
+ *                           example: 50
+ *                         published:
+ *                           type: integer
+ *                           example: 45
+ *                         draft:
+ *                           type: integer
+ *                           example: 5
+ *                         totalViews:
+ *                           type: integer
+ *                           example: 10000
+ *                     testimonials:
+ *                       type: object
+ *                       properties:
+ *                         total:
+ *                           type: integer
+ *                           example: 75
+ *                         approved:
+ *                           type: integer
+ *                           example: 60
+ *                         pending:
+ *                           type: integer
+ *                           example: 15
+ *                     reels:
+ *                       type: object
+ *                       properties:
+ *                         total:
+ *                           type: integer
+ *                           example: 30
+ *                         published:
+ *                           type: integer
+ *                           example: 25
+ *                         totalViews:
+ *                           type: integer
+ *                           example: 5000
+ *                         totalLikes:
+ *                           type: integer
+ *                           example: 800
+ *                     videos:
+ *                       type: object
+ *                       properties:
+ *                         total:
+ *                           type: integer
+ *                           example: 20
+ *                         published:
+ *                           type: integer
+ *                           example: 18
+ *                         totalViews:
+ *                           type: integer
+ *                           example: 15000
+ *                         totalLikes:
+ *                           type: integer
+ *                           example: 1200
+ *                     leads:
+ *                       type: object
+ *                       properties:
+ *                         total:
+ *                           type: integer
+ *                           example: 100
+ *                         active:
+ *                           type: integer
+ *                           example: 95
+ *                     materials:
+ *                       type: object
+ *                       properties:
+ *                         total:
+ *                           type: integer
+ *                           example: 40
+ *                         totalDownloads:
+ *                           type: integer
+ *                           example: 2500
+ *                     bookings:
+ *                       type: object
+ *                       properties:
+ *                         total:
+ *                           type: integer
+ *                           example: 60
+ *                         confirmed:
+ *                           type: integer
+ *                           example: 50
+ *                         pending:
+ *                           type: integer
+ *                           example: 10
+ *                     counselors:
+ *                       type: object
+ *                       properties:
+ *                         total:
+ *                           type: integer
+ *                           example: 15
+ *                         active:
+ *                           type: integer
+ *                           example: 12
+ *                     categories:
+ *                       type: object
+ *                       properties:
+ *                         total:
+ *                           type: integer
+ *                           example: 8
+ *                         active:
+ *                           type: integer
+ *                           example: 7
+ *                     timestamp:
+ *                       type: string
+ *                       format: date-time
+ *                       example: 2025-10-25T12:00:00.000Z
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ */
+
+export {};

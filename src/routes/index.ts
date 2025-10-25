@@ -9,6 +9,7 @@ import testimonialRoutes from './testimonial.routes';
 import reelRoutes from './reel.routes';
 import videoRoutes from './video.routes';
 import leadRoutes from './lead.routes';
+import summaryRoutes from './summary.routes';
 
 const router = Router();
 
@@ -32,5 +33,6 @@ router.use('/testimonials', testimonialRoutes);
 router.use('/reels', reelRoutes);
 router.use('/videos', videoRoutes);
 router.use('/leads', leadRoutes);
+router.use('/summary', summaryRoutes);
 
 export default router;

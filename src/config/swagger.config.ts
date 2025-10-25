@@ -926,6 +926,10 @@ const swaggerDefinition = {
       name: 'Leads',
       description: 'Lead generation and management endpoints for capturing customer inquiries',
     },
+    {
+      name: 'Summary',
+      description: 'Dashboard summary and statistics endpoints aggregating data from all modules',
+    },
   ],
 };
 
