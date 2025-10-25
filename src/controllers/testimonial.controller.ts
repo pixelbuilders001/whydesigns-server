@@ -39,8 +39,15 @@ class TestimonialController {
       if (req.body['socialMedia.linkedin']) socialMedia.linkedin = req.body['socialMedia.linkedin'];
     }
 
+    // Create a clean body object without the form-data social media fields to avoid conflicts
+    const cleanBody = { ...req.body };
+    delete cleanBody['socialMedia.facebook'];
+    delete cleanBody['socialMedia.instagram'];
+    delete cleanBody['socialMedia.twitter'];
+    delete cleanBody['socialMedia.linkedin'];
+
     const testimonialData = {
-      ...req.body,
+      ...cleanBody,
       profileImage: profileImageUrl,
       ...(socialMedia && { socialMedia }),
     };
@@ -290,8 +297,15 @@ class TestimonialController {
       if (req.body['socialMedia.linkedin']) socialMedia.linkedin = req.body['socialMedia.linkedin'];
     }
 
+    // Create a clean body object without the form-data social media fields to avoid conflicts
+    const cleanBody = { ...req.body };
+    delete cleanBody['socialMedia.facebook'];
+    delete cleanBody['socialMedia.instagram'];
+    delete cleanBody['socialMedia.twitter'];
+    delete cleanBody['socialMedia.linkedin'];
+
     const updateData = {
-      ...req.body,
+      ...cleanBody,
       ...(profileImageUrl && { profileImage: profileImageUrl }),
       ...(socialMedia && { socialMedia }),
     };
