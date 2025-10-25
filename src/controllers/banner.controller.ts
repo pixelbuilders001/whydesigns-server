@@ -8,7 +8,7 @@ import { AppError } from '../utils/AppError';
 
 class BannerController {
   /**
-   * Create a new banner group
+   * Create a new banner
    * @route POST /api/v1/banners
    * @access Private (Admin only)
    */
@@ -31,50 +31,22 @@ class BannerController {
       throw new AppError('Description cannot exceed 500 characters', 400);
     }
 
-    // Handle multiple banner image uploads
-    const files = req.files as Express.Multer.File[];
+    // Handle banner image upload
+    const file = req.file;
 
-    if (!files || files.length === 0) {
-      throw new AppError('At least one banner image is required', 400);
+    if (!file) {
+      throw new AppError('Banner image is required', 400);
     }
 
-    if (files.length > 10) {
-      throw new AppError('Cannot upload more than 10 banners at once', 400);
-    }
-
-    // Upload all banner images to S3
-    const uploadPromises = files.map((file, index) =>
-      s3Service.uploadFile(file, 'banners')
-    );
-    const imageUrls = await Promise.all(uploadPromises);
-
-    // Parse banner metadata if provided
-    let bannersMetadata: any[] = [];
-    if (req.body.bannersMetadata) {
-      try {
-        bannersMetadata = typeof req.body.bannersMetadata === 'string'
-          ? JSON.parse(req.body.bannersMetadata)
-          : req.body.bannersMetadata;
-      } catch (error) {
-        throw new AppError('Invalid banners metadata format', 400);
-      }
-    }
-
-    // Build banners array
-    const banners = imageUrls.map((imageUrl, index) => {
-      const metadata = bannersMetadata[index] || {};
-      return {
-        imageUrl,
-        link: metadata.link || '',
-        altText: metadata.altText || '',
-        displayOrder: metadata.displayOrder !== undefined ? metadata.displayOrder : index,
-      };
-    });
+    // Upload banner image to S3
+    const imageUrl = await s3Service.uploadFile(file, 'banners');
 
     const bannerData = {
       title: req.body.title,
       description: req.body.description,
-      banners,
+      imageUrl,
+      link: req.body.link || '',
+      altText: req.body.altText || '',
     };
 
     const banner = await bannerService.createBanner(createdBy, bannerData);
@@ -82,7 +54,7 @@ class BannerController {
     return ApiResponse.success(
       res,
       banner,
-      'Banner group created successfully',
+      'Banner created successfully',
       201
     );
   });
@@ -157,65 +129,30 @@ class BannerController {
   });
 
   /**
-   * Update banner group
+   * Update banner
    * @route PATCH /api/v1/banners/:id
    * @access Private (Admin only)
    */
   updateBanner = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
 
-    // Handle new banner image uploads if provided
-    const files = req.files as Express.Multer.File[];
+    // Handle new banner image upload if provided
+    const file = req.file;
 
     let updateData: any = {
       ...req.body,
     };
 
-    // If new images are uploaded, replace the banners array
-    if (files && files.length > 0) {
-      if (files.length > 10) {
-        throw new AppError('Cannot upload more than 10 banners at once', 400);
-      }
+    // If new image is uploaded, replace the old one
+    if (file) {
+      // Upload new banner image to S3
+      const imageUrl = await s3Service.uploadFile(file, 'banners');
+      updateData.imageUrl = imageUrl;
 
-      // Upload new banner images to S3
-      const uploadPromises = files.map((file) =>
-        s3Service.uploadFile(file, 'banners')
-      );
-      const imageUrls = await Promise.all(uploadPromises);
-
-      // Parse banner metadata if provided
-      let bannersMetadata: any[] = [];
-      if (req.body.bannersMetadata) {
-        try {
-          bannersMetadata = typeof req.body.bannersMetadata === 'string'
-            ? JSON.parse(req.body.bannersMetadata)
-            : req.body.bannersMetadata;
-        } catch (error) {
-          throw new AppError('Invalid banners metadata format', 400);
-        }
-      }
-
-      // Build new banners array
-      const banners = imageUrls.map((imageUrl, index) => {
-        const metadata = bannersMetadata[index] || {};
-        return {
-          imageUrl,
-          link: metadata.link || '',
-          altText: metadata.altText || '',
-          displayOrder: metadata.displayOrder !== undefined ? metadata.displayOrder : index,
-        };
-      });
-
-      updateData.banners = banners;
-
-      // Delete old banner images from S3
+      // Delete old banner image from S3
       const oldBanner = await bannerService.getBannerById(id);
-      if (oldBanner.banners && oldBanner.banners.length > 0) {
-        for (const bannerItem of oldBanner.banners) {
-          if (bannerItem.imageUrl) {
-            await s3Service.deleteFile(bannerItem.imageUrl);
-          }
-        }
+      if (oldBanner.imageUrl) {
+        await s3Service.deleteFile(oldBanner.imageUrl);
       }
     }
 
@@ -224,7 +161,7 @@ class BannerController {
     return ApiResponse.success(
       res,
       banner,
-      'Banner group updated successfully'
+      'Banner updated successfully'
     );
   });
 

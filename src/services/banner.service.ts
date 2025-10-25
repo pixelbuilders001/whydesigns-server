@@ -63,21 +63,17 @@ class BannerService {
   }
 
   /**
-   * Delete banner group (and associated images from S3)
+   * Delete banner (and associated image from S3)
    */
   async deleteBanner(id: string): Promise<void> {
     const banner = await bannerRepository.findById(id);
     if (!banner) {
-      throw new AppError('Banner group not found', 404);
+      throw new AppError('Banner not found', 404);
     }
 
-    // Delete all banner images from S3
-    if (banner.banners && banner.banners.length > 0) {
-      for (const bannerItem of banner.banners) {
-        if (bannerItem.imageUrl) {
-          await s3Service.deleteFile(bannerItem.imageUrl);
-        }
-      }
+    // Delete banner image from S3
+    if (banner.imageUrl) {
+      await s3Service.deleteFile(banner.imageUrl);
     }
 
     await bannerRepository.delete(id);

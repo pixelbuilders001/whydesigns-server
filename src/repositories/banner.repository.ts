@@ -157,21 +157,12 @@ class BannerRepository {
       Banner.countDocuments({ isActive: false }),
     ]);
 
-    // Get total banners count across all groups
-    const totalBannersAgg = await Banner.aggregate([
-      { $unwind: '$banners' },
-      { $count: 'total' },
-    ]);
-
-    const totalBannersCount = totalBannersAgg.length > 0 ? totalBannersAgg[0].total : 0;
-
     return {
       total,
       published,
       unpublished,
       active,
       inactive,
-      totalBannersCount,
     };
   }
 }

@@ -6201,9 +6201,12 @@ export {};
  *                         unpublished:
  *                           type: integer
  *                           example: 4
- *                         totalBannersCount:
+ *                         active:
  *                           type: integer
- *                           example: 15
+ *                           example: 4
+ *                         inactive:
+ *                           type: integer
+ *                           example: 1
  *                     timestamp:
  *                       type: string
  *                       format: date-time
@@ -6222,9 +6225,18 @@ export {};
  * @swagger
  * components:
  *   schemas:
- *     BannerItem:
+ *     Banner:
  *       type: object
  *       properties:
+ *         _id:
+ *           type: string
+ *           description: Banner ID
+ *         title:
+ *           type: string
+ *           description: Banner title
+ *         description:
+ *           type: string
+ *           description: Banner description
  *         imageUrl:
  *           type: string
  *           description: Banner image URL
@@ -6234,42 +6246,19 @@ export {};
  *         altText:
  *           type: string
  *           description: Alternative text for image
- *         displayOrder:
- *           type: integer
- *           description: Display order
- *     Banner:
- *       type: object
- *       properties:
- *         _id:
- *           type: string
- *           description: Banner group ID
- *         title:
- *           type: string
- *           description: Banner group title
- *         description:
- *           type: string
- *           description: Banner group description
- *         banners:
- *           type: array
- *           items:
- *             $ref: '#/components/schemas/BannerItem'
- *           description: Array of banner items (1-10 items)
  *         isPublished:
  *           type: boolean
- *           description: Is this banner group published
+ *           description: Is this banner published
  *         publishedAt:
  *           type: string
  *           format: date-time
- *           description: Date when banner group was published
+ *           description: Date when banner was published
  *         isActive:
  *           type: boolean
- *           description: Is this banner group active
+ *           description: Is this banner active
  *         createdBy:
  *           type: object
- *           description: User who created the banner group
- *         totalBanners:
- *           type: integer
- *           description: Total number of banners in the group (virtual field)
+ *           description: User who created the banner
  *         createdAt:
  *           type: string
  *           format: date-time
@@ -6282,8 +6271,8 @@ export {};
  * @swagger
  * /banners:
  *   get:
- *     summary: Get all banner groups with filters
- *     description: Retrieve banner groups with optional filtering by published status, active status, etc. Use isPublished=true to get only published banner groups.
+ *     summary: Get all banners with filters
+ *     description: Retrieve banners with optional filtering by published status, active status, etc. Use isPublished=true to get only published banners.
  *     tags: [Banners]
  *     parameters:
  *       - in: query
@@ -6324,10 +6313,10 @@ export {};
  *         name: search
  *         schema:
  *           type: string
- *         description: Search term for filtering banner groups
+ *         description: Search term for filtering banners
  *     responses:
  *       200:
- *         description: Banner groups retrieved successfully
+ *         description: Banners retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -6354,12 +6343,12 @@ export {};
  * @swagger
  * /banners/published:
  *   get:
- *     summary: Get published banner group
- *     description: Retrieve the currently published banner group (only one can be published at a time)
+ *     summary: Get published banner
+ *     description: Retrieve the currently published banner (only one can be published at a time)
  *     tags: [Banners]
  *     responses:
  *       200:
- *         description: Published banner group retrieved successfully
+ *         description: Published banner retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -6375,8 +6364,8 @@ export {};
  * @swagger
  * /banners/{id}:
  *   get:
- *     summary: Get banner group by ID
- *     description: Retrieve a specific banner group by its ID
+ *     summary: Get banner by ID
+ *     description: Retrieve a specific banner by its ID
  *     tags: [Banners]
  *     parameters:
  *       - in: path
@@ -6384,10 +6373,10 @@ export {};
  *         required: true
  *         schema:
  *           type: string
- *         description: Banner group ID
+ *         description: Banner ID
  *     responses:
  *       200:
- *         description: Banner group retrieved successfully
+ *         description: Banner retrieved successfully
  *         content:
  *           application/json:
  *             schema:
@@ -6398,15 +6387,15 @@ export {};
  *                 data:
  *                   $ref: '#/components/schemas/Banner'
  *       404:
- *         description: Banner group not found
+ *         description: Banner not found
  */
 
 /**
  * @swagger
  * /banners:
  *   post:
- *     summary: Create banner group (Admin only)
- *     description: Upload multiple banner images and create a banner group (1-10 banners)
+ *     summary: Create banner (Admin only)
+ *     description: Upload a banner image and create a banner
  *     tags: [Banners]
  *     security:
  *       - BearerAuth: []
@@ -6418,29 +6407,31 @@ export {};
  *             type: object
  *             required:
  *               - title
- *               - banners
+ *               - image
  *             properties:
  *               title:
  *                 type: string
  *                 minLength: 2
  *                 maxLength: 100
- *                 description: Banner group title
+ *                 description: Banner title
  *               description:
  *                 type: string
  *                 maxLength: 500
- *                 description: Banner group description (optional)
- *               banners:
- *                 type: array
- *                 items:
- *                   type: string
- *                   format: binary
- *                 description: Banner images (1-10 images)
- *               bannersMetadata:
+ *                 description: Banner description (optional)
+ *               image:
  *                 type: string
- *                 description: JSON string array with metadata for each banner (link, altText, displayOrder)
+ *                 format: binary
+ *                 description: Banner image file
+ *               link:
+ *                 type: string
+ *                 description: Link where banner redirects (optional)
+ *               altText:
+ *                 type: string
+ *                 maxLength: 200
+ *                 description: Alternative text for image (optional)
  *     responses:
  *       201:
- *         description: Banner group created successfully
+ *         description: Banner created successfully
  *         content:
  *           application/json:
  *             schema:
@@ -6462,8 +6453,8 @@ export {};
  * @swagger
  * /banners/{id}:
  *   patch:
- *     summary: Update banner group (Admin only)
- *     description: Update banner group details and optionally replace banner images
+ *     summary: Update banner (Admin only)
+ *     description: Update banner details and optionally replace banner image
  *     tags: [Banners]
  *     security:
  *       - BearerAuth: []
@@ -6473,7 +6464,7 @@ export {};
  *         required: true
  *         schema:
  *           type: string
- *         description: Banner group ID
+ *         description: Banner ID
  *     requestBody:
  *       content:
  *         multipart/form-data:
@@ -6484,23 +6475,28 @@ export {};
  *                 type: string
  *                 minLength: 2
  *                 maxLength: 100
+ *                 description: Banner title
  *               description:
  *                 type: string
  *                 maxLength: 500
- *               banners:
- *                 type: array
- *                 items:
- *                   type: string
- *                   format: binary
- *                 description: New banner images (optional, replaces existing)
- *               bannersMetadata:
+ *                 description: Banner description
+ *               image:
  *                 type: string
- *                 description: JSON string array with metadata for each banner
+ *                 format: binary
+ *                 description: New banner image file (optional, replaces existing)
+ *               link:
+ *                 type: string
+ *                 description: Link where banner redirects
+ *               altText:
+ *                 type: string
+ *                 maxLength: 200
+ *                 description: Alternative text for image
  *               isActive:
  *                 type: boolean
+ *                 description: Banner active status
  *     responses:
  *       200:
- *         description: Banner group updated successfully
+ *         description: Banner updated successfully
  *         content:
  *           application/json:
  *             schema:
@@ -6517,15 +6513,15 @@ export {};
  *       403:
  *         description: Forbidden (Admin only)
  *       404:
- *         description: Banner group not found
+ *         description: Banner not found
  */
 
 /**
  * @swagger
  * /banners/{id}/publish:
  *   patch:
- *     summary: Publish banner group (Admin only)
- *     description: Publish a banner group (automatically unpublishes all other banner groups)
+ *     summary: Publish banner (Admin only)
+ *     description: Publish a banner (automatically unpublishes all other banners)
  *     tags: [Banners]
  *     security:
  *       - BearerAuth: []
@@ -6535,10 +6531,10 @@ export {};
  *         required: true
  *         schema:
  *           type: string
- *         description: Banner group ID
+ *         description: Banner ID
  *     responses:
  *       200:
- *         description: Banner group published successfully
+ *         description: Banner published successfully
  *         content:
  *           application/json:
  *             schema:
@@ -6551,21 +6547,21 @@ export {};
  *                 data:
  *                   $ref: '#/components/schemas/Banner'
  *       400:
- *         description: Cannot publish inactive banner group
+ *         description: Cannot publish inactive banner
  *       401:
  *         description: Unauthorized
  *       403:
  *         description: Forbidden (Admin only)
  *       404:
- *         description: Banner group not found
+ *         description: Banner not found
  */
 
 /**
  * @swagger
  * /banners/{id}/unpublish:
  *   patch:
- *     summary: Unpublish banner group (Admin only)
- *     description: Unpublish a banner group
+ *     summary: Unpublish banner (Admin only)
+ *     description: Unpublish a banner
  *     tags: [Banners]
  *     security:
  *       - BearerAuth: []
@@ -6575,10 +6571,10 @@ export {};
  *         required: true
  *         schema:
  *           type: string
- *         description: Banner group ID
+ *         description: Banner ID
  *     responses:
  *       200:
- *         description: Banner group unpublished successfully
+ *         description: Banner unpublished successfully
  *         content:
  *           application/json:
  *             schema:
@@ -6593,15 +6589,15 @@ export {};
  *       403:
  *         description: Forbidden (Admin only)
  *       404:
- *         description: Banner group not found
+ *         description: Banner not found
  */
 
 /**
  * @swagger
  * /banners/{id}/deactivate:
  *   post:
- *     summary: Deactivate banner group (Admin only)
- *     description: Mark a banner group as inactive (soft delete)
+ *     summary: Deactivate banner (Admin only)
+ *     description: Mark a banner as inactive (soft delete)
  *     tags: [Banners]
  *     security:
  *       - BearerAuth: []
@@ -6611,10 +6607,10 @@ export {};
  *         required: true
  *         schema:
  *           type: string
- *         description: Banner group ID
+ *         description: Banner ID
  *     responses:
  *       200:
- *         description: Banner group deactivated successfully
+ *         description: Banner deactivated successfully
  *         content:
  *           application/json:
  *             schema:
@@ -6629,15 +6625,15 @@ export {};
  *       403:
  *         description: Forbidden (Admin only)
  *       404:
- *         description: Banner group not found
+ *         description: Banner not found
  */
 
 /**
  * @swagger
  * /banners/{id}:
  *   delete:
- *     summary: Delete banner group (Admin only)
- *     description: Permanently delete a banner group and its associated images
+ *     summary: Delete banner (Admin only)
+ *     description: Permanently delete a banner and its associated image
  *     tags: [Banners]
  *     security:
  *       - BearerAuth: []
@@ -6647,10 +6643,10 @@ export {};
  *         required: true
  *         schema:
  *           type: string
- *         description: Banner group ID
+ *         description: Banner ID
  *     responses:
  *       200:
- *         description: Banner group deleted successfully
+ *         description: Banner deleted successfully
  *         content:
  *           application/json:
  *             schema:
@@ -6665,7 +6661,7 @@ export {};
  *       403:
  *         description: Forbidden (Admin only)
  *       404:
- *         description: Banner group not found
+ *         description: Banner not found
  */
 
 /**
@@ -6673,7 +6669,7 @@ export {};
  * /banners/stats/overview:
  *   get:
  *     summary: Get banner statistics (Admin only)
- *     description: Retrieve comprehensive statistics about banner groups
+ *     description: Retrieve comprehensive statistics about banners
  *     tags: [Banners]
  *     security:
  *       - BearerAuth: []
@@ -6692,22 +6688,19 @@ export {};
  *                   properties:
  *                     total:
  *                       type: integer
- *                       description: Total banner groups
+ *                       description: Total banners
  *                     published:
  *                       type: integer
- *                       description: Published banner groups
+ *                       description: Published banners
  *                     unpublished:
  *                       type: integer
- *                       description: Unpublished banner groups
+ *                       description: Unpublished banners
  *                     active:
  *                       type: integer
- *                       description: Active banner groups
+ *                       description: Active banners
  *                     inactive:
  *                       type: integer
- *                       description: Inactive banner groups
- *                     totalBannersCount:
- *                       type: integer
- *                       description: Total number of individual banners across all groups
+ *                       description: Inactive banners
  *       401:
  *         description: Unauthorized
  *       403:

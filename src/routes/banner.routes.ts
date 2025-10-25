@@ -2,7 +2,7 @@ import { Router } from 'express';
 import bannerController from '../controllers/banner.controller';
 import { authenticate, authorize } from '../middlewares/auth';
 import { validateQuery, validateParams } from '../middlewares/validate';
-import { uploadMultiple } from '../middlewares/upload';
+import { uploadSingle } from '../middlewares/upload';
 import {
   getBannersQuerySchema,
   bannerIdParamSchema,
@@ -38,12 +38,12 @@ router.get(
  * Admin only routes
  */
 
-// Create banner group
+// Create banner
 router.post(
   '/',
   authenticate,
   authorize('ADMIN'),
-  uploadMultiple('banners', 10),
+  uploadSingle('image'),
   bannerController.createBanner
 );
 
@@ -55,13 +55,13 @@ router.get(
   bannerController.getBannerStats
 );
 
-// Update banner group
+// Update banner
 router.patch(
   '/:id',
   authenticate,
   authorize('ADMIN'),
   validateParams(bannerIdParamSchema),
-  uploadMultiple('banners', 10),
+  uploadSingle('image'),
   bannerController.updateBanner
 );
 

@@ -9,8 +9,11 @@ export const createBannerSchema = Joi.object({
   description: Joi.string().max(500).optional().allow('').messages({
     'string.max': 'Description cannot exceed 500 characters',
   }),
-  bannersMetadata: Joi.string().optional().allow('').messages({
-    'string.base': 'Banners metadata must be a JSON string',
+  link: Joi.string().uri().optional().allow('').messages({
+    'string.uri': 'Link must be a valid URL',
+  }),
+  altText: Joi.string().max(200).optional().allow('').messages({
+    'string.max': 'Alt text cannot exceed 200 characters',
   }),
 });
 
@@ -22,8 +25,11 @@ export const updateBannerSchema = Joi.object({
   description: Joi.string().max(500).optional().allow('').messages({
     'string.max': 'Description cannot exceed 500 characters',
   }),
-  bannersMetadata: Joi.string().optional().allow('').messages({
-    'string.base': 'Banners metadata must be a JSON string',
+  link: Joi.string().uri().optional().allow('').messages({
+    'string.uri': 'Link must be a valid URL',
+  }),
+  altText: Joi.string().max(200).optional().allow('').messages({
+    'string.max': 'Alt text cannot exceed 200 characters',
   }),
   isActive: Joi.boolean().optional(),
 });

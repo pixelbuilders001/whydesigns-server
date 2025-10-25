@@ -1,16 +1,11 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export interface IBannerItem {
-  imageUrl: string;
-  link?: string;
-  altText?: string;
-  displayOrder: number;
-}
-
 export interface IBanner extends Document {
   title: string;
   description?: string;
-  banners: IBannerItem[];
+  imageUrl: string;
+  link?: string;
+  altText?: string;
   isPublished: boolean;
   isActive: boolean;
   publishedAt?: Date;
@@ -18,11 +13,22 @@ export interface IBanner extends Document {
   createdAt: Date;
   updatedAt: Date;
   creator?: any;
-  totalBanners: number;
 }
 
-const bannerItemSchema = new Schema<IBannerItem>(
+const bannerSchema = new Schema<IBanner>(
   {
+    title: {
+      type: String,
+      required: [true, 'Banner title is required'],
+      trim: true,
+      minlength: [2, 'Title must be at least 2 characters long'],
+      maxlength: [100, 'Title cannot exceed 100 characters'],
+    },
+    description: {
+      type: String,
+      trim: true,
+      maxlength: [500, 'Description cannot exceed 500 characters'],
+    },
     imageUrl: {
       type: String,
       required: [true, 'Banner image URL is required'],
@@ -36,39 +42,6 @@ const bannerItemSchema = new Schema<IBannerItem>(
       type: String,
       trim: true,
       maxlength: [200, 'Alt text cannot exceed 200 characters'],
-    },
-    displayOrder: {
-      type: Number,
-      required: true,
-      default: 0,
-    },
-  },
-  { _id: false }
-);
-
-const bannerSchema = new Schema<IBanner>(
-  {
-    title: {
-      type: String,
-      required: [true, 'Banner group title is required'],
-      trim: true,
-      minlength: [2, 'Title must be at least 2 characters long'],
-      maxlength: [100, 'Title cannot exceed 100 characters'],
-    },
-    description: {
-      type: String,
-      trim: true,
-      maxlength: [500, 'Description cannot exceed 500 characters'],
-    },
-    banners: {
-      type: [bannerItemSchema],
-      required: [true, 'At least one banner is required'],
-      validate: {
-        validator: function (banners: IBannerItem[]) {
-          return banners.length >= 1 && banners.length <= 10;
-        },
-        message: 'Banner group must have between 1 and 10 banners',
-      },
     },
     isPublished: {
       type: Boolean,
@@ -97,11 +70,6 @@ const bannerSchema = new Schema<IBanner>(
     toObject: { virtuals: true },
   }
 );
-
-// Virtual for total banners count
-bannerSchema.virtual('totalBanners').get(function () {
-  return this.banners?.length || 0;
-});
 
 // Indexes for better query performance
 bannerSchema.index({ createdAt: -1 });
