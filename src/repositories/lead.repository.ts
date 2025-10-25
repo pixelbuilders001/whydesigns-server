@@ -30,7 +30,7 @@ class LeadRepository {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return null;
     }
-    return await Lead.findOne({ _id: id, isActive: true });
+    return await Lead.findById(id);
   }
 
   /**

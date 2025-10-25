@@ -66,15 +66,15 @@ export class CounselorService {
     return await counselorRepository.findAll(options, filters);
   }
 
-  async getCounselorById(id: number): Promise<ICounselor> {
-    const counselor = await counselorRepository.findByNumericId(id);
+  async getCounselorById(id: string): Promise<ICounselor> {
+    const counselor = await counselorRepository.findById(id);
     if (!counselor) {
       throw new NotFoundError('Counselor not found');
     }
     return counselor;
   }
 
-  async updateCounselor(id: number, data: UpdateCounselorData): Promise<ICounselor> {
+  async updateCounselor(id: string, data: UpdateCounselorData): Promise<ICounselor> {
     const {
       fullName,
       email,
@@ -88,7 +88,7 @@ export class CounselorService {
     } = data;
 
     // Check if counselor exists
-    const existingCounselor = await counselorRepository.findByNumericId(id);
+    const existingCounselor = await counselorRepository.findById(id);
     if (!existingCounselor) {
       throw new NotFoundError('Counselor not found');
     }
@@ -115,7 +115,7 @@ export class CounselorService {
     if (isActive !== undefined) updateData.isActive = isActive;
     if (rating !== undefined) updateData.rating = rating;
 
-    const updatedCounselor = await counselorRepository.updateByNumericId(id, updateData);
+    const updatedCounselor = await counselorRepository.update(id, updateData);
     if (!updatedCounselor) {
       throw new NotFoundError('Counselor not found');
     }
@@ -123,22 +123,22 @@ export class CounselorService {
     return updatedCounselor;
   }
 
-  async deleteCounselor(id: number): Promise<void> {
-    const counselor = await counselorRepository.findByNumericId(id);
+  async deleteCounselor(id: string): Promise<void> {
+    const counselor = await counselorRepository.findById(id);
     if (!counselor) {
       throw new NotFoundError('Counselor not found');
     }
 
-    await counselorRepository.hardDeleteByNumericId(id);
+    await counselorRepository.hardDelete(id);
   }
 
-  async softDeleteCounselor(id: number): Promise<ICounselor> {
-    const counselor = await counselorRepository.findByNumericId(id);
+  async softDeleteCounselor(id: string): Promise<ICounselor> {
+    const counselor = await counselorRepository.findById(id);
     if (!counselor) {
       throw new NotFoundError('Counselor not found');
     }
 
-    const deletedCounselor = await counselorRepository.softDeleteByNumericId(id);
+    const deletedCounselor = await counselorRepository.softDelete(id);
     if (!deletedCounselor) {
       throw new NotFoundError('Counselor not found');
     }
@@ -174,17 +174,17 @@ export class CounselorService {
     return await counselorRepository.findMostExperienced(limit);
   }
 
-  async updateCounselorRating(id: number, rating: number): Promise<ICounselor> {
+  async updateCounselorRating(id: string, rating: number): Promise<ICounselor> {
     if (rating < 0 || rating > 5) {
       throw new BadRequestError('Rating must be between 0 and 5');
     }
 
-    const counselor = await counselorRepository.findByNumericId(id);
+    const counselor = await counselorRepository.findById(id);
     if (!counselor) {
       throw new NotFoundError('Counselor not found');
     }
 
-    const updatedCounselor = await counselorRepository.updateRating(id, rating);
+    const updatedCounselor = await counselorRepository.update(id, { rating });
     if (!updatedCounselor) {
       throw new NotFoundError('Counselor not found');
     }

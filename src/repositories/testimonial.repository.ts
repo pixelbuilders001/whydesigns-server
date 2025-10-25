@@ -35,7 +35,7 @@ class TestimonialRepository {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return null;
     }
-    return await Testimonial.findOne({ _id: id, isActive: true });
+    return await Testimonial.findById(id);
   }
 
   /**

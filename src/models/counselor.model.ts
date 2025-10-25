@@ -2,7 +2,6 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface ICounselor extends Document {
   _id: string;
-  id: number;
   fullName: string;
   email: string;
   title: string;
@@ -16,25 +15,8 @@ export interface ICounselor extends Document {
   updatedAt: Date;
 }
 
-// Counter schema for auto-incrementing ID
-interface ICounter extends Document {
-  _id: string;
-  seq: number;
-}
-
-const counterSchema = new Schema<ICounter>({
-  _id: { type: String, required: true },
-  seq: { type: Number, default: 0 },
-});
-
-const Counter = mongoose.model<ICounter>('Counter', counterSchema);
-
 const counselorSchema = new Schema<ICounselor>(
   {
-    id: {
-      type: Number,
-      unique: true,
-    },
     fullName: {
       type: String,
       required: [true, 'Full name is required'],
@@ -112,7 +94,6 @@ const counselorSchema = new Schema<ICounselor>(
 );
 
 // Indexes for better query performance
-counselorSchema.index({ id: 1 }, { unique: true });
 counselorSchema.index({ email: 1 }, { unique: true });
 counselorSchema.index({ fullName: 'text', bio: 'text', title: 'text' }); // Text index for search
 counselorSchema.index({ isActive: 1 });
@@ -120,25 +101,6 @@ counselorSchema.index({ rating: -1 });
 counselorSchema.index({ yearsOfExperience: -1 });
 counselorSchema.index({ specialties: 1 });
 counselorSchema.index({ createdAt: -1 });
-
-// Auto-increment ID before saving
-counselorSchema.pre('save', async function (next) {
-  if (this.isNew) {
-    try {
-      const counter = await Counter.findByIdAndUpdate(
-        { _id: 'counselorId' },
-        { $inc: { seq: 1 } },
-        { new: true, upsert: true }
-      );
-      this.id = counter!.seq;
-      next();
-    } catch (error) {
-      next(error as Error);
-    }
-  } else {
-    next();
-  }
-});
 
 // Virtual for experience level
 counselorSchema.virtual('experienceLevel').get(function (this: ICounselor) {

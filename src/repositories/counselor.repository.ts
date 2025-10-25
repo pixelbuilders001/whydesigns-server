@@ -8,11 +8,7 @@ export class CounselorRepository {
   }
 
   async findById(id: string): Promise<ICounselor | null> {
-    return await Counselor.findOne({ _id: id, isActive: true });
-  }
-
-  async findByNumericId(id: number): Promise<ICounselor | null> {
-    return await Counselor.findOne({ id, isActive: true });
+    return await Counselor.findById(id);
   }
 
   async findAll(options: PaginationOptions, filters: { isActive?: boolean } = {}): Promise<{ counselors: ICounselor[]; total: number }> {
@@ -44,48 +40,13 @@ export class CounselorRepository {
     });
   }
 
-  async updateByNumericId(id: number, updateData: Partial<ICounselor>): Promise<ICounselor | null> {
-    return await Counselor.findOneAndUpdate({ id }, updateData, {
-      new: true,
-      runValidators: true,
-    });
-  }
-
-  async delete(id: string): Promise<ICounselor | null> {
-    return await Counselor.findByIdAndUpdate(
-      id,
-      { isActive: false },
-      { new: true }
-    );
-  }
-
-  async deleteByNumericId(id: number): Promise<ICounselor | null> {
-    return await Counselor.findOneAndUpdate(
-      { id },
-      { isActive: false },
-      { new: true }
-    );
-  }
-
   async hardDelete(id: string): Promise<ICounselor | null> {
     return await Counselor.findByIdAndDelete(id);
-  }
-
-  async hardDeleteByNumericId(id: number): Promise<ICounselor | null> {
-    return await Counselor.findOneAndDelete({ id });
   }
 
   async softDelete(id: string): Promise<ICounselor | null> {
     return await Counselor.findByIdAndUpdate(
       id,
-      { isActive: false },
-      { new: true }
-    );
-  }
-
-  async softDeleteByNumericId(id: number): Promise<ICounselor | null> {
-    return await Counselor.findOneAndUpdate(
-      { id },
       { isActive: false },
       { new: true }
     );
@@ -160,14 +121,6 @@ export class CounselorRepository {
     return await Counselor.find({ isActive: true })
       .sort({ yearsOfExperience: -1 })
       .limit(limit);
-  }
-
-  async updateRating(id: number, rating: number): Promise<ICounselor | null> {
-    return await Counselor.findOneAndUpdate(
-      { id },
-      { rating },
-      { new: true }
-    );
   }
 
   async getAverageRating(): Promise<number> {

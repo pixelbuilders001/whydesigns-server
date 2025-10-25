@@ -8,7 +8,7 @@ export class CategoryRepository {
   }
 
   async findById(id: string): Promise<ICategory | null> {
-    return await Category.findOne({ _id: id, isActive: true }).populate('createdBy', 'firstName lastName email');
+    return await Category.findById(id).populate('createdBy', 'firstName lastName email');
   }
 
   async findBySlug(slug: string): Promise<ICategory | null> {

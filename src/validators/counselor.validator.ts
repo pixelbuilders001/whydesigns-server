@@ -99,12 +99,13 @@ export const counselorPaginationSchema = Joi.object({
 });
 
 export const counselorIdParamSchema = Joi.object({
-  id: Joi.number().integer().positive().required().messages({
-    'number.base': 'Counselor ID must be a number',
-    'number.integer': 'Counselor ID must be an integer',
-    'number.positive': 'Counselor ID must be positive',
-    'any.required': 'Counselor ID is required',
-  }),
+  id: Joi.string()
+    .pattern(/^[0-9a-fA-F]{24}$/)
+    .required()
+    .messages({
+      'string.pattern.base': 'Counselor ID must be a valid MongoDB ObjectId',
+      'any.required': 'Counselor ID is required',
+    }),
 });
 
 export const topCounselorsQuerySchema = Joi.object({

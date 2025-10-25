@@ -8,8 +8,8 @@ export class BookingRepository {
   }
 
   async findById(id: string): Promise<IBooking | null> {
-    return await Booking.findOne({ _id: id, isActive: true })
-      .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
+    return await Booking.findById(id)
+      .populate('counselorId', '_id fullName title avatarUrl specialties rating')
       .populate('userId', '_id firstName lastName email phoneNumber');
   }
 
@@ -22,7 +22,7 @@ export class BookingRepository {
 
     const [bookings, total] = await Promise.all([
       Booking.find({ isActive: true })
-        .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
+        .populate('counselorId', '_id fullName title avatarUrl specialties rating')
         .populate('userId', '_id firstName lastName email phoneNumber')
         .sort(sortOptions)
         .skip(skip)
@@ -45,7 +45,7 @@ export class BookingRepository {
 
     const [bookings, total] = await Promise.all([
       Booking.find({ status, isActive: true })
-        .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
+        .populate('counselorId', '_id fullName title avatarUrl specialties rating')
         .populate('userId', '_id firstName lastName email phoneNumber')
         .sort(sortOptions)
         .skip(skip)
@@ -68,7 +68,7 @@ export class BookingRepository {
 
     const [bookings, total] = await Promise.all([
       Booking.find({ counselorId, isActive: true })
-        .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
+        .populate('counselorId', '_id fullName title avatarUrl specialties rating')
         .populate('userId', '_id firstName lastName email phoneNumber')
         .sort(sortOptions)
         .skip(skip)
@@ -91,7 +91,7 @@ export class BookingRepository {
 
     const [bookings, total] = await Promise.all([
       Booking.find({ userId, isActive: true })
-        .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
+        .populate('counselorId', '_id fullName title avatarUrl specialties rating')
         .populate('userId', '_id firstName lastName email phoneNumber')
         .sort(sortOptions)
         .skip(skip)
@@ -114,7 +114,7 @@ export class BookingRepository {
 
     const [bookings, total] = await Promise.all([
       Booking.find({ guestEmail: email.toLowerCase(), isActive: true })
-        .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
+        .populate('counselorId', '_id fullName title avatarUrl specialties rating')
         .populate('userId', '_id firstName lastName email phoneNumber')
         .sort(sortOptions)
         .skip(skip)
@@ -132,7 +132,7 @@ export class BookingRepository {
       status: { $in: ['pending', 'confirmed'] },
       isActive: true,
     })
-      .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
+      .populate('counselorId', '_id fullName title avatarUrl specialties rating')
       .populate('userId', '_id firstName lastName email phoneNumber')
       .sort({ bookingDate: 1, bookingTime: 1 })
       .limit(limit);
@@ -146,7 +146,7 @@ export class BookingRepository {
       status: { $in: ['pending', 'confirmed'] },
       isActive: true,
     })
-      .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
+      .populate('counselorId', '_id fullName title avatarUrl specialties rating')
       .sort({ bookingDate: 1, bookingTime: 1 });
   }
 
@@ -158,7 +158,7 @@ export class BookingRepository {
       status: { $in: ['pending', 'confirmed'] },
       isActive: true,
     })
-      .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
+      .populate('counselorId', '_id fullName title avatarUrl specialties rating')
       .sort({ bookingDate: 1, bookingTime: 1 });
   }
 
@@ -179,7 +179,7 @@ export class BookingRepository {
       new: true,
       runValidators: true,
     })
-      .populate('counselorId', '_id id fullName title avatarUrl specialties rating')
+      .populate('counselorId', '_id fullName title avatarUrl specialties rating')
       .populate('userId', '_id firstName lastName email phoneNumber');
   }
 
@@ -275,7 +275,7 @@ export class BookingRepository {
       reminderEmailSent: false,
       isActive: true,
     })
-      .populate('counselorId', '_id id fullName title avatarUrl')
+      .populate('counselorId', '_id fullName title avatarUrl')
       .populate('userId', '_id firstName lastName email phoneNumber');
   }
 }

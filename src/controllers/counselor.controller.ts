@@ -67,23 +67,13 @@ export class CounselorController {
   });
 
   getCounselorById = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    const id = parseInt(req.params.id, 10);
-
-    if (isNaN(id)) {
-      return ApiResponse.error(res, 'Invalid counselor ID', 400);
-    }
-
+    const id = req.params.id;
     const counselor = await counselorService.getCounselorById(id);
-
     return ApiResponse.success(res, counselor, 'Counselor retrieved successfully');
   });
 
   updateCounselor = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    const id = parseInt(req.params.id, 10);
-
-    if (isNaN(id)) {
-      return ApiResponse.error(res, 'Invalid counselor ID', 400);
-    }
+    const id = req.params.id;
 
     // Handle file upload if present
     let avatarUrl = '';
@@ -120,26 +110,14 @@ export class CounselorController {
   });
 
   deleteCounselor = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    const id = parseInt(req.params.id, 10);
-
-    if (isNaN(id)) {
-      return ApiResponse.error(res, 'Invalid counselor ID', 400);
-    }
-
+    const id = req.params.id;
     await counselorService.deleteCounselor(id);
-
     return ApiResponse.success(res, null, 'Counselor deleted successfully');
   });
 
   softDeleteCounselor = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    const id = parseInt(req.params.id, 10);
-
-    if (isNaN(id)) {
-      return ApiResponse.error(res, 'Invalid counselor ID', 400);
-    }
-
+    const id = req.params.id;
     const counselor = await counselorService.softDeleteCounselor(id);
-
     return ApiResponse.success(res, counselor, 'Counselor deactivated successfully');
   });
 
@@ -160,16 +138,9 @@ export class CounselorController {
   });
 
   updateCounselorRating = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    const id = parseInt(req.params.id, 10);
-
-    if (isNaN(id)) {
-      return ApiResponse.error(res, 'Invalid counselor ID', 400);
-    }
-
+    const id = req.params.id;
     const { rating } = req.body;
-
     const counselor = await counselorService.updateCounselorRating(id, rating);
-
     return ApiResponse.success(res, counselor, 'Counselor rating updated successfully');
   });
 

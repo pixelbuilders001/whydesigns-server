@@ -18,7 +18,7 @@ export class MaterialRepository {
    * Find material by ID
    */
   async findById(id: string): Promise<IMaterial | null> {
-    return await Material.findOne({ _id: id, isActive: true }).populate('uploadedBy', 'name email');
+    return await Material.findById(id).populate('uploadedBy', 'name email');
   }
 
   /**

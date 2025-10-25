@@ -19,7 +19,7 @@ export class BlogRepository {
   }
 
   async findById(id: string): Promise<IBlog | null> {
-    return await Blog.findOne({ _id: id, isActive: true })
+    return await Blog.findById(id)
       .populate('authorId', 'firstName lastName email profilePicture');
   }
 
