@@ -5,6 +5,7 @@ import { NotFoundError, BadRequestError } from '../utils/AppError';
 
 interface CreateCounselorData {
   fullName: string;
+  email: string;
   title: string;
   yearsOfExperience: number;
   bio: string;
@@ -16,6 +17,7 @@ interface CreateCounselorData {
 
 interface UpdateCounselorData {
   fullName?: string;
+  email?: string;
   title?: string;
   yearsOfExperience?: number;
   bio?: string;
@@ -29,6 +31,7 @@ export class CounselorService {
   async createCounselor(data: CreateCounselorData): Promise<ICounselor> {
     const {
       fullName,
+      email,
       title,
       yearsOfExperience,
       bio,
@@ -46,6 +49,7 @@ export class CounselorService {
     // Create counselor
     const counselor = await counselorRepository.create({
       fullName,
+      email,
       title,
       yearsOfExperience,
       bio,
@@ -73,6 +77,7 @@ export class CounselorService {
   async updateCounselor(id: number, data: UpdateCounselorData): Promise<ICounselor> {
     const {
       fullName,
+      email,
       title,
       yearsOfExperience,
       bio,
@@ -101,6 +106,7 @@ export class CounselorService {
     // Update counselor
     const updateData: Partial<ICounselor> = {};
     if (fullName !== undefined) updateData.fullName = fullName;
+    if (email !== undefined) updateData.email = email;
     if (title !== undefined) updateData.title = title;
     if (yearsOfExperience !== undefined) updateData.yearsOfExperience = yearsOfExperience;
     if (bio !== undefined) updateData.bio = bio;
