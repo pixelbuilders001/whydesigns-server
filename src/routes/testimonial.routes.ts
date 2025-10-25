@@ -26,6 +26,13 @@ router.get(
   testimonialController.getPublishedTestimonials
 );
 
+// Get approved testimonials (backward compatibility - same as /published)
+router.get(
+  '/approved',
+  validateQuery(getTestimonialsQuerySchema),
+  testimonialController.getPublishedTestimonials
+);
+
 // Get favorite testimonials
 router.get(
   '/favorites',
