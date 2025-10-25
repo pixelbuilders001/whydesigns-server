@@ -3135,9 +3135,13 @@
  *         isFavorite:
  *           type: boolean
  *           description: Is this a favorite testimonial
- *         isApproved:
+ *         isPublished:
  *           type: boolean
- *           description: Is this testimonial approved
+ *           description: Is this testimonial published
+ *         publishedAt:
+ *           type: string
+ *           format: date-time
+ *           description: Date when testimonial was published
  *         isActive:
  *           type: boolean
  *           description: Is this testimonial active
@@ -3348,7 +3352,7 @@
  *           enum: [asc, desc]
  *           default: desc
  *       - in: query
- *         name: isApproved
+ *         name: isPublished
  *         schema:
  *           type: boolean
  *       - in: query
@@ -3436,6 +3440,39 @@
  *     responses:
  *       200:
  *         description: Approved testimonials retrieved successfully
+ */
+
+/**
+ * @swagger
+ * /testimonials/published:
+ *   get:
+ *     summary: Get published testimonials
+ *     description: Get all published and active testimonials (public)
+ *     tags: [Testimonials]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [createdAt, rating, displayOrder, name]
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *     responses:
+ *       200:
+ *         description: Published testimonials retrieved successfully
  */
 
 /**
@@ -3767,9 +3804,9 @@
  *                   properties:
  *                     total:
  *                       type: integer
- *                     approved:
+ *                     published:
  *                       type: integer
- *                     pending:
+ *                     unpublished:
  *                       type: integer
  *                     favorites:
  *                       type: integer
@@ -3813,10 +3850,10 @@
 
 /**
  * @swagger
- * /testimonials/{id}/approve:
+ * /testimonials/{id}/publish:
  *   patch:
- *     summary: Approve testimonial
- *     description: Approve a pending testimonial (admin only)
+ *     summary: Publish testimonial
+ *     description: Publish a testimonial to make it publicly visible (admin only)
  *     tags: [Testimonials]
  *     security:
  *       - bearerAuth: []
@@ -3828,7 +3865,7 @@
  *           type: string
  *     responses:
  *       200:
- *         description: Testimonial approved successfully
+ *         description: Testimonial published successfully
  *       401:
  *         description: Unauthorized
  *       403:
@@ -3839,10 +3876,10 @@
 
 /**
  * @swagger
- * /testimonials/{id}/reject:
+ * /testimonials/{id}/unpublish:
  *   patch:
- *     summary: Reject testimonial
- *     description: Reject a testimonial (admin only)
+ *     summary: Unpublish testimonial
+ *     description: Unpublish a testimonial to hide it from public view (admin only)
  *     tags: [Testimonials]
  *     security:
  *       - bearerAuth: []
@@ -3854,7 +3891,7 @@
  *           type: string
  *     responses:
  *       200:
- *         description: Testimonial rejected successfully
+ *         description: Testimonial unpublished successfully
  *       401:
  *         description: Unauthorized
  *       403:
@@ -6016,10 +6053,10 @@ export {};
  *                         total:
  *                           type: integer
  *                           example: 75
- *                         approved:
+ *                         published:
  *                           type: integer
  *                           example: 60
- *                         pending:
+ *                         unpublished:
  *                           type: integer
  *                           example: 15
  *                     reels:
