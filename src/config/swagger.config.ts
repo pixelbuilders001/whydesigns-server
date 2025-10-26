@@ -930,6 +930,14 @@ const swaggerDefinition = {
       name: 'Summary',
       description: 'Dashboard summary and statistics endpoints aggregating data from all modules',
     },
+    {
+      name: 'Banners',
+      description: 'Banner management endpoints for homepage banners',
+    },
+    {
+      name: 'Team',
+      description: 'Team member management endpoints for displaying our team section',
+    },
   ],
 };
 
