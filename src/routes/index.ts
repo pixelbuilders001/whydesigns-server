@@ -11,6 +11,7 @@ import videoRoutes from './video.routes';
 import leadRoutes from './lead.routes';
 import summaryRoutes from './summary.routes';
 import bannerRoutes from './banner.routes';
+import teamRoutes from './team.routes';
 
 const router = Router();
 
@@ -36,5 +37,6 @@ router.use('/videos', videoRoutes);
 router.use('/leads', leadRoutes);
 router.use('/summary', summaryRoutes);
 router.use('/banners', bannerRoutes);
+router.use('/team', teamRoutes);
 
 export default router;

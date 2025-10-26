@@ -6717,4 +6717,456 @@ export {};
  *         description: Forbidden (Admin only)
  */
 
+/**
+ * @swagger
+ * tags:
+ *   name: Team
+ *   description: Our Team management endpoints
+ */
+
+/**
+ * @swagger
+ * /team:
+ *   get:
+ *     summary: Get team members (Public)
+ *     description: Get all team members with filters using query parameters. By default returns published and active team members.
+ *     tags: [Team]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Items per page
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [createdAt, publishedAt, displayOrder, name]
+ *           default: displayOrder
+ *         description: Sort field
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: asc
+ *         description: Sort order
+ *       - in: query
+ *         name: isPublished
+ *         schema:
+ *           type: boolean
+ *         description: Filter by published status
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *         description: Filter by active status
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search in name, designation, and description
+ *     responses:
+ *       200:
+ *         description: Team members retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     teams:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           _id:
+ *                             type: string
+ *                           name:
+ *                             type: string
+ *                           designation:
+ *                             type: string
+ *                           description:
+ *                             type: string
+ *                           image:
+ *                             type: string
+ *                           isPublished:
+ *                             type: boolean
+ *                           isActive:
+ *                             type: boolean
+ *                           displayOrder:
+ *                             type: integer
+ *                           publishedAt:
+ *                             type: string
+ *                             format: date-time
+ *                           createdAt:
+ *                             type: string
+ *                             format: date-time
+ *                           updatedAt:
+ *                             type: string
+ *                             format: date-time
+ *                     total:
+ *                       type: integer
+ *                     page:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *   post:
+ *     summary: Create team member (Admin only)
+ *     description: Create a new team member with image upload
+ *     tags: [Team]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - designation
+ *               - description
+ *               - image
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
+ *                 description: Team member name
+ *               designation:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
+ *                 description: Job designation
+ *               description:
+ *                 type: string
+ *                 minLength: 10
+ *                 maxLength: 1000
+ *                 description: Team member description
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *                 description: Team member image (required)
+ *               isPublished:
+ *                 type: boolean
+ *                 description: Publish immediately (default false)
+ *               displayOrder:
+ *                 type: integer
+ *                 description: Display order for sorting (default 0)
+ *     responses:
+ *       201:
+ *         description: Team member created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *       400:
+ *         description: Validation error or missing image
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+
+/**
+ * @swagger
+ * /team/{id}:
+ *   get:
+ *     summary: Get team member by ID
+ *     description: Get a single team member by ID
+ *     tags: [Team]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Team member ID
+ *     responses:
+ *       200:
+ *         description: Team member retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *       404:
+ *         description: Team member not found
+ *   patch:
+ *     summary: Update team member (Admin only)
+ *     description: Update an existing team member's details and optionally replace image
+ *     tags: [Team]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Team member ID
+ *     requestBody:
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
+ *               designation:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
+ *               description:
+ *                 type: string
+ *                 minLength: 10
+ *                 maxLength: 1000
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *               isPublished:
+ *                 type: boolean
+ *               isActive:
+ *                 type: boolean
+ *               displayOrder:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Team member updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Team member not found
+ *   delete:
+ *     summary: Delete team member (Admin only)
+ *     description: Permanently delete a team member and their image
+ *     tags: [Team]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Team member ID
+ *     responses:
+ *       200:
+ *         description: Team member deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Team member not found
+
+/**
+ * @swagger
+ * /team/{id}/publish:
+ *   post:
+ *     summary: Publish team member (Admin only)
+ *     description: Mark a team member as published and set publication timestamp
+ *     tags: [Team]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Team member ID
+ *     responses:
+ *       200:
+ *         description: Team member published successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Team member not found
+
+/**
+ * @swagger
+ * /team/{id}/unpublish:
+ *   post:
+ *     summary: Unpublish team member (Admin only)
+ *     description: Mark a team member as unpublished
+ *     tags: [Team]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Team member ID
+ *     responses:
+ *       200:
+ *         description: Team member unpublished successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Team member not found
+
+/**
+ * @swagger
+ * /team/{id}/deactivate:
+ *   post:
+ *     summary: Deactivate team member (Admin only)
+ *     description: Soft delete a team member by marking as inactive
+ *     tags: [Team]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Team member ID
+ *     responses:
+ *       200:
+ *         description: Team member deactivated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Team member not found
+
+/**
+ * @swagger
+ * /team/stats/overview:
+ *   get:
+ *     summary: Get team statistics (Admin only)
+ *     description: Retrieve comprehensive statistics about team members
+ *     tags: [Team]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                       description: Total team members
+ *                     published:
+ *                       type: integer
+ *                       description: Published team members
+ *                     unpublished:
+ *                       type: integer
+ *                       description: Unpublished team members
+ *                     active:
+ *                       type: integer
+ *                       description: Active team members
+ *                     inactive:
+ *                       type: integer
+ *                       description: Inactive team members
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ */
+
 export {};
