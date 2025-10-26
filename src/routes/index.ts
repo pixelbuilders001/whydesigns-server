@@ -9,6 +9,7 @@ import testimonialRoutes from './testimonial.routes';
 import reelRoutes from './reel.routes';
 import videoRoutes from './video.routes';
 import leadRoutes from './lead.routes';
+import leadActivityRoutes from './leadActivity.routes';
 import summaryRoutes from './summary.routes';
 import bannerRoutes from './banner.routes';
 import teamRoutes from './team.routes';
@@ -35,6 +36,7 @@ router.use('/testimonials', testimonialRoutes);
 router.use('/reels', reelRoutes);
 router.use('/videos', videoRoutes);
 router.use('/leads', leadRoutes);
+router.use('/', leadActivityRoutes); // Lead activities are nested under /leads/:leadId/activities
 router.use('/summary', summaryRoutes);
 router.use('/banners', bannerRoutes);
 router.use('/team', teamRoutes);
