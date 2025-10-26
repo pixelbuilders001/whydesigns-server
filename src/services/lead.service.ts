@@ -7,14 +7,6 @@ class LeadService {
    * Create a new lead
    */
   async createLead(leadData: Partial<ILead>): Promise<ILead> {
-    // Check if lead with same email already exists
-    if (leadData.email) {
-      const exists = await leadRepository.existsByEmail(leadData.email);
-      if (exists) {
-        throw new AppError('Lead with this email already exists', 400);
-      }
-    }
-
     const lead = await leadRepository.create(leadData);
     return lead;
   }
@@ -46,17 +38,6 @@ class LeadService {
   async updateLead(id: string, updateData: Partial<ILead>): Promise<ILead> {
     // Check if lead exists
     await this.getLeadById(id);
-
-    // If email is being updated, check if it's already taken
-    if (updateData.email) {
-      const existingLead = await leadRepository.findById(id);
-      if (existingLead && existingLead.email !== updateData.email.toLowerCase()) {
-        const emailExists = await leadRepository.existsByEmail(updateData.email);
-        if (emailExists) {
-          throw new AppError('Lead with this email already exists', 400);
-        }
-      }
-    }
 
     const updatedLead = await leadRepository.update(id, updateData);
     if (!updatedLead) {
