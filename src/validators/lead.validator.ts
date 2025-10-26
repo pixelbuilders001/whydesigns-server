@@ -46,6 +46,12 @@ export const updateLeadSchema = Joi.object({
   message: Joi.string().max(1000).optional().allow('').messages({
     'string.max': 'Message cannot exceed 1000 characters',
   }),
+  contacted: Joi.boolean().optional().messages({
+    'boolean.base': 'contacted must be a boolean',
+  }),
+  isActive: Joi.boolean().optional().messages({
+    'boolean.base': 'isActive must be a boolean',
+  }),
 }).min(1);
 
 export const updateActiveStatusSchema = Joi.object({
@@ -66,16 +72,17 @@ export const getLeadsQuerySchema = Joi.object({
     'number.max': 'Limit cannot exceed 100',
   }),
   sortBy: Joi.string()
-    .valid('createdAt', 'fullName', 'email', 'areaOfInterest')
+    .valid('createdAt', 'fullName', 'email', 'areaOfInterest', 'contactedAt', 'contacted')
     .optional()
     .default('createdAt')
     .messages({
-      'any.only': 'Sort by must be one of: createdAt, fullName, email, areaOfInterest',
+      'any.only': 'Sort by must be one of: createdAt, fullName, email, areaOfInterest, contactedAt, contacted',
     }),
   sortOrder: Joi.string().valid('asc', 'desc').optional().default('desc').messages({
     'any.only': 'Sort order must be either asc or desc',
   }),
   isActive: Joi.boolean().optional(),
+  contacted: Joi.boolean().optional(),
   areaOfInterest: Joi.string().optional(),
   search: Joi.string().optional(),
 });

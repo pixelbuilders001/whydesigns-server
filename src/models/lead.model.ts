@@ -7,6 +7,9 @@ export interface ILead extends Document {
   areaOfInterest: string;
   message?: string;
   isActive: boolean;
+  contacted: boolean;
+  contactedAt?: Date;
+  contactedBy?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -55,6 +58,20 @@ const leadSchema = new Schema<ILead>(
       default: true,
       index: true,
     },
+    contacted: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    contactedAt: {
+      type: Date,
+      default: null,
+    },
+    contactedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -68,7 +85,10 @@ leadSchema.index({ email: 1 });
 leadSchema.index({ phone: 1 });
 leadSchema.index({ createdAt: -1 });
 leadSchema.index({ isActive: 1 });
+leadSchema.index({ contacted: 1 });
+leadSchema.index({ contactedAt: -1 });
 leadSchema.index({ fullName: 'text', areaOfInterest: 'text' });
+leadSchema.index({ contacted: 1, isActive: 1 }); // Compound index for filtering
 
 const Lead = mongoose.model<ILead>('Lead', leadSchema);
 

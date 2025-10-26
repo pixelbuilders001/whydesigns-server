@@ -5763,7 +5763,7 @@
  *         name: sortBy
  *         schema:
  *           type: string
- *           enum: [createdAt, fullName, email, areaOfInterest]
+ *           enum: [createdAt, fullName, email, areaOfInterest, contactedAt, contacted]
  *           default: createdAt
  *         description: Field to sort by
  *       - in: query
@@ -5778,6 +5778,11 @@
  *         schema:
  *           type: boolean
  *         description: Filter by active status
+ *       - in: query
+ *         name: contacted
+ *         schema:
+ *           type: boolean
+ *         description: Filter by contacted status (true = contacted, false = not contacted)
  *       - in: query
  *         name: areaOfInterest
  *         schema:
@@ -5846,12 +5851,23 @@
  *                     total:
  *                       type: integer
  *                       example: 100
+ *                       description: Total leads
  *                     active:
  *                       type: integer
  *                       example: 85
+ *                       description: Active leads
  *                     inactive:
  *                       type: integer
  *                       example: 15
+ *                       description: Inactive leads
+ *                     contacted:
+ *                       type: integer
+ *                       example: 45
+ *                       description: Leads that have been contacted
+ *                     notContacted:
+ *                       type: integer
+ *                       example: 55
+ *                       description: Leads that have not been contacted
  *       401:
  *         description: Unauthorized
  *       403:
@@ -5939,6 +5955,14 @@
  *                 type: string
  *                 maxLength: 1000
  *                 example: I would like to know more about your design courses
+ *               contacted:
+ *                 type: boolean
+ *                 description: Mark lead as contacted or not contacted
+ *                 example: true
+ *               isActive:
+ *                 type: boolean
+ *                 description: Set lead active status
+ *                 example: true
  *     responses:
  *       200:
  *         description: Lead updated successfully
@@ -5998,6 +6022,76 @@
  *       404:
  *         description: Lead not found
  */
+
+/**
+ * @swagger
+ * /leads/{id}/contacted:
+ *   post:
+ *     summary: Mark lead as contacted (Admin only)
+ *     description: Mark a lead as contacted by the current admin user. Automatically records who contacted and when.
+ *     tags: [Leads]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Lead ID
+ *     responses:
+ *       200:
+ *         description: Lead marked as contacted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Lead'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Lead not found
+ *   delete:
+ *     summary: Mark lead as not contacted (Admin only)
+ *     description: Mark a lead as not contacted. Clears the contacted flag, contactedAt, and contactedBy fields.
+ *     tags: [Leads]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Lead ID
+ *     responses:
+ *       200:
+ *         description: Lead marked as not contacted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Lead'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Lead not found
 
 /**
  * @swagger

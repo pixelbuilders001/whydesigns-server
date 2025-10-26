@@ -63,6 +63,24 @@ router.put(
   leadController.updateLead
 );
 
+// Mark lead as contacted
+router.post(
+  '/:id/contacted',
+  authenticate,
+  authorize('ADMIN'),
+  validateParams(leadIdParamSchema),
+  leadController.markAsContacted
+);
+
+// Mark lead as not contacted
+router.delete(
+  '/:id/contacted',
+  authenticate,
+  authorize('ADMIN'),
+  validateParams(leadIdParamSchema),
+  leadController.markAsNotContacted
+);
+
 // Delete lead
 router.delete(
   '/:id',

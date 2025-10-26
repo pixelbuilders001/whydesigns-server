@@ -92,6 +92,36 @@ class LeadService {
   }
 
   /**
+   * Mark lead as contacted
+   */
+  async markAsContacted(id: string, userId: string): Promise<ILead> {
+    // Check if lead exists
+    await this.getLeadById(id);
+
+    const lead = await leadRepository.markAsContacted(id, userId);
+    if (!lead) {
+      throw new AppError('Failed to mark lead as contacted', 500);
+    }
+
+    return lead;
+  }
+
+  /**
+   * Mark lead as not contacted
+   */
+  async markAsNotContacted(id: string): Promise<ILead> {
+    // Check if lead exists
+    await this.getLeadById(id);
+
+    const lead = await leadRepository.markAsNotContacted(id);
+    if (!lead) {
+      throw new AppError('Failed to mark lead as not contacted', 500);
+    }
+
+    return lead;
+  }
+
+  /**
    * Get lead statistics
    */
   async getLeadStats(): Promise<any> {

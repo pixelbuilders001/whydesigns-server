@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 
 export interface LeadFilters {
   isActive?: boolean;
+  contacted?: boolean;
   search?: string;
   areaOfInterest?: string;
 }
@@ -50,6 +51,10 @@ class LeadRepository {
       query.isActive = filters.isActive;
     }
 
+    if (filters.contacted !== undefined) {
+      query.contacted = filters.contacted;
+    }
+
     if (filters.areaOfInterest) {
       query.areaOfInterest = new RegExp(filters.areaOfInterest, 'i');
     }
@@ -61,6 +66,10 @@ class LeadRepository {
     // Execute query
     const [leads, total] = await Promise.all([
       Lead.find(query)
+        .populate({
+          path: 'contactedBy',
+          select: 'firstName lastName email',
+        })
         .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
         .skip(skip)
         .limit(limit),
@@ -138,19 +147,62 @@ class LeadRepository {
   }
 
   /**
+   * Mark lead as contacted
+   */
+  async markAsContacted(id: string, userId: string): Promise<ILead | null> {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return null;
+    }
+    return await Lead.findByIdAndUpdate(
+      id,
+      {
+        contacted: true,
+        contactedAt: new Date(),
+        contactedBy: userId,
+      },
+      { new: true }
+    ).populate({
+      path: 'contactedBy',
+      select: 'firstName lastName email',
+    });
+  }
+
+  /**
+   * Mark lead as not contacted
+   */
+  async markAsNotContacted(id: string): Promise<ILead | null> {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return null;
+    }
+    return await Lead.findByIdAndUpdate(
+      id,
+      {
+        contacted: false,
+        contactedAt: null,
+        contactedBy: null,
+      },
+      { new: true }
+    );
+  }
+
+  /**
    * Get lead statistics
    */
   async getStats(): Promise<any> {
-    const [total, active, inactive] = await Promise.all([
+    const [total, active, inactive, contacted, notContacted] = await Promise.all([
       Lead.countDocuments(),
       Lead.countDocuments({ isActive: true }),
       Lead.countDocuments({ isActive: false }),
+      Lead.countDocuments({ contacted: true }),
+      Lead.countDocuments({ contacted: false }),
     ]);
 
     return {
       total,
       active,
       inactive,
+      contacted,
+      notContacted,
     };
   }
 }

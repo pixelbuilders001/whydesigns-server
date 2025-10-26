@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
+import { AuthenticatedRequest } from '../types';
 import leadService from '../services/lead.service';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
+import { AppError } from '../utils/AppError';
 
 class LeadController {
   /**
@@ -26,10 +28,11 @@ class LeadController {
    * @access Private (Admin only)
    */
   getAllLeads = asyncHandler(async (req: Request, res: Response) => {
-    const { page, limit, sortBy, sortOrder, isActive, areaOfInterest, search } = req.query;
+    const { page, limit, sortBy, sortOrder, isActive, contacted, areaOfInterest, search } = req.query;
 
     const filters: any = {};
     if (isActive !== undefined) filters.isActive = isActive === 'true';
+    if (contacted !== undefined) filters.contacted = contacted === 'true';
     if (areaOfInterest) filters.areaOfInterest = String(areaOfInterest);
     if (search) filters.search = String(search);
 
@@ -112,6 +115,44 @@ class LeadController {
       res,
       lead,
       `Lead ${isActive ? 'activated' : 'deactivated'} successfully`
+    );
+  });
+
+  /**
+   * Mark lead as contacted
+   * @route POST /api/v1/leads/:id/contacted
+   * @access Private (Admin only)
+   */
+  markAsContacted = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      throw new AppError('User not authenticated', 401);
+    }
+
+    const lead = await leadService.markAsContacted(id, userId);
+
+    return ApiResponse.success(
+      res,
+      lead,
+      'Lead marked as contacted successfully'
+    );
+  });
+
+  /**
+   * Mark lead as not contacted
+   * @route DELETE /api/v1/leads/:id/contacted
+   * @access Private (Admin only)
+   */
+  markAsNotContacted = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const lead = await leadService.markAsNotContacted(id);
+
+    return ApiResponse.success(
+      res,
+      lead,
+      'Lead marked as not contacted successfully'
     );
   });
 
