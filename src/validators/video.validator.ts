@@ -16,6 +16,9 @@ export const createVideoSchema = Joi.object({
   thumbnailUrl: Joi.string().uri().optional().allow('').messages({
     'string.uri': 'Thumbnail URL must be a valid URL',
   }),
+  posterUrl: Joi.string().uri().optional().allow('').messages({
+    'string.uri': 'Poster URL must be a valid URL',
+  }),
   duration: Joi.number().min(1).required().messages({
     'number.base': 'Duration must be a number',
     'number.min': 'Duration must be at least 1 second',
@@ -51,6 +54,9 @@ export const updateVideoSchema = Joi.object({
   }),
   thumbnailUrl: Joi.string().uri().optional().allow('').messages({
     'string.uri': 'Thumbnail URL must be a valid URL',
+  }),
+  posterUrl: Joi.string().uri().optional().allow('').messages({
+    'string.uri': 'Poster URL must be a valid URL',
   }),
   duration: Joi.number().min(1).optional().messages({
     'number.base': 'Duration must be a number',

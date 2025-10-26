@@ -3308,6 +3308,9 @@
  *         thumbnailUrl:
  *           type: string
  *           description: Thumbnail URL
+ *         posterUrl:
+ *           type: string
+ *           description: Poster image URL
  *         duration:
  *           type: integer
  *           description: Video duration in seconds
@@ -5333,7 +5336,7 @@
  * /videos:
  *   post:
  *     summary: Create video (Admin only)
- *     description: Upload and create a new video with video and optional thumbnail
+ *     description: Upload and create a new video with video file and optional thumbnail and poster images
  *     tags: [Videos]
  *     security:
  *       - BearerAuth: []
@@ -5379,6 +5382,10 @@
  *                 type: string
  *                 format: binary
  *                 description: Thumbnail image (optional)
+ *               poster:
+ *                 type: string
+ *                 format: binary
+ *                 description: Poster image (optional)
  *     responses:
  *       201:
  *         description: Video created successfully
@@ -5448,7 +5455,7 @@
  * /videos/{id}:
  *   patch:
  *     summary: Update video (Admin only)
- *     description: Update an existing video's details and optionally replace video/thumbnail
+ *     description: Update an existing video's details and optionally replace video file, thumbnail, or poster images
  *     tags: [Videos]
  *     security:
  *       - BearerAuth: []
@@ -5488,6 +5495,9 @@
  *                 type: string
  *                 format: binary
  *               thumbnail:
+ *                 type: string
+ *                 format: binary
+ *               poster:
  *                 type: string
  *                 format: binary
  *     responses:

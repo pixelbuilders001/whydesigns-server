@@ -118,7 +118,7 @@ export const uploadReelFiles = multer({
   { name: 'thumbnail', maxCount: 1 },
 ]);
 
-// Upload middleware for videos (video + optional thumbnail)
+// Upload middleware for videos (video + optional thumbnail + optional poster)
 export const uploadVideoFiles = multer({
   storage: storage,
   limits: {
@@ -133,12 +133,12 @@ export const uploadVideoFiles = multer({
       } else {
         cb(new BadRequestError(`Invalid video file type. Allowed types: MP4, MOV, AVI, WMV, WebM, FLV, 3GP, MKV`));
       }
-    } else if (file.fieldname === 'thumbnail') {
-      // Thumbnail image
+    } else if (file.fieldname === 'thumbnail' || file.fieldname === 'poster') {
+      // Thumbnail or poster image
       if (S3_CONFIG.allowedMimeTypes.includes(file.mimetype)) {
         cb(null, true);
       } else {
-        cb(new BadRequestError(`Invalid thumbnail file type. Allowed types: ${S3_CONFIG.allowedMimeTypes.join(', ')}`));
+        cb(new BadRequestError(`Invalid image file type. Allowed types: ${S3_CONFIG.allowedMimeTypes.join(', ')}`));
       }
     } else {
       cb(new BadRequestError('Invalid field name'));
@@ -147,4 +147,5 @@ export const uploadVideoFiles = multer({
 }).fields([
   { name: 'video', maxCount: 1 },
   { name: 'thumbnail', maxCount: 1 },
+  { name: 'poster', maxCount: 1 },
 ]);

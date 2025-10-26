@@ -27,6 +27,7 @@ class VideoController {
 
     const videoFile = files.video[0];
     const thumbnailFile = files.thumbnail ? files.thumbnail[0] : null;
+    const posterFile = files.poster ? files.poster[0] : null;
 
     // Upload video to S3
     const videoUrl = await s3Service.uploadFile(videoFile, 'videos/videos');
@@ -35,6 +36,12 @@ class VideoController {
     let thumbnailUrl: string | undefined;
     if (thumbnailFile) {
       thumbnailUrl = await s3Service.uploadFile(thumbnailFile, 'videos/thumbnails');
+    }
+
+    // Upload poster to S3 if provided
+    let posterUrl: string | undefined;
+    if (posterFile) {
+      posterUrl = await s3Service.uploadFile(posterFile, 'videos/posters');
     }
 
     // Parse tags if provided as JSON string
@@ -53,6 +60,7 @@ class VideoController {
       description: req.body.description,
       videoUrl,
       thumbnailUrl,
+      posterUrl,
       duration: parseInt(req.body.duration),
       fileSize: videoFile.size,
       tags,
@@ -288,6 +296,7 @@ class VideoController {
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
     let videoUrl = existingVideo.videoUrl;
     let thumbnailUrl = existingVideo.thumbnailUrl;
+    let posterUrl = existingVideo.posterUrl;
 
     // Upload new video if provided
     if (files && files.video && files.video.length > 0) {
@@ -311,6 +320,17 @@ class VideoController {
       }
     }
 
+    // Upload new poster if provided
+    if (files && files.poster && files.poster.length > 0) {
+      const posterFile = files.poster[0];
+      posterUrl = await s3Service.uploadFile(posterFile, 'videos/posters');
+
+      // Delete old poster from S3
+      if (existingVideo.posterUrl) {
+        await s3Service.deleteFile(existingVideo.posterUrl);
+      }
+    }
+
     // Parse tags if provided as JSON string
     let tags = req.body.tags;
     if (tags && typeof tags === 'string') {
@@ -326,6 +346,7 @@ class VideoController {
       ...req.body,
       videoUrl,
       thumbnailUrl,
+      posterUrl,
       tags,
     };
 

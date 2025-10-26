@@ -4,6 +4,7 @@ import roleRepository from '../repositories/role.repository';
 import s3Service from './s3.service';
 import otpService from './otp.service';
 import emailService from './email.service';
+import leadService from './lead.service';
 import { IUser } from '../models/user.model';
 import { config } from '../config/env.config';
 import {
@@ -82,6 +83,29 @@ export class UserService {
     } catch (error) {
       console.error('Failed to send OTP email:', error);
       // Don't fail registration if email sending fails
+    }
+
+    // Create a lead for the new user registration
+    try {
+      // Only create lead if phone number is provided (since it's required in Lead model)
+      if (user.phoneNumber) {
+        const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email;
+
+        await leadService.createLead({
+          fullName,
+          email: user.email,
+          phone: user.phoneNumber,
+          areaOfInterest: 'New User Registration',
+          message: 'Automatically created from user registration',
+        });
+
+        console.log(`✅ Lead created for new user: ${user.email}`);
+      } else {
+        console.log(`⚠️  Lead not created for ${user.email} - phone number not provided`);
+      }
+    } catch (error) {
+      console.error('Failed to create lead for new user:', error);
+      // Don't fail registration if lead creation fails
     }
 
     return { user, token, refreshToken };

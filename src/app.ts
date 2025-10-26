@@ -56,10 +56,14 @@ export class App {
 
   private initializeRoutes(): void {
     // Swagger API Documentation
-    this.app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-      customCss: '.swagger-ui .topbar { display: none }',
-      customSiteTitle: 'Why Designers API Docs',
-    }));
+    this.app.use(
+      '/api-docs',
+      swaggerUi.serve,
+      swaggerUi.setup(swaggerSpec, {
+        customCss: '.swagger-ui .topbar { display: none }',
+        customSiteTitle: 'Why Designers API Docs',
+      })
+    );
 
     // Swagger JSON endpoint
     this.app.get('/api-docs.json', (req, res) => {

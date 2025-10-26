@@ -5,6 +5,7 @@ export interface IVideo extends Document {
   description?: string;
   videoUrl: string;
   thumbnailUrl?: string;
+  posterUrl?: string;
   duration: number;
   fileSize: number;
   uploadedBy: mongoose.Types.ObjectId;
@@ -43,6 +44,10 @@ const videoSchema = new Schema<IVideo>(
       trim: true,
     },
     thumbnailUrl: {
+      type: String,
+      trim: true,
+    },
+    posterUrl: {
       type: String,
       trim: true,
     },
