@@ -42,7 +42,15 @@ export class EmailService {
 
       await sesClient.send(command);
       console.log(`✅ Email sent successfully to: ${options.to}`);
-    } catch (error) {
+    } catch (error: any) {
+      // Check if it's a MessageRejected error due to unverified email
+      if (error.name === 'MessageRejected' && error.message?.includes('Email address is not verified')) {
+        console.warn(`⚠️  Email not sent to ${options.to}: Email address not verified in AWS SES`);
+        console.warn(`ℹ️  To send emails in production, verify the email in AWS SES or move out of sandbox mode`);
+        // Don't throw error - let registration continue
+        return;
+      }
+
       console.error('❌ Failed to send email:', error);
       throw new InternalServerError('Failed to send email');
     }

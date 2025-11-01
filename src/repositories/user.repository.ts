@@ -85,7 +85,8 @@ export class UserRepository extends BaseRepository<IUser> {
       filterExpression: '#email = :email AND #isActive = :isActive',
       expressionAttributeNames: { '#email': 'email', '#isActive': 'isActive' },
       expressionAttributeValues: { ':email': email, ':isActive': true },
-      limit: 1,
+      // Note: limit parameter in DynamoDB Scan limits items scanned BEFORE filtering, not after
+      // So we don't use limit here to ensure we find the user even if it's not in the first scanned items
     });
 
     return result.items[0] || null;
