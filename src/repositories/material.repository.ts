@@ -21,7 +21,7 @@ export class MaterialRepository extends BaseRepository<IMaterial> {
 
     const material: IMaterial = {
       id,
-      title: data.title || '',
+      name: data.name || '',
       description: data.description || '',
       fileUrl: data.fileUrl || '',
       fileType: data.fileType || '',
@@ -151,7 +151,7 @@ export class MaterialRepository extends BaseRepository<IMaterial> {
     const queryLower = query.toLowerCase();
     const filteredItems = result.items.filter((material) => {
       return (
-        material.title?.toLowerCase().includes(queryLower) ||
+        material.name?.toLowerCase().includes(queryLower) ||
         material.description?.toLowerCase().includes(queryLower) ||
         material.category?.toLowerCase().includes(queryLower)
       );

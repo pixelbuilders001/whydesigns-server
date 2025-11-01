@@ -33,7 +33,7 @@ export class MaterialController {
 
     // Prepare material data
     const data = {
-      title: req.body.title || req.body.name,
+      name: req.body.name || req.body.title,
       description: req.body.description || '',
       fileUrl,
       fileType: req.file.mimetype,
@@ -63,7 +63,7 @@ export class MaterialController {
     const filters: any = {};
     if (query.isActive !== undefined) filters.isActive = query.isActive === 'true';
 
-    const result = await materialService.getAll({ page, limit, sortBy, order }, filters);
+    const result = await materialService.getAllWithUser({ page, limit, sortBy, order }, filters);
 
     return ApiResponse.paginated(
       res,
@@ -83,7 +83,7 @@ export class MaterialController {
   getById = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
-    const material = await materialService.getById(id);
+    const material = await materialService.getByIdWithUser(id);
 
     return ApiResponse.success(res, material, 'Material retrieved successfully');
   });

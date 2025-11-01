@@ -6,7 +6,7 @@ import { BaseModel } from './base.model';
  */
 export interface IMaterial extends BaseModel {
   id: string; // UUID - Primary Key
-  title: string;
+  name: string;
   description?: string;
   fileUrl: string;
   fileType: string; // e.g., 'pdf', 'doc', 'zip', 'image'
@@ -22,7 +22,7 @@ export interface IMaterial extends BaseModel {
  * Material creation input (without auto-generated fields)
  */
 export interface CreateMaterialInput {
-  title: string;
+  name: string;
   description?: string;
   fileUrl: string;
   fileType: string;
@@ -36,7 +36,7 @@ export interface CreateMaterialInput {
  * Material update input
  */
 export interface UpdateMaterialInput {
-  title?: string;
+  name?: string;
   description?: string;
   fileUrl?: string;
   fileType?: string;
@@ -49,10 +49,20 @@ export interface UpdateMaterialInput {
 }
 
 /**
+ * User info for material response
+ */
+export interface MaterialUploadedByUser {
+  id: string;
+  name: string;
+  email: string;
+}
+
+/**
  * Material response interface
  */
-export interface MaterialResponse extends IMaterial {
+export interface MaterialResponse extends Omit<IMaterial, 'uploadedBy'> {
   formattedFileSize: string;
+  uploadedBy: MaterialUploadedByUser;
 }
 
 /**
@@ -111,14 +121,6 @@ export class MaterialUtils {
     };
 
     return extensions[fileType.toLowerCase()] || fileType;
-  }
-
-  // Convert to response with formatted fields
-  static toResponse(material: IMaterial): MaterialResponse {
-    return {
-      ...material,
-      formattedFileSize: this.formatFileSize(material.fileSize),
-    };
   }
 }
 

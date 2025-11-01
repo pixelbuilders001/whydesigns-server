@@ -1,13 +1,14 @@
 import materialRepository from '../repositories/material.repository';
-import { IMaterial } from '../models/material.model';
+import { IMaterial, MaterialResponse, MaterialUploadedByUser } from '../models/material.model';
 import { PaginationOptions } from '../types';
 import { NotFoundError, BadRequestError, AppError } from '../utils/AppError';
+import userRepository from '../repositories/user.repository';
 
 /**
  * Interface for creating a material
  */
 export interface CreateMaterialData {
-  title: string;
+  name: string;
   description?: string;
   fileUrl: string;
   fileType: string;
@@ -20,7 +21,7 @@ export interface CreateMaterialData {
  * Interface for updating a material
  */
 export interface UpdateMaterialData {
-  title?: string;
+  name?: string;
   description?: string;
   fileUrl?: string;
   fileType?: string;
@@ -35,12 +36,54 @@ export interface UpdateMaterialData {
  */
 export class MaterialService {
   /**
+   * Helper method to populate uploaded by user info
+   */
+  private async populateUploadedBy(material: IMaterial): Promise<MaterialResponse> {
+    const user = await userRepository.findById(material.uploadedBy);
+
+    const uploadedByUser: MaterialUploadedByUser = user
+      ? {
+          id: user.id,
+          name: `${user.firstName} ${user.lastName}`.trim() || 'Unknown User',
+          email: user.email,
+        }
+      : {
+          id: material.uploadedBy,
+          name: 'Unknown User',
+          email: '',
+        };
+
+    const { uploadedBy, ...materialData } = material;
+    return {
+      ...materialData,
+      uploadedBy: uploadedByUser,
+      formattedFileSize: this.formatFileSize(material.fileSize),
+    };
+  }
+
+  /**
+   * Format file size to human readable format
+   */
+  private formatFileSize(bytes: number): string {
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let size = bytes;
+    let unitIndex = 0;
+
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex++;
+    }
+
+    return `${size.toFixed(2)} ${units[unitIndex]}`;
+  }
+
+  /**
    * Create a new material
    */
   async create(data: CreateMaterialData): Promise<IMaterial> {
     // Validate required fields
-    if (!data.title) {
-      throw new BadRequestError('Material title is required');
+    if (!data.name) {
+      throw new BadRequestError('Material name is required');
     }
 
     if (!data.fileUrl) {
@@ -61,7 +104,7 @@ export class MaterialService {
 
     // Create material
     const material = await materialRepository.create({
-      title: data.title.trim(),
+      name: data.name.trim(),
       description: data.description?.trim() || '',
       fileUrl: data.fileUrl,
       fileType: data.fileType.toLowerCase(),
@@ -81,6 +124,17 @@ export class MaterialService {
   }
 
   /**
+   * Get all materials with pagination and populated user data
+   */
+  async getAllWithUser(options: PaginationOptions, filters: { isActive?: boolean } = {}): Promise<{ items: MaterialResponse[]; total: number }> {
+    const result = await materialRepository.findAll(options, filters);
+    const itemsWithUser = await Promise.all(
+      result.items.map(material => this.populateUploadedBy(material))
+    );
+    return { items: itemsWithUser, total: result.total };
+  }
+
+  /**
    * Get material by ID
    */
   async getById(id: string): Promise<IMaterial> {
@@ -89,6 +143,14 @@ export class MaterialService {
       throw new NotFoundError('Material not found');
     }
     return material;
+  }
+
+  /**
+   * Get material by ID with populated user data
+   */
+  async getByIdWithUser(id: string): Promise<MaterialResponse> {
+    const material = await this.getById(id);
+    return await this.populateUploadedBy(material);
   }
 
   /**
@@ -131,11 +193,11 @@ export class MaterialService {
     // Prepare update data
     const updateData: Partial<IMaterial> = {};
 
-    if (data.title !== undefined) {
-      if (data.title.trim().length < 2) {
-        throw new BadRequestError('Material title must be at least 2 characters');
+    if (data.name !== undefined) {
+      if (data.name.trim().length < 2) {
+        throw new BadRequestError('Material name must be at least 2 characters');
       }
-      updateData.title = data.title.trim();
+      updateData.name = data.name.trim();
     }
 
     if (data.description !== undefined) {
