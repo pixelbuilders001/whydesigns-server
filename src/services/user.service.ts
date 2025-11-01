@@ -28,7 +28,7 @@ export interface RegisterUserData {
 }
 
 export class UserService {
-  async register(userData: RegisterUserData): Promise<{ user: IUser; token: string; refreshToken: string }> {
+  async register(userData: RegisterUserData): Promise<{ user: any; token: string; refreshToken: string }> {
     // Check if user already exists
     const existingUser = await userRepository.existsByEmail(userData.email);
     if (existingUser) {
@@ -107,10 +107,10 @@ export class UserService {
       // Don't fail registration if lead creation fails
     }
 
-    return { user, token, refreshToken };
+    return { user: UserUtils.toResponse(user), token, refreshToken };
   }
 
-  async login(email: string, password: string): Promise<{ user: IUser; token: string; refreshToken: string }> {
+  async login(email: string, password: string): Promise<{ user: any; token: string; refreshToken: string }> {
     // Find user by email
     const user = await userRepository.findByEmailWithPassword(email);
     if (!user) {
@@ -135,11 +135,7 @@ export class UserService {
     // Save refresh token
     await userRepository.updateRefreshToken(user._id, refreshToken);
 
-    // Remove sensitive fields from response
-    user.password = undefined as any;
-    user.refreshToken = undefined as any;
-
-    return { user, token, refreshToken };
+    return { user: UserUtils.toResponse(user), token, refreshToken };
   }
 
   async refreshToken(refreshToken: string): Promise<{ token: string; refreshToken: string }> {
@@ -174,19 +170,23 @@ export class UserService {
     await userRepository.updateRefreshToken(userId, null);
   }
 
-  async getUserById(id: string): Promise<IUser> {
+  async getUserById(id: string): Promise<any> {
     const user = await userRepository.findByIdWithRole(id);
     if (!user) {
       throw new NotFoundError('User not found');
     }
-    return user;
+    return UserUtils.toResponse(user);
   }
 
-  async getAllUsers(options: PaginationOptions): Promise<{ users: IUser[]; total: number }> {
-    return await userRepository.findAll(options);
+  async getAllUsers(options: PaginationOptions): Promise<{ users: any[]; total: number }> {
+    const result = await userRepository.findAll(options);
+    return {
+      users: result.users.map(user => UserUtils.toResponse(user)),
+      total: result.total
+    };
   }
 
-  async updateUser(id: string, updateData: Partial<IUser>): Promise<IUser> {
+  async updateUser(id: string, updateData: Partial<IUser>): Promise<any> {
     // Prevent updating sensitive fields
     if (updateData.password || updateData.email || (updateData as any).refreshToken) {
       throw new BadRequestError('Cannot update password, email, or refresh token through this endpoint');
@@ -197,10 +197,10 @@ export class UserService {
       throw new NotFoundError('User not found');
     }
 
-    return user;
+    return UserUtils.toResponse(user);
   }
 
-  async updateProfile(id: string, updateData: Partial<IUser>): Promise<IUser> {
+  async updateProfile(id: string, updateData: Partial<IUser>): Promise<any> {
     // Only allow updating specific profile fields
     const allowedFields = ['firstName', 'lastName', 'phoneNumber', 'dateOfBirth', 'gender', 'address', 'profilePicture'];
     const filteredData: any = {};
@@ -227,14 +227,14 @@ export class UserService {
       throw new NotFoundError('User not found');
     }
 
-    return user;
+    return UserUtils.toResponse(user);
   }
 
   async updateProfileWithImage(
     id: string,
     updateData: Partial<IUser>,
     file?: Express.Multer.File
-  ): Promise<IUser> {
+  ): Promise<any> {
     // Get current user to check for existing profile picture
     const currentUser = await userRepository.findById(id);
     if (!currentUser) {
@@ -279,7 +279,7 @@ export class UserService {
       throw new NotFoundError('User not found');
     }
 
-    return user;
+    return UserUtils.toResponse(user);
   }
 
   async changePassword(id: string, currentPassword: string, newPassword: string): Promise<void> {
@@ -380,7 +380,7 @@ export class UserService {
     console.log(`✅ Password reset successfully for ${email}`);
   }
 
-  async verifyEmail(otp: string, userId?: string, email?: string): Promise<IUser> {
+  async verifyEmail(otp: string, userId?: string, email?: string): Promise<any> {
     // Get user by ID or email
     let user: IUser | null = null;
 
@@ -417,7 +417,7 @@ export class UserService {
       // Don't fail verification if welcome email fails
     }
 
-    return updatedUser;
+    return UserUtils.toResponse(updatedUser);
   }
 
   async resendOTP(userId?: string, email?: string): Promise<void> {
@@ -443,28 +443,28 @@ export class UserService {
     await otpService.resendOTP(user._id, user.email, user.firstName || 'User', 'email_verification');
   }
 
-  async verifyPhone(id: string): Promise<IUser> {
+  async verifyPhone(id: string): Promise<any> {
     const user = await userRepository.update(id, { isPhoneVerified: true });
     if (!user) {
       throw new NotFoundError('User not found');
     }
-    return user;
+    return UserUtils.toResponse(user);
   }
 
-  async deleteUser(id: string): Promise<IUser> {
+  async deleteUser(id: string): Promise<any> {
     const user = await userRepository.softDelete(id);
     if (!user) {
       throw new NotFoundError('User not found');
     }
-    return user;
+    return UserUtils.toResponse(user);
   }
 
-  async softDeleteUser(id: string): Promise<IUser> {
+  async softDeleteUser(id: string): Promise<any> {
     const user = await userRepository.softDelete(id);
     if (!user) {
       throw new NotFoundError('User not found');
     }
-    return user;
+    return UserUtils.toResponse(user);
   }
 
   private generateToken(user: IUser): string {
