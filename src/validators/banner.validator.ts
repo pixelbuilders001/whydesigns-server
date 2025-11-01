@@ -61,10 +61,10 @@ export const getBannersQuerySchema = Joi.object({
 
 export const bannerIdParamSchema = Joi.object({
   id: Joi.string()
-    .pattern(/^[0-9a-fA-F]{24}$/)
+    .uuid()
     .required()
     .messages({
-      'string.pattern.base': 'Invalid banner ID format',
+      'string.guid': 'Invalid banner ID format',
       'any.required': 'Banner ID is required',
     }),
 });

@@ -109,10 +109,10 @@ export const getReelsQuerySchema = Joi.object({
 
 export const reelIdParamSchema = Joi.object({
   id: Joi.string()
-    .pattern(/^[0-9a-fA-F]{24}$/)
+    .uuid()
     .required()
     .messages({
-      'string.pattern.base': 'Invalid reel ID format',
+      'string.guid': 'Invalid reel ID format',
       'any.required': 'Reel ID is required',
     }),
 });

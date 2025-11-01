@@ -69,10 +69,10 @@ export const getTeamMembersQuerySchema = Joi.object({
 
 export const teamIdParamSchema = Joi.object({
   id: Joi.string()
-    .pattern(/^[0-9a-fA-F]{24}$/)
+    .uuid()
     .required()
     .messages({
-      'string.pattern.base': 'Invalid team member ID format',
+      'string.guid': 'Invalid team member ID format',
       'any.required': 'Team member ID is required',
     }),
 });

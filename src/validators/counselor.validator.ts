@@ -100,10 +100,10 @@ export const counselorPaginationSchema = Joi.object({
 
 export const counselorIdParamSchema = Joi.object({
   id: Joi.string()
-    .pattern(/^[0-9a-fA-F]{24}$/)
+    .uuid()
     .required()
     .messages({
-      'string.pattern.base': 'Counselor ID must be a valid MongoDB ObjectId',
+      'string.guid': 'Invalid counselor ID format',
       'any.required': 'Counselor ID is required',
     }),
 });

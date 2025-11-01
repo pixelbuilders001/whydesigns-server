@@ -239,10 +239,10 @@ export const getTestimonialsQuerySchema = Joi.object({
 
 export const testimonialIdParamSchema = Joi.object({
   id: Joi.string()
-    .pattern(/^[0-9a-fA-F]{24}$/)
+    .uuid()
     .required()
     .messages({
-      'string.pattern.base': 'Invalid testimonial ID format',
+      'string.guid': 'Invalid testimonial ID format',
       'any.required': 'Testimonial ID is required',
     }),
 });

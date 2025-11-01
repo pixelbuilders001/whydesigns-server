@@ -114,10 +114,10 @@ export const getVideosQuerySchema = Joi.object({
 
 export const videoIdParamSchema = Joi.object({
   id: Joi.string()
-    .pattern(/^[0-9a-fA-F]{24}$/)
+    .uuid()
     .required()
     .messages({
-      'string.pattern.base': 'Invalid video ID format',
+      'string.guid': 'Invalid video ID format',
       'any.required': 'Video ID is required',
     }),
 });
