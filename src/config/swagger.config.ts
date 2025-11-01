@@ -39,7 +39,7 @@ const swaggerDefinition = {
       User: {
         type: 'object',
         properties: {
-          _id: {
+          id: {
             type: 'string',
             description: 'User ID',
             example: '64abc123def456789',
@@ -90,7 +90,7 @@ const swaggerDefinition = {
           roleId: {
             type: 'object',
             properties: {
-              _id: {
+              id: {
                 type: 'string',
                 example: '64xyz...',
               },
@@ -305,7 +305,7 @@ const swaggerDefinition = {
       Material: {
         type: 'object',
         properties: {
-          _id: {
+          id: {
             type: 'string',
             description: 'Material ID',
             example: '64abc123def456789',
@@ -357,7 +357,7 @@ const swaggerDefinition = {
           uploadedBy: {
             type: 'object',
             properties: {
-              _id: {
+              id: {
                 type: 'string',
                 example: '64xyz...',
               },
@@ -396,7 +396,7 @@ const swaggerDefinition = {
       Testimonial: {
         type: 'object',
         properties: {
-          _id: {
+          id: {
             type: 'string',
             description: 'Testimonial ID',
             example: '64abc123def456789',
@@ -404,7 +404,7 @@ const swaggerDefinition = {
           userId: {
             type: 'object',
             properties: {
-              _id: {
+              id: {
                 type: 'string',
                 example: '64xyz...',
               },
@@ -552,7 +552,7 @@ const swaggerDefinition = {
       Reel: {
         type: 'object',
         properties: {
-          _id: {
+          id: {
             type: 'string',
             description: 'Reel ID',
             example: '64abc123def456789',
@@ -597,7 +597,7 @@ const swaggerDefinition = {
           uploadedBy: {
             type: 'object',
             properties: {
-              _id: {
+              id: {
                 type: 'string',
                 example: '64xyz...',
               },
@@ -686,7 +686,7 @@ const swaggerDefinition = {
       Video: {
         type: 'object',
         properties: {
-          _id: {
+          id: {
             type: 'string',
             description: 'Video ID',
             example: '64abc123def456789',
@@ -730,7 +730,7 @@ const swaggerDefinition = {
           uploadedBy: {
             type: 'object',
             properties: {
-              _id: {
+              id: {
                 type: 'string',
                 example: '64xyz...',
               },
@@ -819,7 +819,7 @@ const swaggerDefinition = {
       Lead: {
         type: 'object',
         properties: {
-          _id: {
+          id: {
             type: 'string',
             description: 'Lead ID',
             example: '64abc123def456789',

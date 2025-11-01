@@ -25,10 +25,10 @@ export class TeamRepository extends BaseRepository<ITeam> {
    * Create a new team member
    */
   async create(teamData: Partial<ITeam>): Promise<ITeam> {
-    const _id = this.generateId();
+    const id = this.generateId();
 
     const team: ITeam = {
-      _id,
+      id,
       name: teamData.name || '',
       designation: teamData.designation || '',
       description: teamData.description,
@@ -111,14 +111,14 @@ export class TeamRepository extends BaseRepository<ITeam> {
    * Find team member by ID
    */
   async findById(id: string): Promise<ITeam | null> {
-    return await this.getItem({ _id: id });
+    return await this.getItem({ id: id });
   }
 
   /**
    * Update team member
    */
   async update(id: string, updateData: Partial<ITeam>): Promise<ITeam | null> {
-    return await this.updateItem({ _id: id }, updateData);
+    return await this.updateItem({ id: id }, updateData);
   }
 
   /**
@@ -126,7 +126,7 @@ export class TeamRepository extends BaseRepository<ITeam> {
    */
   async delete(id: string): Promise<ITeam | null> {
     const team = await this.findById(id);
-    await this.hardDeleteItem({ _id: id });
+    await this.hardDeleteItem({ id: id });
     return team;
   }
 
@@ -134,7 +134,7 @@ export class TeamRepository extends BaseRepository<ITeam> {
    * Soft delete team member
    */
   async softDelete(id: string): Promise<ITeam | null> {
-    return await this.softDeleteItem({ _id: id });
+    return await this.softDeleteItem({ id: id });
   }
 
   /**
@@ -142,7 +142,7 @@ export class TeamRepository extends BaseRepository<ITeam> {
    */
   async publish(id: string): Promise<ITeam | null> {
     return await this.updateItem(
-      { _id: id },
+      { id: id },
       {
         isPublished: true,
         publishedAt: new Date().toISOString(),
@@ -155,7 +155,7 @@ export class TeamRepository extends BaseRepository<ITeam> {
    */
   async unpublish(id: string): Promise<ITeam | null> {
     return await this.updateItem(
-      { _id: id },
+      { id: id },
       { isPublished: false }
     );
   }

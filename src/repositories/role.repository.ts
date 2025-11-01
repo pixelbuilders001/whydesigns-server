@@ -12,10 +12,10 @@ export class RoleRepository extends BaseRepository<IRole> {
    * Create a new role
    */
   async create(roleData: CreateRoleInput): Promise<IRole> {
-    const _id = this.generateId();
+    const id = this.generateId();
 
     const role: IRole = {
-      _id,
+      id,
       ...roleData,
       permissions: roleData.permissions || [],
       ...createBaseFields(),
@@ -28,7 +28,7 @@ export class RoleRepository extends BaseRepository<IRole> {
    * Find role by ID
    */
   async findById(id: string): Promise<IRole | null> {
-    return await this.getItem({ _id: id });
+    return await this.getItem({ id: id });
   }
 
   /**
@@ -65,7 +65,7 @@ export class RoleRepository extends BaseRepository<IRole> {
    * Update role
    */
   async update(id: string, updateData: UpdateRoleInput): Promise<IRole | null> {
-    return await this.updateItem({ _id: id }, updateData);
+    return await this.updateItem({ id: id }, updateData);
   }
 
   /**
@@ -73,7 +73,7 @@ export class RoleRepository extends BaseRepository<IRole> {
    */
   async delete(id: string): Promise<IRole | null> {
     const role = await this.findById(id);
-    await this.hardDeleteItem({ _id: id });
+    await this.hardDeleteItem({ id: id });
     return role;
   }
 

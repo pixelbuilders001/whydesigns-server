@@ -1,7 +1,7 @@
 import { BaseModel } from './base.model';
 
 export interface ITeam extends BaseModel {
-  _id: string; // UUID - Primary Key
+  id: string; // UUID - Primary Key
   name: string;
   designation: string;
   description?: string;

@@ -10,10 +10,10 @@ export class CategoryRepository extends BaseRepository<ICategory> {
   }
 
   async create(categoryData: Partial<ICategory>): Promise<ICategory> {
-    const _id = this.generateId();
+    const id = this.generateId();
 
     const category: ICategory = {
-      _id,
+      id,
       name: categoryData.name || '',
       slug: categoryData.slug || '',
       description: categoryData.description || '',
@@ -25,7 +25,7 @@ export class CategoryRepository extends BaseRepository<ICategory> {
   }
 
   async findById(id: string): Promise<ICategory | null> {
-    return await this.getItem({ _id: id });
+    return await this.getItem({ id: id });
   }
 
   async findBySlug(slug: string): Promise<ICategory | null> {
@@ -86,17 +86,17 @@ export class CategoryRepository extends BaseRepository<ICategory> {
   }
 
   async update(id: string, updateData: Partial<ICategory>): Promise<ICategory | null> {
-    return await this.updateItem({ _id: id }, updateData);
+    return await this.updateItem({ id: id }, updateData);
   }
 
   async delete(id: string): Promise<ICategory | null> {
     const category = await this.findById(id);
-    await this.hardDeleteItem({ _id: id });
+    await this.hardDeleteItem({ id: id });
     return category;
   }
 
   async softDelete(id: string): Promise<ICategory | null> {
-    return await this.softDeleteItem({ _id: id });
+    return await this.softDeleteItem({ id: id });
   }
 
   async existsByName(name: string, excludeId?: string): Promise<boolean> {
@@ -107,7 +107,7 @@ export class CategoryRepository extends BaseRepository<ICategory> {
     });
 
     if (excludeId) {
-      return result.items.some(cat => cat._id !== excludeId);
+      return result.items.some(cat => cat.id !== excludeId);
     }
 
     return result.items.length > 0;
@@ -122,7 +122,7 @@ export class CategoryRepository extends BaseRepository<ICategory> {
     });
 
     if (excludeId) {
-      return result.items.some(cat => cat._id !== excludeId);
+      return result.items.some(cat => cat.id !== excludeId);
     }
 
     return result.items.length > 0;

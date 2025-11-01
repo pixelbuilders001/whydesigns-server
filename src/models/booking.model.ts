@@ -3,7 +3,7 @@ import { BaseModel } from './base.model';
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no-show';
 
 export interface IBooking extends BaseModel {
-  _id: string; // UUID - Primary Key
+  id: string; // UUID - Primary Key
   counselorId: string; // Counselor ID
   userId?: string; // User ID (optional - for logged-in users)
   // Guest information (for non-logged-in users)

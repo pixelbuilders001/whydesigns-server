@@ -28,10 +28,10 @@ export class ReelRepository extends BaseRepository<IReel> {
    * Create a new reel
    */
   async create(reelData: Partial<IReel>): Promise<IReel> {
-    const _id = this.generateId();
+    const id = this.generateId();
 
     const reel: IReel = {
-      _id,
+      id,
       title: reelData.title || '',
       description: reelData.description,
       videoUrl: reelData.videoUrl || '',
@@ -56,7 +56,7 @@ export class ReelRepository extends BaseRepository<IReel> {
    * Find reel by ID
    */
   async findById(id: string): Promise<IReel | null> {
-    return await this.getItem({ _id: id });
+    return await this.getItem({ id: id });
   }
 
   /**
@@ -255,14 +255,14 @@ export class ReelRepository extends BaseRepository<IReel> {
    * Update reel
    */
   async update(id: string, updateData: Partial<IReel>): Promise<IReel | null> {
-    return await this.updateItem({ _id: id }, updateData);
+    return await this.updateItem({ id: id }, updateData);
   }
 
   /**
    * Delete reel (soft delete)
    */
   async softDelete(id: string): Promise<IReel | null> {
-    return await this.softDeleteItem({ _id: id });
+    return await this.softDeleteItem({ id: id });
   }
 
   /**
@@ -270,7 +270,7 @@ export class ReelRepository extends BaseRepository<IReel> {
    */
   async delete(id: string): Promise<IReel | null> {
     const reel = await this.findById(id);
-    await this.hardDeleteItem({ _id: id });
+    await this.hardDeleteItem({ id: id });
     return reel;
   }
 
@@ -294,7 +294,7 @@ export class ReelRepository extends BaseRepository<IReel> {
   async incrementViewCount(id: string): Promise<IReel | null> {
     const reel = await this.findById(id);
     if (reel) {
-      return await this.updateItem({ _id: id }, { viewCount: (reel.viewCount || 0) + 1 });
+      return await this.updateItem({ id: id }, { viewCount: (reel.viewCount || 0) + 1 });
     }
     return null;
   }
@@ -305,7 +305,7 @@ export class ReelRepository extends BaseRepository<IReel> {
   async incrementLikeCount(id: string): Promise<IReel | null> {
     const reel = await this.findById(id);
     if (reel) {
-      return await this.updateItem({ _id: id }, { likeCount: (reel.likeCount || 0) + 1 });
+      return await this.updateItem({ id: id }, { likeCount: (reel.likeCount || 0) + 1 });
     }
     return null;
   }
@@ -316,7 +316,7 @@ export class ReelRepository extends BaseRepository<IReel> {
   async decrementLikeCount(id: string): Promise<IReel | null> {
     const reel = await this.findById(id);
     if (reel && reel.likeCount > 0) {
-      return await this.updateItem({ _id: id }, { likeCount: reel.likeCount - 1 });
+      return await this.updateItem({ id: id }, { likeCount: reel.likeCount - 1 });
     }
     return null;
   }
@@ -347,7 +347,7 @@ export class ReelRepository extends BaseRepository<IReel> {
       }, {});
 
     const categories = Object.entries(categoryCount)
-      .map(([_id, count]) => ({ _id, count }))
+      .map(([id, count]) => ({ id, count }))
       .sort((a, b) => b.count - a.count);
 
     const publishedReels = result.items.filter(r => r.isPublished);

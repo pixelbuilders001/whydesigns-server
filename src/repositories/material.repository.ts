@@ -17,10 +17,10 @@ export class MaterialRepository extends BaseRepository<IMaterial> {
    * Create a new material
    */
   async create(data: Partial<IMaterial>): Promise<IMaterial> {
-    const _id = this.generateId();
+    const id = this.generateId();
 
     const material: IMaterial = {
-      _id,
+      id,
       title: data.title || '',
       description: data.description || '',
       fileUrl: data.fileUrl || '',
@@ -41,7 +41,7 @@ export class MaterialRepository extends BaseRepository<IMaterial> {
    * Find material by ID
    */
   async findById(id: string): Promise<IMaterial | null> {
-    return await this.getItem({ _id: id });
+    return await this.getItem({ id: id });
   }
 
   /**
@@ -171,7 +171,7 @@ export class MaterialRepository extends BaseRepository<IMaterial> {
    * Update material by ID
    */
   async update(id: string, data: Partial<IMaterial>): Promise<IMaterial | null> {
-    return await this.updateItem({ _id: id }, data);
+    return await this.updateItem({ id: id }, data);
   }
 
   /**
@@ -179,7 +179,7 @@ export class MaterialRepository extends BaseRepository<IMaterial> {
    */
   async delete(id: string): Promise<IMaterial | null> {
     const material = await this.findById(id);
-    await this.hardDeleteItem({ _id: id });
+    await this.hardDeleteItem({ id: id });
     return material;
   }
 
@@ -187,7 +187,7 @@ export class MaterialRepository extends BaseRepository<IMaterial> {
    * Soft delete material by ID
    */
   async softDelete(id: string): Promise<IMaterial | null> {
-    return await this.softDeleteItem({ _id: id });
+    return await this.softDeleteItem({ id: id });
   }
 
   /**
@@ -196,7 +196,7 @@ export class MaterialRepository extends BaseRepository<IMaterial> {
   async incrementDownloadCount(id: string): Promise<IMaterial | null> {
     const material = await this.findById(id);
     if (material) {
-      return await this.updateItem({ _id: id }, { downloadCount: (material.downloadCount || 0) + 1 });
+      return await this.updateItem({ id: id }, { downloadCount: (material.downloadCount || 0) + 1 });
     }
     return null;
   }

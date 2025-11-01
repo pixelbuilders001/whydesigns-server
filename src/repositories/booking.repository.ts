@@ -10,10 +10,10 @@ export class BookingRepository extends BaseRepository<IBooking> {
   }
 
   async create(bookingData: Partial<IBooking>): Promise<IBooking> {
-    const _id = this.generateId();
+    const id = this.generateId();
 
     const booking: IBooking = {
-      _id,
+      id,
       counselorId: bookingData.counselorId || '',
       userId: bookingData.userId,
       guestName: bookingData.guestName || '',
@@ -33,7 +33,7 @@ export class BookingRepository extends BaseRepository<IBooking> {
   }
 
   async findById(id: string): Promise<IBooking | null> {
-    return await this.getItem({ _id: id });
+    return await this.getItem({ id: id });
   }
 
   async findAll(options: PaginationOptions): Promise<{ bookings: IBooking[]; total: number }> {
@@ -253,17 +253,17 @@ export class BookingRepository extends BaseRepository<IBooking> {
   }
 
   async update(id: string, updateData: Partial<IBooking>): Promise<IBooking | null> {
-    return await this.updateItem({ _id: id }, updateData);
+    return await this.updateItem({ id: id }, updateData);
   }
 
   async delete(id: string): Promise<IBooking | null> {
     const booking = await this.findById(id);
-    await this.hardDeleteItem({ _id: id });
+    await this.hardDeleteItem({ id: id });
     return booking;
   }
 
   async softDelete(id: string): Promise<IBooking | null> {
-    return await this.softDeleteItem({ _id: id });
+    return await this.softDeleteItem({ id: id });
   }
 
   async checkAvailability(counselorId: string, bookingDate: Date, bookingTime: string): Promise<boolean> {

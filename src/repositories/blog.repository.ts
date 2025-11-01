@@ -17,10 +17,10 @@ export class BlogRepository extends BaseRepository<IBlog> {
   }
 
   async create(blogData: Partial<IBlog>): Promise<IBlog> {
-    const _id = this.generateId();
+    const id = this.generateId();
 
     const blog: IBlog = {
-      _id,
+      id,
       title: blogData.title || '',
       slug: blogData.slug || '',
       content: blogData.content || '',
@@ -38,7 +38,7 @@ export class BlogRepository extends BaseRepository<IBlog> {
   }
 
   async findById(id: string): Promise<IBlog | null> {
-    return await this.getItem({ _id: id });
+    return await this.getItem({ id: id });
   }
 
   async findBySlug(slug: string): Promise<IBlog | null> {
@@ -127,23 +127,23 @@ export class BlogRepository extends BaseRepository<IBlog> {
   }
 
   async update(id: string, updateData: Partial<IBlog>): Promise<IBlog | null> {
-    return await this.updateItem({ _id: id }, updateData);
+    return await this.updateItem({ id: id }, updateData);
   }
 
   async delete(id: string): Promise<IBlog | null> {
     const blog = await this.findById(id);
-    await this.hardDeleteItem({ _id: id });
+    await this.hardDeleteItem({ id: id });
     return blog;
   }
 
   async softDelete(id: string): Promise<IBlog | null> {
-    return await this.softDeleteItem({ _id: id });
+    return await this.softDeleteItem({ id: id });
   }
 
   async incrementViewCount(id: string): Promise<void> {
     const blog = await this.findById(id);
     if (blog) {
-      await this.updateItem({ _id: id }, { viewCount: (blog.viewCount || 0) + 1 });
+      await this.updateItem({ id: id }, { viewCount: (blog.viewCount || 0) + 1 });
     }
   }
 
@@ -168,7 +168,7 @@ export class BlogRepository extends BaseRepository<IBlog> {
     });
 
     if (excludeId) {
-      return result.items.some(blog => blog._id !== excludeId);
+      return result.items.some(blog => blog.id !== excludeId);
     }
 
     return result.items.length > 0;

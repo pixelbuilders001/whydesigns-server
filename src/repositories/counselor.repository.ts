@@ -10,10 +10,10 @@ export class CounselorRepository extends BaseRepository<ICounselor> {
   }
 
   async create(counselorData: Partial<ICounselor>): Promise<ICounselor> {
-    const _id = this.generateId();
+    const id = this.generateId();
 
     const counselor: ICounselor = {
-      _id,
+      id,
       fullName: counselorData.fullName || '',
       email: counselorData.email || '',
       title: counselorData.title || '',
@@ -29,7 +29,7 @@ export class CounselorRepository extends BaseRepository<ICounselor> {
   }
 
   async findById(id: string): Promise<ICounselor | null> {
-    return await this.getItem({ _id: id });
+    return await this.getItem({ id: id });
   }
 
   async findAll(options: PaginationOptions, filters: { isActive?: boolean } = {}): Promise<{ counselors: ICounselor[]; total: number }> {
@@ -63,17 +63,17 @@ export class CounselorRepository extends BaseRepository<ICounselor> {
   }
 
   async update(id: string, updateData: Partial<ICounselor>): Promise<ICounselor | null> {
-    return await this.updateItem({ _id: id }, updateData);
+    return await this.updateItem({ id: id }, updateData);
   }
 
   async hardDelete(id: string): Promise<ICounselor | null> {
     const counselor = await this.findById(id);
-    await this.hardDeleteItem({ _id: id });
+    await this.hardDeleteItem({ id: id });
     return counselor;
   }
 
   async softDelete(id: string): Promise<ICounselor | null> {
-    return await this.softDeleteItem({ _id: id });
+    return await this.softDeleteItem({ id: id });
   }
 
   async countActive(): Promise<number> {

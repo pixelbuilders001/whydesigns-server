@@ -30,10 +30,10 @@ export class TestimonialRepository extends BaseRepository<ITestimonial> {
    * Create a new testimonial
    */
   async create(testimonialData: Partial<ITestimonial>): Promise<ITestimonial> {
-    const _id = this.generateId();
+    const id = this.generateId();
 
     const testimonial: ITestimonial = {
-      _id,
+      id,
       userId: testimonialData.userId,
       name: testimonialData.name || '',
       email: testimonialData.email || '',
@@ -60,7 +60,7 @@ export class TestimonialRepository extends BaseRepository<ITestimonial> {
    * Find testimonial by ID
    */
   async findById(id: string): Promise<ITestimonial | null> {
-    return await this.getItem({ _id: id });
+    return await this.getItem({ id: id });
   }
 
   /**
@@ -219,7 +219,7 @@ export class TestimonialRepository extends BaseRepository<ITestimonial> {
    * Update testimonial
    */
   async update(id: string, updateData: Partial<ITestimonial>): Promise<ITestimonial | null> {
-    return await this.updateItem({ _id: id }, updateData);
+    return await this.updateItem({ id: id }, updateData);
   }
 
   /**
@@ -227,7 +227,7 @@ export class TestimonialRepository extends BaseRepository<ITestimonial> {
    */
   async delete(id: string): Promise<ITestimonial | null> {
     const testimonial = await this.findById(id);
-    await this.hardDeleteItem({ _id: id });
+    await this.hardDeleteItem({ id: id });
     return testimonial;
   }
 
@@ -235,7 +235,7 @@ export class TestimonialRepository extends BaseRepository<ITestimonial> {
    * Soft delete testimonial (deactivate)
    */
   async softDelete(id: string): Promise<ITestimonial | null> {
-    return await this.softDeleteItem({ _id: id });
+    return await this.softDeleteItem({ id: id });
   }
 
   /**
@@ -282,12 +282,12 @@ export class TestimonialRepository extends BaseRepository<ITestimonial> {
       .filter(t => t.isPublished)
       .reduce((acc: any, t) => {
         const rating = t.rating || 5;
-        if (!acc[rating]) acc[rating] = { _id: rating, count: 0 };
+        if (!acc[rating]) acc[rating] = { id: rating, count: 0 };
         acc[rating].count++;
         return acc;
       }, {});
 
-    const ratingDistribution = Object.values(ratingStats).sort((a: any, b: any) => b._id - a._id);
+    const ratingDistribution = Object.values(ratingStats).sort((a: any, b: any) => b.id - a.id);
 
     const publishedTestimonials = result.items.filter(t => t.isPublished);
     const avgRating = publishedTestimonials.length > 0

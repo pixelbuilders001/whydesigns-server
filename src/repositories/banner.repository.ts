@@ -25,10 +25,10 @@ export class BannerRepository extends BaseRepository<IBanner> {
    * Create a new banner group
    */
   async create(bannerData: Partial<IBanner>): Promise<IBanner> {
-    const _id = this.generateId();
+    const id = this.generateId();
 
     const banner: IBanner = {
-      _id,
+      id,
       title: bannerData.title || '',
       description: bannerData.description,
       imageUrl: bannerData.imageUrl || '',
@@ -118,14 +118,14 @@ export class BannerRepository extends BaseRepository<IBanner> {
    * Find banner group by ID
    */
   async findById(id: string): Promise<IBanner | null> {
-    return await this.getItem({ _id: id });
+    return await this.getItem({ id: id });
   }
 
   /**
    * Update banner group
    */
   async update(id: string, updateData: Partial<IBanner>): Promise<IBanner | null> {
-    return await this.updateItem({ _id: id }, updateData);
+    return await this.updateItem({ id: id }, updateData);
   }
 
   /**
@@ -133,7 +133,7 @@ export class BannerRepository extends BaseRepository<IBanner> {
    */
   async delete(id: string): Promise<IBanner | null> {
     const banner = await this.findById(id);
-    await this.hardDeleteItem({ _id: id });
+    await this.hardDeleteItem({ id: id });
     return banner;
   }
 
@@ -141,7 +141,7 @@ export class BannerRepository extends BaseRepository<IBanner> {
    * Deactivate banner group (soft delete)
    */
   async deactivate(id: string): Promise<IBanner | null> {
-    return await this.softDeleteItem({ _id: id });
+    return await this.softDeleteItem({ id: id });
   }
 
   /**
@@ -156,7 +156,7 @@ export class BannerRepository extends BaseRepository<IBanner> {
 
     // Update each published banner to unpublish it
     for (const banner of result.items) {
-      await this.updateItem({ _id: banner._id }, { isPublished: false });
+      await this.updateItem({ id: banner.id }, { isPublished: false });
     }
   }
 
@@ -169,7 +169,7 @@ export class BannerRepository extends BaseRepository<IBanner> {
 
     // Then publish the specified banner group
     return await this.updateItem(
-      { _id: id },
+      { id: id },
       {
         isPublished: true,
         publishedAt: new Date().toISOString(),
@@ -182,7 +182,7 @@ export class BannerRepository extends BaseRepository<IBanner> {
    */
   async unpublish(id: string): Promise<IBanner | null> {
     return await this.updateItem(
-      { _id: id },
+      { id: id },
       { isPublished: false }
     );
   }

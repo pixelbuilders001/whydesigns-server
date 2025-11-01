@@ -23,7 +23,7 @@ export interface PaginationOptions {
 }
 
 export interface MongoDocument {
-  _id: string;
+  id: string;
   createdAt: Date;
   updatedAt: Date;
 }

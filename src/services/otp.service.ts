@@ -82,7 +82,7 @@ export class OTPService {
     // Check if OTP is expired
     if (new Date() > otpRecord.expiresAt) {
       // Delete expired OTP
-      await OTP.deleteOne({ _id: otpRecord._id });
+      await OTP.deleteOne({ id: otpRecord.id });
       throw new BadRequestError('OTP has expired. Please request a new one.');
     }
 
@@ -91,7 +91,7 @@ export class OTPService {
     await otpRecord.save();
 
     // Delete the used OTP
-    await OTP.deleteOne({ _id: otpRecord._id });
+    await OTP.deleteOne({ id: otpRecord.id });
 
     console.log(`✅ OTP verified successfully for user: ${userId}`);
     return true;

@@ -1,7 +1,7 @@
 import { BaseModel } from './base.model';
 
 export interface IRole extends BaseModel {
-  _id: string; // UUID - Primary Key
+  id: string; // UUID - Primary Key
   name: 'USER' | 'ADMIN';
   description: string;
   permissions: string[];

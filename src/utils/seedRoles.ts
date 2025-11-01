@@ -52,7 +52,7 @@ export const seedRoles = async (): Promise<void> => {
           await roleRepository.create(roleData);
           console.log(`✅ Created role: ${roleData.name}`);
         } else {
-          console.log(`⏭️  Role already exists: ${roleData.name} (ID: ${existingRole._id})`);
+          console.log(`⏭️  Role already exists: ${roleData.name} (ID: ${existingRole.id})`);
         }
       } catch (error) {
         console.error(`❌ Error processing role ${roleData.name}:`, error);

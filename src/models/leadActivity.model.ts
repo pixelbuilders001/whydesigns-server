@@ -12,7 +12,7 @@ export type ActivityType =
   | 'other';
 
 export interface ILeadActivity extends BaseModel {
-  _id: string; // UUID - Primary Key (was activityId)
+  id: string; // UUID - Primary Key (was activityId)
   leadId: string; // Lead ID reference
   counselorId: string; // Counselor/User ID reference
   activityType: ActivityType;

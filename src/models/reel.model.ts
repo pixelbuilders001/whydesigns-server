@@ -1,7 +1,7 @@
 import { BaseModel } from './base.model';
 
 export interface IReel extends BaseModel {
-  _id: string; // UUID - Primary Key
+  id: string; // UUID - Primary Key
   title: string;
   description?: string;
   videoUrl: string;

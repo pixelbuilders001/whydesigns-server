@@ -1,7 +1,7 @@
 import { BaseModel } from './base.model';
 
 export interface ITestimonial extends BaseModel {
-  _id: string; // UUID - Primary Key
+  id: string; // UUID - Primary Key
   userId?: string; // Optional - guests can submit testimonials
   name: string;
   email: string;

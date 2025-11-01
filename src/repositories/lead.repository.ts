@@ -26,10 +26,10 @@ export class LeadRepository extends BaseRepository<ILead> {
    * Create a new lead
    */
   async create(leadData: Partial<ILead>): Promise<ILead> {
-    const _id = this.generateId();
+    const id = this.generateId();
 
     const lead: ILead = {
-      _id,
+      id,
       fullName: leadData.fullName || '',
       email: leadData.email || '',
       phone: leadData.phone || '',
@@ -48,7 +48,7 @@ export class LeadRepository extends BaseRepository<ILead> {
    * Find lead by ID
    */
   async findById(id: string): Promise<ILead | null> {
-    return await this.getItem({ _id: id });
+    return await this.getItem({ id: id });
   }
 
   /**
@@ -125,14 +125,14 @@ export class LeadRepository extends BaseRepository<ILead> {
    * Update lead
    */
   async update(id: string, updateData: Partial<ILead>): Promise<ILead | null> {
-    return await this.updateItem({ _id: id }, updateData);
+    return await this.updateItem({ id: id }, updateData);
   }
 
   /**
    * Delete lead (soft delete)
    */
   async softDelete(id: string): Promise<ILead | null> {
-    return await this.softDeleteItem({ _id: id });
+    return await this.softDeleteItem({ id: id });
   }
 
   /**
@@ -140,7 +140,7 @@ export class LeadRepository extends BaseRepository<ILead> {
    */
   async delete(id: string): Promise<ILead | null> {
     const lead = await this.findById(id);
-    await this.hardDeleteItem({ _id: id });
+    await this.hardDeleteItem({ id: id });
     return lead;
   }
 
@@ -148,7 +148,7 @@ export class LeadRepository extends BaseRepository<ILead> {
    * Update isActive status
    */
   async updateActiveStatus(id: string, isActive: boolean): Promise<ILead | null> {
-    return await this.updateItem({ _id: id }, { isActive });
+    return await this.updateItem({ id: id }, { isActive });
   }
 
   /**
@@ -170,7 +170,7 @@ export class LeadRepository extends BaseRepository<ILead> {
    */
   async markAsContacted(id: string, userId: string): Promise<ILead | null> {
     return await this.updateItem(
-      { _id: id },
+      { id: id },
       {
         contacted: true,
         contactedAt: new Date().toISOString(),
@@ -184,7 +184,7 @@ export class LeadRepository extends BaseRepository<ILead> {
    */
   async markAsNotContacted(id: string): Promise<ILead | null> {
     return await this.updateItem(
-      { _id: id },
+      { id: id },
       {
         contacted: false,
         contactedAt: undefined,

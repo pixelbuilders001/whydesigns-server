@@ -202,8 +202,8 @@ export class BookingService {
       const newDateObj = new Date(newDateISO);
 
       // Extract counselor ID - handle both populated and non-populated cases
-      const counselorId = (booking.counselorId as any)?._id
-        ? (booking.counselorId as any)._id.toString()
+      const counselorId = (booking.counselorId as any)?.id
+        ? (booking.counselorId as any).id.toString()
         : booking.counselorId.toString();
 
       // Check if the new slot is available (excluding current booking)
@@ -258,12 +258,12 @@ export class BookingService {
 
     // Send approval email with meeting link (non-blocking)
     // Extract counselor ID - handle both populated and non-populated cases
-    // If counselorId is populated (object with properties), extract the _id
+    // If counselorId is populated (object with properties), extract the id
     // Otherwise, it's already an ObjectId
     let counselorId: string;
     if (typeof booking.counselorId === 'object' && booking.counselorId !== null) {
-      // It's populated - extract the MongoDB _id
-      counselorId = (booking.counselorId as any)._id?.toString() || (booking.counselorId as any).id?.toString();
+      // It's populated - extract the MongoDB id
+      counselorId = (booking.counselorId as any).id?.toString() || (booking.counselorId as any).id?.toString();
     } else {
       // It's an ObjectId
       counselorId = (booking.counselorId as any).toString();
@@ -303,8 +303,8 @@ export class BookingService {
 
     // Send cancellation email (non-blocking)
     // Extract counselor ID - handle both populated and non-populated cases
-    const counselorId = (booking.counselorId as any)?._id
-      ? (booking.counselorId as any)._id.toString()
+    const counselorId = (booking.counselorId as any)?.id
+      ? (booking.counselorId as any).id.toString()
       : booking.counselorId.toString();
 
     const counselor = await counselorRepository.findById(counselorId);
@@ -372,8 +372,8 @@ export class BookingService {
     for (const booking of bookings) {
       try {
         // Extract counselor ID - handle both populated and non-populated cases
-        const counselorId = (booking.counselorId as any)?._id
-          ? (booking.counselorId as any)._id.toString()
+        const counselorId = (booking.counselorId as any)?.id
+          ? (booking.counselorId as any).id.toString()
           : booking.counselorId.toString();
 
         const counselor = await counselorRepository.findById(counselorId);
@@ -381,11 +381,11 @@ export class BookingService {
           const emailSent = await bookingEmailService.sendBookingReminder(booking, counselor);
 
           if (emailSent) {
-            await bookingRepository.update(booking._id, { reminderEmailSent: true });
+            await bookingRepository.update(booking.id, { reminderEmailSent: true });
           }
         }
       } catch (error) {
-        console.error(`Failed to send reminder for booking ${booking._id}:`, error);
+        console.error(`Failed to send reminder for booking ${booking.id}:`, error);
       }
     }
   }
@@ -395,10 +395,10 @@ export class BookingService {
       const emailSent = await bookingEmailService.sendBookingConfirmation(booking, counselor);
 
       if (emailSent) {
-        await bookingRepository.update(booking._id, { confirmationEmailSent: true });
+        await bookingRepository.update(booking.id, { confirmationEmailSent: true });
       }
     } catch (error) {
-      console.error(`Failed to send confirmation email for booking ${booking._id}:`, error);
+      console.error(`Failed to send confirmation email for booking ${booking.id}:`, error);
     }
   }
 }

@@ -105,7 +105,7 @@ export class BlogService {
 
     // Increment view count only for published blogs
     if (blog.status === 'published') {
-      await blogRepository.incrementViewCount(blog._id);
+      await blogRepository.incrementViewCount(blog.id);
     }
 
     return blog;

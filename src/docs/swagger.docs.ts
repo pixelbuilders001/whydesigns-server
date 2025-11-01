@@ -966,7 +966,7 @@
  *                   items:
  *                     type: object
  *                     properties:
- *                       _id:
+ *                       id:
  *                         type: string
  *                       name:
  *                         type: string
@@ -2411,7 +2411,7 @@
  *                 data:
  *                   type: object
  *                   properties:
- *                     _id:
+ *                     id:
  *                       type: string
  *                     status:
  *                       type: string
@@ -3094,7 +3094,7 @@
  *     Testimonial:
  *       type: object
  *       properties:
- *         _id:
+ *         id:
  *           type: string
  *           description: Testimonial ID
  *         userId:
@@ -3227,7 +3227,7 @@
  *     Reel:
  *       type: object
  *       properties:
- *         _id:
+ *         id:
  *           type: string
  *           description: Reel ID
  *         title:
@@ -3293,7 +3293,7 @@
  *     Video:
  *       type: object
  *       properties:
- *         _id:
+ *         id:
  *           type: string
  *           description: Video ID
  *         title:
@@ -6332,7 +6332,7 @@ export {};
  *     Banner:
  *       type: object
  *       properties:
- *         _id:
+ *         id:
  *           type: string
  *           description: Banner ID
  *         title:

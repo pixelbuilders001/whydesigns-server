@@ -13,7 +13,7 @@ export class UserRepository extends BaseRepository<IUser> {
    * Create a new user
    */
   async create(userData: CreateUserInput): Promise<IUser> {
-    const _id = this.generateId();
+    const id = this.generateId();
 
     // Hash password if provided
     const hashedPassword = userData.password
@@ -21,7 +21,7 @@ export class UserRepository extends BaseRepository<IUser> {
       : '';
 
     const user: IUser = {
-      _id,
+      id,
       ...userData,
       password: hashedPassword,
       isEmailVerified: userData.isEmailVerified || false,
@@ -38,7 +38,7 @@ export class UserRepository extends BaseRepository<IUser> {
    * Find user by ID
    */
   async findById(id: string): Promise<IUser | null> {
-    const user = await this.getItem({ _id: id });
+    const user = await this.getItem({ id: id });
     if (!user || !user.isActive) {
       return null;
     }
@@ -70,7 +70,7 @@ export class UserRepository extends BaseRepository<IUser> {
    * Find user by ID with password included
    */
   async findByIdWithPassword(id: string): Promise<IUser | null> {
-    const user = await this.getItem({ _id: id });
+    const user = await this.getItem({ id: id });
     if (!user || !user.isActive) {
       return null;
     }
@@ -142,14 +142,14 @@ export class UserRepository extends BaseRepository<IUser> {
    * Update user
    */
   async update(id: string, updateData: UpdateUserInput): Promise<IUser | null> {
-    return await this.updateItem({ _id: id }, updateData);
+    return await this.updateItem({ id: id }, updateData);
   }
 
   /**
    * Soft delete user
    */
   async delete(id: string): Promise<IUser | null> {
-    return await this.softDeleteItem({ _id: id });
+    return await this.softDeleteItem({ id: id });
   }
 
   /**
@@ -157,7 +157,7 @@ export class UserRepository extends BaseRepository<IUser> {
    */
   async hardDelete(id: string): Promise<IUser | null> {
     const user = await this.findById(id);
-    await this.hardDeleteItem({ _id: id });
+    await this.hardDeleteItem({ id: id });
     return user;
   }
 
@@ -188,14 +188,14 @@ export class UserRepository extends BaseRepository<IUser> {
    * Update refresh token
    */
   async updateRefreshToken(id: string, refreshToken: string | null): Promise<void> {
-    await this.updateItem({ _id: id }, { refreshToken });
+    await this.updateItem({ id: id }, { refreshToken });
   }
 
   /**
    * Get refresh token
    */
   async getRefreshToken(id: string): Promise<string | null> {
-    const user = await this.getItem({ _id: id });
+    const user = await this.getItem({ id: id });
     return user?.refreshToken || null;
   }
 

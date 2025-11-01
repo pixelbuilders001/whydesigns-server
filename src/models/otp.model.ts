@@ -1,5 +1,5 @@
 export interface IOTP {
-  _id: string; // UUID - Primary Key
+  id: string; // UUID - Primary Key
   userId: string; // User ID
   email: string;
   otp: string; // 6-digit OTP

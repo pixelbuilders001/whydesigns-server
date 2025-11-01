@@ -5,7 +5,7 @@ import { BaseModel } from './base.model';
  * Represents a downloadable material (PDF, documents, etc.)
  */
 export interface IMaterial extends BaseModel {
-  _id: string; // UUID - Primary Key
+  id: string; // UUID - Primary Key
   title: string;
   description?: string;
   fileUrl: string;

@@ -19,10 +19,10 @@ export class LeadActivityRepository extends BaseRepository<ILeadActivity> {
    * Create a new lead activity
    */
   async create(activityData: Partial<ILeadActivity>): Promise<ILeadActivity> {
-    const _id = this.generateId();
+    const id = this.generateId();
 
     const activity: ILeadActivity = {
-      _id,
+      id,
       leadId: activityData.leadId || '',
       counselorId: activityData.counselorId || '',
       activityType: activityData.activityType || 'other',
@@ -39,7 +39,7 @@ export class LeadActivityRepository extends BaseRepository<ILeadActivity> {
    * Find activity by ID
    */
   async findById(id: string): Promise<ILeadActivity | null> {
-    return await this.getItem({ _id: id });
+    return await this.getItem({ id: id });
   }
 
   /**
@@ -114,21 +114,21 @@ export class LeadActivityRepository extends BaseRepository<ILeadActivity> {
    * Update activity by ID
    */
   async update(id: string, updateData: Partial<ILeadActivity>): Promise<ILeadActivity | null> {
-    return await this.updateItem({ _id: id }, updateData);
+    return await this.updateItem({ id: id }, updateData);
   }
 
   /**
    * Soft delete activity
    */
   async softDelete(id: string): Promise<ILeadActivity | null> {
-    return await this.softDeleteItem({ _id: id });
+    return await this.softDeleteItem({ id: id });
   }
 
   /**
    * Hard delete activity
    */
   async delete(id: string): Promise<void> {
-    await this.hardDeleteItem({ _id: id });
+    await this.hardDeleteItem({ id: id });
   }
 
   /**
@@ -146,7 +146,7 @@ export class LeadActivityRepository extends BaseRepository<ILeadActivity> {
       const type = activity.activityType;
       if (!acc[type]) {
         acc[type] = {
-          _id: type,
+          id: type,
           count: 0,
           lastActivity: activity.activityDate,
         };

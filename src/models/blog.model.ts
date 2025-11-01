@@ -3,7 +3,7 @@ import { BaseModel } from './base.model';
 export type BlogStatus = 'draft' | 'published' | 'archived';
 
 export interface IBlog extends BaseModel {
-  _id: string; // UUID - Primary Key
+  id: string; // UUID - Primary Key
   title: string;
   slug: string;
   content: string;

@@ -2,7 +2,7 @@ import { BaseModel } from './base.model';
 import bcrypt from 'bcryptjs';
 
 export interface IUser extends BaseModel {
-  _id: string; // UUID - Primary Key
+  id: string; // UUID - Primary Key
   firstName?: string;
   lastName?: string;
   roleId: string; // UUID reference to Role

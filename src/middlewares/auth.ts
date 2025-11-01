@@ -36,7 +36,7 @@ export const authenticate = async (
     const roleName = (user as any).role?.name || '';
 
     req.user = {
-      id: user._id,
+      id: user.id,
       email: user.email,
       role: roleName,
     };
@@ -104,7 +104,7 @@ export const optionalAuthenticate = async (
       const roleName = (user as any).role?.name || '';
 
       req.user = {
-        id: user._id,
+        id: user.id,
         email: user.email,
         role: roleName,
       };

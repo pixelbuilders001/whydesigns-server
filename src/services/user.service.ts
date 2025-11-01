@@ -60,7 +60,7 @@ export class UserService {
     // Create user with USER roleId
     const user = await userRepository.create({
       ...userData,
-      roleId: role._id as any,
+      roleId: role.id as any,
       provider: 'local',
     });
 
@@ -69,12 +69,12 @@ export class UserService {
     const refreshToken = this.generateRefreshToken(user);
 
     // Save refresh token
-    await userRepository.updateRefreshToken(user._id, refreshToken);
+    await userRepository.updateRefreshToken(user.id, refreshToken);
 
     // Send OTP for email verification
     try {
       await otpService.createAndSendOTP(
-        user._id,
+        user.id,
         user.email,
         user.firstName || 'User',
         'email_verification'
@@ -133,7 +133,7 @@ export class UserService {
     const refreshToken = this.generateRefreshToken(user);
 
     // Save refresh token
-    await userRepository.updateRefreshToken(user._id, refreshToken);
+    await userRepository.updateRefreshToken(user.id, refreshToken);
 
     return { user: UserUtils.toResponse(user), token, refreshToken };
   }
@@ -148,7 +148,7 @@ export class UserService {
       }
 
       // Verify stored refresh token matches
-      const storedToken = await userRepository.getRefreshToken(user._id);
+      const storedToken = await userRepository.getRefreshToken(user.id);
       if (storedToken !== refreshToken) {
         throw new UnauthorizedError('Invalid refresh token');
       }
@@ -158,7 +158,7 @@ export class UserService {
       const newRefreshToken = this.generateRefreshToken(user);
 
       // Update stored refresh token
-      await userRepository.updateRefreshToken(user._id, newRefreshToken);
+      await userRepository.updateRefreshToken(user.id, newRefreshToken);
 
       return { token: newToken, refreshToken: newRefreshToken };
     } catch (error) {
@@ -216,7 +216,7 @@ export class UserService {
       const existingPhone = await userRepository.existsByPhone(filteredData.phoneNumber);
       if (existingPhone) {
         const existingUser = await userRepository.findByPhone(filteredData.phoneNumber);
-        if (existingUser && existingUser._id !== id) {
+        if (existingUser && existingUser.id !== id) {
           throw new ConflictError('Phone number is already in use');
         }
       }
@@ -256,7 +256,7 @@ export class UserService {
       const existingPhone = await userRepository.existsByPhone(filteredData.phoneNumber);
       if (existingPhone) {
         const existingUser = await userRepository.findByPhone(filteredData.phoneNumber);
-        if (existingUser && existingUser._id !== id) {
+        if (existingUser && existingUser.id !== id) {
           throw new ConflictError('Phone number is already in use');
         }
       }
@@ -324,7 +324,7 @@ export class UserService {
     // Create and send OTP for password reset
     try {
       await otpService.createAndSendOTP(
-        user._id,
+        user.id,
         user.email,
         user.firstName || 'User',
         'password_reset'
@@ -357,17 +357,17 @@ export class UserService {
 
     // Verify OTP
     try {
-      await otpService.verifyOTP(user._id, otp, 'password_reset');
+      await otpService.verifyOTP(user.id, otp, 'password_reset');
     } catch (error) {
       throw error; // Re-throw OTP verification errors
     }
 
     // Hash new password and update
     const hashedPassword = await UserUtils.hashPassword(newPassword);
-    await userRepository.update(user._id, { password: hashedPassword } as any);
+    await userRepository.update(user.id, { password: hashedPassword } as any);
 
     // Invalidate all refresh tokens for security
-    await userRepository.updateRefreshToken(user._id, null);
+    await userRepository.updateRefreshToken(user.id, null);
 
     // Send password changed confirmation email
     try {
@@ -401,10 +401,10 @@ export class UserService {
     }
 
     // Verify OTP
-    await otpService.verifyOTP(user._id, otp, 'email_verification');
+    await otpService.verifyOTP(user.id, otp, 'email_verification');
 
     // Update user email verification status
-    const updatedUser = await userRepository.update(user._id, { isEmailVerified: true });
+    const updatedUser = await userRepository.update(user.id, { isEmailVerified: true });
     if (!updatedUser) {
       throw new NotFoundError('User not found');
     }
@@ -440,7 +440,7 @@ export class UserService {
       throw new BadRequestError('Email is already verified');
     }
 
-    await otpService.resendOTP(user._id, user.email, user.firstName || 'User', 'email_verification');
+    await otpService.resendOTP(user.id, user.email, user.firstName || 'User', 'email_verification');
   }
 
   async verifyPhone(id: string): Promise<any> {
@@ -473,7 +473,7 @@ export class UserService {
     };
     return jwt.sign(
       {
-        id: user._id,
+        id: user.id,
         email: user.email,
         roleId: user.roleId,
       },
@@ -485,7 +485,7 @@ export class UserService {
   private generateRefreshToken(user: IUser): string {
     return jwt.sign(
       {
-        id: user._id,
+        id: user.id,
         type: 'refresh',
       },
       config.JWT_SECRET,

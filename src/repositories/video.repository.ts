@@ -28,10 +28,10 @@ export class VideoRepository extends BaseRepository<IVideo> {
    * Create a new video
    */
   async create(videoData: Partial<IVideo>): Promise<IVideo> {
-    const _id = this.generateId();
+    const id = this.generateId();
 
     const video: IVideo = {
-      _id,
+      id,
       title: videoData.title || '',
       description: videoData.description,
       videoUrl: videoData.videoUrl || '',
@@ -57,7 +57,7 @@ export class VideoRepository extends BaseRepository<IVideo> {
    * Find video by ID
    */
   async findById(id: string): Promise<IVideo | null> {
-    return await this.getItem({ _id: id });
+    return await this.getItem({ id: id });
   }
 
   /**
@@ -256,14 +256,14 @@ export class VideoRepository extends BaseRepository<IVideo> {
    * Update video
    */
   async update(id: string, updateData: Partial<IVideo>): Promise<IVideo | null> {
-    return await this.updateItem({ _id: id }, updateData);
+    return await this.updateItem({ id: id }, updateData);
   }
 
   /**
    * Delete video (soft delete)
    */
   async softDelete(id: string): Promise<IVideo | null> {
-    return await this.softDeleteItem({ _id: id });
+    return await this.softDeleteItem({ id: id });
   }
 
   /**
@@ -271,7 +271,7 @@ export class VideoRepository extends BaseRepository<IVideo> {
    */
   async delete(id: string): Promise<IVideo | null> {
     const video = await this.findById(id);
-    await this.hardDeleteItem({ _id: id });
+    await this.hardDeleteItem({ id: id });
     return video;
   }
 
@@ -295,7 +295,7 @@ export class VideoRepository extends BaseRepository<IVideo> {
   async incrementViewCount(id: string): Promise<IVideo | null> {
     const video = await this.findById(id);
     if (video) {
-      return await this.updateItem({ _id: id }, { viewCount: (video.viewCount || 0) + 1 });
+      return await this.updateItem({ id: id }, { viewCount: (video.viewCount || 0) + 1 });
     }
     return null;
   }
@@ -306,7 +306,7 @@ export class VideoRepository extends BaseRepository<IVideo> {
   async incrementLikeCount(id: string): Promise<IVideo | null> {
     const video = await this.findById(id);
     if (video) {
-      return await this.updateItem({ _id: id }, { likeCount: (video.likeCount || 0) + 1 });
+      return await this.updateItem({ id: id }, { likeCount: (video.likeCount || 0) + 1 });
     }
     return null;
   }
@@ -317,7 +317,7 @@ export class VideoRepository extends BaseRepository<IVideo> {
   async decrementLikeCount(id: string): Promise<IVideo | null> {
     const video = await this.findById(id);
     if (video && video.likeCount > 0) {
-      return await this.updateItem({ _id: id }, { likeCount: video.likeCount - 1 });
+      return await this.updateItem({ id: id }, { likeCount: video.likeCount - 1 });
     }
     return null;
   }
@@ -348,7 +348,7 @@ export class VideoRepository extends BaseRepository<IVideo> {
       }, {});
 
     const categories = Object.entries(categoryCount)
-      .map(([_id, count]) => ({ _id, count }))
+      .map(([id, count]) => ({ id, count }))
       .sort((a, b) => b.count - a.count);
 
     const publishedVideos = result.items.filter(v => v.isPublished);

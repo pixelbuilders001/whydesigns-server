@@ -1,7 +1,7 @@
 import { BaseModel } from './base.model';
 
 export interface ILead extends BaseModel {
-  _id: string; // UUID - Primary Key
+  id: string; // UUID - Primary Key
   fullName: string;
   email: string;
   phone: string;
