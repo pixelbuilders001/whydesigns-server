@@ -94,36 +94,8 @@ export class OTPService {
     name: string,
     type: 'email_verification' | 'password_reset' | 'phone_verification' = 'email_verification'
   ): Promise<void> {
-    // Create and send new OTP (spam check removed for now - can be added later with DynamoDB TTL)
+    // Create and send new OTP (existing OTPs are automatically cleaned up in createAndSendOTP)
     await this.createAndSendOTP(userId, email, name, type);
-  }
-
-  /**
-   * Check if user has pending OTP
-   */
-  async hasPendingOTP(
-    userId: string,
-    type: 'email_verification' | 'password_reset' | 'phone_verification' = 'email_verification'
-  ): Promise<boolean> {
-    const pendingOTP = await otpRepository.findOne({
-      userId,
-      otp: '', // We don't know the OTP, so this will return null
-      type,
-      isUsed: false,
-    });
-
-    return !!pendingOTP;
-  }
-
-  /**
-   * Get OTP expiry time
-   */
-  async getOTPExpiryTime(
-    userId: string,
-    type: 'email_verification' | 'password_reset' | 'phone_verification' = 'email_verification'
-  ): Promise<string | null> {
-    // Simplified - just return null for now as we don't have a way to query without OTP
-    return null;
   }
 
   /**
@@ -134,11 +106,11 @@ export class OTPService {
   }
 
   /**
-   * Clean up expired OTPs (can be run as a cron job)
+   * Clean up expired OTPs
+   * Note: In production, use DynamoDB TTL feature for automatic cleanup
    */
   async cleanupExpiredOTPs(): Promise<void> {
-    // Simplified for DynamoDB - would typically use TTL feature
-    console.log(`🧹 Cleanup should be handled by DynamoDB TTL feature`);
+    console.log(`💡 For production: Enable DynamoDB TTL on the expiresAt field for automatic cleanup`);
   }
 }
 
