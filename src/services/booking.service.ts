@@ -12,14 +12,14 @@ interface CreateBookingInput {
   guestName: string;
   guestEmail: string;
   guestPhone: string;
-  bookingDate: Date;
+  bookingDate: Date | string;
   bookingTime: string;
   duration?: number;
   discussionTopic: string;
 }
 
 interface UpdateBookingInput {
-  bookingDate?: Date;
+  bookingDate?: string | Date;
   bookingTime?: string;
   duration?: number;
   discussionTopic?: string;
@@ -43,17 +43,21 @@ export class BookingService {
     }
 
     // 2. Check availability
+    const bookingDateObj = data.bookingDate instanceof Date ? data.bookingDate : new Date(data.bookingDate);
     const isAvailable = await bookingRepository.checkAvailability(
       data.counselorId,
-      data.bookingDate,
+      bookingDateObj,
       data.bookingTime
     );
+
+    // 3. Convert bookingDate to ISO string for storage
+    const bookingDateISO = bookingDateObj.toISOString();
     if (!isAvailable) {
       throw new AppError('This time slot is not available. Please choose another time.', 400);
     }
 
-    // 3. Validate booking is in the future
-    const bookingDateTime = new Date(data.bookingDate);
+    // 4. Validate booking is in the future
+    const bookingDateTime = new Date(bookingDateISO);
     const [hours, minutes] = data.bookingTime.split(':');
     bookingDateTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
 
@@ -61,12 +65,13 @@ export class BookingService {
       throw new AppError('Booking must be scheduled for a future date and time', 400);
     }
 
-    // 4. Set duration
+    // 5. Set duration
     const duration = data.duration || 60;
 
-    // 5. Create booking in database
+    // 6. Create booking in database
     const booking = await bookingRepository.create({
       ...data,
+      bookingDate: bookingDateISO,
       duration,
       status: 'pending',
       confirmationEmailSent: false,
@@ -185,10 +190,16 @@ export class BookingService {
       throw new AppError(`Cannot update ${booking.status} bookings`, 400);
     }
 
+    // Convert date to ISO string if it's a Date object
+    const updateData: Partial<IBooking> = {};
+
     // If date/time is being changed, check availability
     if (data.bookingDate || data.bookingTime) {
-      const newDate = data.bookingDate || booking.bookingDate;
+      const newDateISO = data.bookingDate
+        ? (data.bookingDate instanceof Date ? data.bookingDate.toISOString() : data.bookingDate)
+        : booking.bookingDate;
       const newTime = data.bookingTime || booking.bookingTime;
+      const newDateObj = new Date(newDateISO);
 
       // Extract counselor ID - handle both populated and non-populated cases
       const counselorId = (booking.counselorId as any)?._id
@@ -198,7 +209,7 @@ export class BookingService {
       // Check if the new slot is available (excluding current booking)
       const bookingsForSlot = await bookingRepository.checkAvailability(
         counselorId,
-        newDate,
+        newDateObj,
         newTime
       );
 
@@ -207,7 +218,18 @@ export class BookingService {
       }
     }
 
-    const updatedBooking = await bookingRepository.update(id, data);
+    // Build update data with proper types
+    if (data.bookingDate) {
+      updateData.bookingDate = data.bookingDate instanceof Date
+        ? data.bookingDate.toISOString()
+        : data.bookingDate;
+    }
+    if (data.bookingTime !== undefined) updateData.bookingTime = data.bookingTime;
+    if (data.duration !== undefined) updateData.duration = data.duration;
+    if (data.discussionTopic !== undefined) updateData.discussionTopic = data.discussionTopic;
+    if (data.status !== undefined) updateData.status = data.status;
+
+    const updatedBooking = await bookingRepository.update(id, updateData);
     if (!updatedBooking) {
       throw new AppError('Booking not found', 404);
     }
@@ -271,7 +293,7 @@ export class BookingService {
     const updatedBooking = await bookingRepository.update(id, {
       status: 'cancelled',
       cancellationReason: cancelData.cancellationReason,
-      cancelledAt: new Date(),
+      cancelledAt: new Date().toISOString(),
       cancelledBy: cancelData.cancelledBy,
     });
 

@@ -1,37 +1,88 @@
-import { Role, IRole } from '../models/role.model';
+import { IRole, CreateRoleInput, UpdateRoleInput } from '../models/role.model';
+import { BaseRepository } from './base.repository';
+import { TABLES } from '../config/dynamodb.tables';
+import { createBaseFields } from '../models/base.model';
 
-export class RoleRepository {
-  async create(roleData: Partial<IRole>): Promise<IRole> {
-    const role = await Role.create(roleData);
+export class RoleRepository extends BaseRepository<IRole> {
+  constructor() {
+    super(TABLES.ROLES);
+  }
+
+  /**
+   * Create a new role
+   */
+  async create(roleData: CreateRoleInput): Promise<IRole> {
+    const _id = this.generateId();
+
+    const role: IRole = {
+      _id,
+      ...roleData,
+      permissions: roleData.permissions || [],
+      ...createBaseFields(),
+    };
+
+    return await this.putItem(role);
+  }
+
+  /**
+   * Find role by ID
+   */
+  async findById(id: string): Promise<IRole | null> {
+    return await this.getItem({ _id: id });
+  }
+
+  /**
+   * Find role by name using Scan (no GSI needed)
+   */
+  async findByName(name: string): Promise<IRole | null> {
+    const result = await this.scanItems({
+      filterExpression: '#name = :name AND #isActive = :isActive',
+      expressionAttributeNames: { '#name': 'name', '#isActive': 'isActive' },
+      expressionAttributeValues: {
+        ':name': name.toUpperCase() as 'USER' | 'ADMIN',
+        ':isActive': true
+      },
+    });
+
+    // Return the first active role found (there should only be one per name)
+    return result.items[0] || null;
+  }
+
+  /**
+   * Find all active roles
+   */
+  async findAll(): Promise<IRole[]> {
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive',
+      expressionAttributeNames: { '#isActive': 'isActive' },
+      expressionAttributeValues: { ':isActive': true },
+    });
+
+    return result.items;
+  }
+
+  /**
+   * Update role
+   */
+  async update(id: string, updateData: UpdateRoleInput): Promise<IRole | null> {
+    return await this.updateItem({ _id: id }, updateData);
+  }
+
+  /**
+   * Delete role
+   */
+  async delete(id: string): Promise<IRole | null> {
+    const role = await this.findById(id);
+    await this.hardDeleteItem({ _id: id });
     return role;
   }
 
-  async findById(id: string): Promise<IRole | null> {
-    return await Role.findById(id);
-  }
-
-  async findByName(name: string): Promise<IRole | null> {
-    return await Role.findOne({ name: name.toUpperCase() });
-  }
-
-  async findAll(): Promise<IRole[]> {
-    return await Role.find({ isActive: true });
-  }
-
-  async update(id: string, updateData: Partial<IRole>): Promise<IRole | null> {
-    return await Role.findByIdAndUpdate(id, updateData, {
-      new: true,
-      runValidators: true,
-    });
-  }
-
-  async delete(id: string): Promise<IRole | null> {
-    return await Role.findByIdAndDelete(id);
-  }
-
+  /**
+   * Check if role exists by name
+   */
   async exists(name: string): Promise<boolean> {
-    const count = await Role.countDocuments({ name: name.toUpperCase() });
-    return count > 0;
+    const role = await this.findByName(name);
+    return role !== null;
   }
 }
 

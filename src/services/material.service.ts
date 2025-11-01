@@ -7,14 +7,12 @@ import { NotFoundError, BadRequestError, AppError } from '../utils/AppError';
  * Interface for creating a material
  */
 export interface CreateMaterialData {
-  name: string;
+  title: string;
   description?: string;
   fileUrl: string;
-  fileName: string;
   fileType: string;
   fileSize: number;
   category?: string;
-  tags?: string[];
   uploadedBy: string;
 }
 
@@ -22,14 +20,12 @@ export interface CreateMaterialData {
  * Interface for updating a material
  */
 export interface UpdateMaterialData {
-  name?: string;
+  title?: string;
   description?: string;
   fileUrl?: string;
-  fileName?: string;
   fileType?: string;
   fileSize?: number;
   category?: string;
-  tags?: string[];
   isActive?: boolean;
 }
 
@@ -43,16 +39,12 @@ export class MaterialService {
    */
   async create(data: CreateMaterialData): Promise<IMaterial> {
     // Validate required fields
-    if (!data.name) {
-      throw new BadRequestError('Material name is required');
+    if (!data.title) {
+      throw new BadRequestError('Material title is required');
     }
 
     if (!data.fileUrl) {
       throw new BadRequestError('File URL is required');
-    }
-
-    if (!data.fileName) {
-      throw new BadRequestError('File name is required');
     }
 
     if (!data.fileType) {
@@ -69,14 +61,12 @@ export class MaterialService {
 
     // Create material
     const material = await materialRepository.create({
-      name: data.name.trim(),
+      title: data.title.trim(),
       description: data.description?.trim() || '',
       fileUrl: data.fileUrl,
-      fileName: data.fileName,
       fileType: data.fileType.toLowerCase(),
       fileSize: data.fileSize,
       category: data.category?.trim() || 'General',
-      tags: data.tags || [],
       uploadedBy: data.uploadedBy as any,
     });
 
@@ -114,18 +104,6 @@ export class MaterialService {
     return await materialRepository.findByCategory(category, options);
   }
 
-  /**
-   * Get materials by tags
-   */
-  async getByTags(
-    tags: string[],
-    options: PaginationOptions
-  ): Promise<{ items: IMaterial[]; total: number }> {
-    if (!tags || tags.length === 0) {
-      throw new BadRequestError('At least one tag is required');
-    }
-    return await materialRepository.findByTags(tags, options);
-  }
 
   /**
    * Search materials
@@ -153,11 +131,11 @@ export class MaterialService {
     // Prepare update data
     const updateData: Partial<IMaterial> = {};
 
-    if (data.name !== undefined) {
-      if (data.name.trim().length < 2) {
-        throw new BadRequestError('Material name must be at least 2 characters');
+    if (data.title !== undefined) {
+      if (data.title.trim().length < 2) {
+        throw new BadRequestError('Material title must be at least 2 characters');
       }
-      updateData.name = data.name.trim();
+      updateData.title = data.title.trim();
     }
 
     if (data.description !== undefined) {
@@ -166,10 +144,6 @@ export class MaterialService {
 
     if (data.fileUrl !== undefined) {
       updateData.fileUrl = data.fileUrl;
-    }
-
-    if (data.fileName !== undefined) {
-      updateData.fileName = data.fileName;
     }
 
     if (data.fileType !== undefined) {
@@ -185,10 +159,6 @@ export class MaterialService {
 
     if (data.category !== undefined) {
       updateData.category = data.category.trim() || 'General';
-    }
-
-    if (data.tags !== undefined) {
-      updateData.tags = data.tags;
     }
 
     if (data.isActive !== undefined) {
@@ -245,12 +215,6 @@ export class MaterialService {
     return await materialRepository.getCategories();
   }
 
-  /**
-   * Get all tags
-   */
-  async getTags(): Promise<string[]> {
-    return await materialRepository.getTags();
-  }
 
   /**
    * Get statistics by category

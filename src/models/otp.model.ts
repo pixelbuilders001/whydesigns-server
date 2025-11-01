@@ -1,71 +1,45 @@
-import { Schema, model, Document } from 'mongoose';
+export interface IOTP {
+  _id: string; // UUID - Primary Key
+  userId: string; // User ID
+  email: string;
+  otp: string; // 6-digit OTP
+  type: 'email_verification' | 'password_reset' | 'phone_verification';
+  isUsed: boolean;
+  expiresAt: string; // ISO 8601 timestamp
+  createdAt: string; // ISO 8601 timestamp
+  updatedAt: string; // ISO 8601 timestamp
+}
 
-export interface IOTP extends Document {
-  _id: string;
-  userId: Schema.Types.ObjectId;
+export interface CreateOTPInput {
+  userId: string;
   email: string;
   otp: string;
   type: 'email_verification' | 'password_reset' | 'phone_verification';
-  isUsed: boolean;
-  expiresAt: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  expiresAt: string;
 }
 
-const otpSchema = new Schema<IOTP>(
-  {
-    userId: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: [true, 'User ID is required'],
-      index: true,
-    },
-    email: {
-      type: String,
-      required: [true, 'Email is required'],
-      lowercase: true,
-      trim: true,
-      index: true,
-    },
-    otp: {
-      type: String,
-      required: [true, 'OTP is required'],
-      length: 6,
-    },
-    type: {
-      type: String,
-      enum: ['email_verification', 'password_reset', 'phone_verification'],
-      default: 'email_verification',
-      required: true,
-    },
-    isUsed: {
-      type: Boolean,
-      default: false,
-    },
-    expiresAt: {
-      type: Date,
-      required: true,
-      index: true,
-    },
-  },
-  {
-    timestamps: true,
+export interface UpdateOTPInput {
+  isUsed?: boolean;
+}
+
+// Utility class for OTP operations
+export class OTPUtils {
+  // Generate 6-digit OTP
+  static generateOTP(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
   }
-);
 
-// Indexes for efficient querying
-otpSchema.index({ userId: 1, type: 1 });
-otpSchema.index({ email: 1, type: 1 });
-otpSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // TTL index for auto-deletion
+  // Get expiration time (default: 10 minutes from now)
+  static getExpirationTime(minutes: number = 10): string {
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + minutes);
+    return expiresAt.toISOString();
+  }
 
-// Method to check if OTP is expired
-otpSchema.methods.isExpired = function (): boolean {
-  return new Date() > this.expiresAt;
-};
+  // Check if OTP is expired
+  static isExpired(expiresAt: string): boolean {
+    return new Date(expiresAt) < new Date();
+  }
+}
 
-// Static method to clean up expired OTPs (optional, as TTL index handles this)
-otpSchema.statics.cleanupExpired = async function (): Promise<void> {
-  await this.deleteMany({ expiresAt: { $lt: new Date() } });
-};
-
-export const OTP = model<IOTP>('OTP', otpSchema);
+export default IOTP;

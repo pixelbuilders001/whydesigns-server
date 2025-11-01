@@ -1,5 +1,7 @@
-import Reel, { IReel } from '../models/reel.model';
-import mongoose from 'mongoose';
+import { IReel } from '../models/reel.model';
+import { BaseRepository } from './base.repository';
+import { TABLES } from '../config/dynamodb.tables';
+import { createBaseFields } from '../models/base.model';
 
 export interface ReelFilters {
   isActive?: boolean;
@@ -17,23 +19,44 @@ export interface PaginationOptions {
   sortOrder?: 'asc' | 'desc';
 }
 
-class ReelRepository {
+export class ReelRepository extends BaseRepository<IReel> {
+  constructor() {
+    super(TABLES.REELS);
+  }
+
   /**
    * Create a new reel
    */
   async create(reelData: Partial<IReel>): Promise<IReel> {
-    const reel = await Reel.create(reelData);
-    return reel;
+    const _id = this.generateId();
+
+    const reel: IReel = {
+      _id,
+      title: reelData.title || '',
+      description: reelData.description,
+      videoUrl: reelData.videoUrl || '',
+      thumbnailUrl: reelData.thumbnailUrl,
+      duration: reelData.duration || 0,
+      fileSize: reelData.fileSize || 0,
+      category: reelData.category,
+      tags: reelData.tags || [],
+      viewCount: reelData.viewCount || 0,
+      likeCount: reelData.likeCount || 0,
+      uploadedBy: reelData.uploadedBy || '',
+      isPublished: reelData.isPublished || false,
+      publishedAt: reelData.publishedAt || null,
+      displayOrder: reelData.displayOrder || 0,
+      ...createBaseFields(),
+    };
+
+    return await this.putItem(reel);
   }
 
   /**
    * Find reel by ID
    */
   async findById(id: string): Promise<IReel | null> {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return null;
-    }
-    return await Reel.findById(id);
+    return await this.getItem({ _id: id });
   }
 
   /**
@@ -44,49 +67,72 @@ class ReelRepository {
     options: PaginationOptions = {}
   ): Promise<{ reels: IReel[]; total: number; page: number; totalPages: number }> {
     const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc' } = options;
-    const skip = (page - 1) * limit;
 
-    // Build query
-    const query: any = {};
+    // Build filter expression
+    const filterExpressions: string[] = [];
+    const expressionAttributeNames: Record<string, string> = {};
+    const expressionAttributeValues: Record<string, any> = {};
 
     if (filters.isActive !== undefined) {
-      query.isActive = filters.isActive;
+      filterExpressions.push('#isActive = :isActive');
+      expressionAttributeNames['#isActive'] = 'isActive';
+      expressionAttributeValues[':isActive'] = filters.isActive;
     }
 
     if (filters.isPublished !== undefined) {
-      query.isPublished = filters.isPublished;
-    }
-
-    if (filters.category) {
-      query.category = new RegExp(filters.category, 'i');
-    }
-
-    if (filters.tags) {
-      query.tags = { $in: [new RegExp(filters.tags, 'i')] };
+      filterExpressions.push('#isPublished = :isPublished');
+      expressionAttributeNames['#isPublished'] = 'isPublished';
+      expressionAttributeValues[':isPublished'] = filters.isPublished;
     }
 
     if (filters.uploadedBy) {
-      query.uploadedBy = filters.uploadedBy;
+      filterExpressions.push('#uploadedBy = :uploadedBy');
+      expressionAttributeNames['#uploadedBy'] = 'uploadedBy';
+      expressionAttributeValues[':uploadedBy'] = filters.uploadedBy;
+    }
+
+    // Scan with filters
+    const result = await this.scanItems({
+      filterExpression: filterExpressions.length > 0 ? filterExpressions.join(' AND ') : undefined,
+      expressionAttributeNames: Object.keys(expressionAttributeNames).length > 0 ? expressionAttributeNames : undefined,
+      expressionAttributeValues: Object.keys(expressionAttributeValues).length > 0 ? expressionAttributeValues : undefined,
+    });
+
+    let reels = result.items;
+
+    // Filter by category/tags/search in memory
+    if (filters.category) {
+      const categoryLower = filters.category.toLowerCase();
+      reels = reels.filter(r => r.category?.toLowerCase().includes(categoryLower));
+    }
+
+    if (filters.tags) {
+      const tagsLower = filters.tags.toLowerCase();
+      reels = reels.filter(r => r.tags?.some(t => t.toLowerCase().includes(tagsLower)));
     }
 
     if (filters.search) {
-      query.$text = { $search: filters.search };
+      const queryLower = filters.search.toLowerCase();
+      reels = reels.filter(r =>
+        r.title?.toLowerCase().includes(queryLower) ||
+        r.description?.toLowerCase().includes(queryLower) ||
+        r.category?.toLowerCase().includes(queryLower) ||
+        r.tags?.some(t => t.toLowerCase().includes(queryLower))
+      );
     }
 
-    // Execute query
-    const [reels, total] = await Promise.all([
-      Reel.find(query)
-        .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
-        .skip(skip)
-        .limit(limit),
-      Reel.countDocuments(query),
-    ]);
+    // Sort in memory
+    const sortedReels = this.sortItems(reels, sortBy, sortOrder);
+
+    // Paginate
+    const skip = (page - 1) * limit;
+    const paginatedReels = sortedReels.slice(skip, skip + limit);
 
     return {
-      reels,
-      total,
+      reels: paginatedReels,
+      total: sortedReels.length,
       page,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil(sortedReels.length / limit),
     };
   }
 
@@ -123,27 +169,30 @@ class ReelRepository {
     options: PaginationOptions = {}
   ): Promise<{ reels: IReel[]; total: number; page: number; totalPages: number }> {
     const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc' } = options;
+
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive AND #isPublished = :isPublished',
+      expressionAttributeNames: { '#isActive': 'isActive', '#isPublished': 'isPublished' },
+      expressionAttributeValues: { ':isActive': true, ':isPublished': true },
+    });
+
+    // Filter by tags in memory
+    const filteredReels = result.items.filter(reel =>
+      reel.tags && tags.some(tag => reel.tags.includes(tag))
+    );
+
+    // Sort
+    const sortedReels = this.sortItems(filteredReels, sortBy, sortOrder);
+
+    // Paginate
     const skip = (page - 1) * limit;
-
-    const query = {
-      isActive: true,
-      isPublished: true,
-      tags: { $in: tags },
-    };
-
-    const [reels, total] = await Promise.all([
-      Reel.find(query)
-        .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
-        .skip(skip)
-        .limit(limit),
-      Reel.countDocuments(query),
-    ]);
+    const paginatedReels = sortedReels.slice(skip, skip + limit);
 
     return {
-      reels,
-      total,
+      reels: paginatedReels,
+      total: filteredReels.length,
       page,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil(filteredReels.length / limit),
     };
   }
 
@@ -151,87 +200,85 @@ class ReelRepository {
    * Find reels by uploader
    */
   async findByUploader(uploaderId: string): Promise<IReel[]> {
-    if (!mongoose.Types.ObjectId.isValid(uploaderId)) {
-      return [];
-    }
-    return await Reel.find({ uploadedBy: uploaderId, isActive: true }).sort({ createdAt: -1 });
+    const result = await this.scanItems({
+      filterExpression: '#uploadedBy = :uploadedBy AND #isActive = :isActive',
+      expressionAttributeNames: { '#uploadedBy': 'uploadedBy', '#isActive': 'isActive' },
+      expressionAttributeValues: { ':uploadedBy': uploaderId, ':isActive': true },
+    });
+
+    return this.sortItems(result.items, 'createdAt', 'desc');
   }
 
   /**
    * Find most viewed reels
    */
-  async findMostViewed(
-    limit: number = 10
-  ): Promise<IReel[]> {
-    return await Reel.find({ isActive: true, isPublished: true })
-      .sort({ viewCount: -1 })
-      .limit(limit);
+  async findMostViewed(limit: number = 10): Promise<IReel[]> {
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive AND #isPublished = :isPublished',
+      expressionAttributeNames: { '#isActive': 'isActive', '#isPublished': 'isPublished' },
+      expressionAttributeValues: { ':isActive': true, ':isPublished': true },
+    });
+
+    const sorted = this.sortItems(result.items, 'viewCount', 'desc');
+    return sorted.slice(0, limit);
   }
 
   /**
    * Find most liked reels
    */
-  async findMostLiked(
-    limit: number = 10
-  ): Promise<IReel[]> {
-    return await Reel.find({ isActive: true, isPublished: true })
-      .sort({ likeCount: -1 })
-      .limit(limit);
+  async findMostLiked(limit: number = 10): Promise<IReel[]> {
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive AND #isPublished = :isPublished',
+      expressionAttributeNames: { '#isActive': 'isActive', '#isPublished': 'isPublished' },
+      expressionAttributeValues: { ':isActive': true, ':isPublished': true },
+    });
+
+    const sorted = this.sortItems(result.items, 'likeCount', 'desc');
+    return sorted.slice(0, limit);
   }
 
   /**
    * Find recent reels
    */
-  async findRecent(
-    limit: number = 10
-  ): Promise<IReel[]> {
-    return await Reel.find({ isActive: true, isPublished: true })
-      .sort({ publishedAt: -1 })
-      .limit(limit);
+  async findRecent(limit: number = 10): Promise<IReel[]> {
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive AND #isPublished = :isPublished',
+      expressionAttributeNames: { '#isActive': 'isActive', '#isPublished': 'isPublished' },
+      expressionAttributeValues: { ':isActive': true, ':isPublished': true },
+    });
+
+    const sorted = this.sortItems(result.items, 'publishedAt', 'desc');
+    return sorted.slice(0, limit);
   }
 
   /**
    * Update reel
    */
   async update(id: string, updateData: Partial<IReel>): Promise<IReel | null> {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return null;
-    }
-    return await Reel.findByIdAndUpdate(id, updateData, {
-      new: true,
-      runValidators: true,
-    });
+    return await this.updateItem({ _id: id }, updateData);
   }
 
   /**
    * Delete reel (soft delete)
    */
   async softDelete(id: string): Promise<IReel | null> {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return null;
-    }
-    return await Reel.findByIdAndUpdate(
-      id,
-      { isActive: false },
-      { new: true }
-    );
+    return await this.softDeleteItem({ _id: id });
   }
 
   /**
    * Delete reel (hard delete)
    */
   async delete(id: string): Promise<IReel | null> {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return null;
-    }
-    return await Reel.findByIdAndDelete(id);
+    const reel = await this.findById(id);
+    await this.hardDeleteItem({ _id: id });
+    return reel;
   }
 
   /**
    * Publish reel
    */
   async publish(id: string): Promise<IReel | null> {
-    return await this.update(id, { isPublished: true, publishedAt: new Date() });
+    return await this.update(id, { isPublished: true, publishedAt: new Date().toISOString() });
   }
 
   /**
@@ -245,79 +292,76 @@ class ReelRepository {
    * Increment view count
    */
   async incrementViewCount(id: string): Promise<IReel | null> {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return null;
+    const reel = await this.findById(id);
+    if (reel) {
+      return await this.updateItem({ _id: id }, { viewCount: (reel.viewCount || 0) + 1 });
     }
-    return await Reel.findByIdAndUpdate(
-      id,
-      { $inc: { viewCount: 1 } },
-      { new: true }
-    );
+    return null;
   }
 
   /**
    * Increment like count
    */
   async incrementLikeCount(id: string): Promise<IReel | null> {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return null;
+    const reel = await this.findById(id);
+    if (reel) {
+      return await this.updateItem({ _id: id }, { likeCount: (reel.likeCount || 0) + 1 });
     }
-    return await Reel.findByIdAndUpdate(
-      id,
-      { $inc: { likeCount: 1 } },
-      { new: true }
-    );
+    return null;
   }
 
   /**
    * Decrement like count
    */
   async decrementLikeCount(id: string): Promise<IReel | null> {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return null;
+    const reel = await this.findById(id);
+    if (reel && reel.likeCount > 0) {
+      return await this.updateItem({ _id: id }, { likeCount: reel.likeCount - 1 });
     }
-    return await Reel.findByIdAndUpdate(
-      id,
-      { $inc: { likeCount: -1 } },
-      { new: true }
-    );
+    return null;
   }
 
   /**
    * Get reel statistics
    */
   async getStats(): Promise<any> {
-    const [total, published, unpublished, totalViews, totalLikes, categories] = await Promise.all([
-      Reel.countDocuments({ isActive: true }),
-      Reel.countDocuments({ isActive: true, isPublished: true }),
-      Reel.countDocuments({ isActive: true, isPublished: false }),
-      Reel.aggregate([
-        { $match: { isActive: true } },
-        { $group: { _id: null, total: { $sum: '$viewCount' } } },
-      ]),
-      Reel.aggregate([
-        { $match: { isActive: true } },
-        { $group: { _id: null, total: { $sum: '$likeCount' } } },
-      ]),
-      Reel.aggregate([
-        { $match: { isActive: true, isPublished: true } },
-        { $group: { _id: '$category', count: { $sum: 1 } } },
-        { $sort: { count: -1 } },
-      ]),
-    ]);
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive',
+      expressionAttributeNames: { '#isActive': 'isActive' },
+      expressionAttributeValues: { ':isActive': true },
+    });
 
-    const avgViews = await Reel.aggregate([
-      { $match: { isActive: true, isPublished: true } },
-      { $group: { _id: null, average: { $avg: '$viewCount' } } },
-    ]);
+    const total = result.items.length;
+    const published = result.items.filter(r => r.isPublished).length;
+    const unpublished = result.items.filter(r => !r.isPublished).length;
+    const totalViews = result.items.reduce((sum, r) => sum + (r.viewCount || 0), 0);
+    const totalLikes = result.items.reduce((sum, r) => sum + (r.likeCount || 0), 0);
+
+    // Categories count
+    const categoryCount = result.items
+      .filter(r => r.isPublished)
+      .reduce((acc: Record<string, number>, r) => {
+        const category = r.category || 'uncategorized';
+        acc[category] = (acc[category] || 0) + 1;
+        return acc;
+      }, {});
+
+    const categories = Object.entries(categoryCount)
+      .map(([_id, count]) => ({ _id, count }))
+      .sort((a, b) => b.count - a.count);
+
+    const publishedReels = result.items.filter(r => r.isPublished);
+    const avgViews = publishedReels.length > 0
+      ? (publishedReels.reduce((sum, r) => sum + (r.viewCount || 0), 0) / publishedReels.length).toFixed(2)
+      : 0;
 
     return {
       total,
       published,
       unpublished,
-      totalViews: totalViews.length > 0 ? totalViews[0].total : 0,
-      totalLikes: totalLikes.length > 0 ? totalLikes[0].total : 0,
-      averageViews: avgViews.length > 0 ? avgViews[0].average.toFixed(2) : 0,
+      totalViews,
+      totalLikes,
+      averageViews: avgViews,
       categories,
     };
   }
@@ -326,16 +370,56 @@ class ReelRepository {
    * Get all unique categories
    */
   async getCategories(): Promise<string[]> {
-    const categories = await Reel.distinct('category', { isActive: true, isPublished: true });
-    return categories.filter(cat => cat && cat.trim() !== '');
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive AND #isPublished = :isPublished',
+      expressionAttributeNames: { '#isActive': 'isActive', '#isPublished': 'isPublished' },
+      expressionAttributeValues: { ':isActive': true, ':isPublished': true },
+    });
+
+    const categoriesSet = new Set<string>();
+    result.items.forEach(reel => {
+      if (reel.category && reel.category.trim() !== '') {
+        categoriesSet.add(reel.category);
+      }
+    });
+
+    return Array.from(categoriesSet).sort();
   }
 
   /**
    * Get all unique tags
    */
   async getTags(): Promise<string[]> {
-    const tags = await Reel.distinct('tags', { isActive: true, isPublished: true });
-    return tags.filter(tag => tag && tag.trim() !== '');
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive AND #isPublished = :isPublished',
+      expressionAttributeNames: { '#isActive': 'isActive', '#isPublished': 'isPublished' },
+      expressionAttributeValues: { ':isActive': true, ':isPublished': true },
+    });
+
+    const tagsSet = new Set<string>();
+    result.items.forEach(reel => {
+      reel.tags?.forEach(tag => {
+        if (tag && tag.trim() !== '') {
+          tagsSet.add(tag);
+        }
+      });
+    });
+
+    return Array.from(tagsSet).sort();
+  }
+
+  /**
+   * Helper method to sort items in memory
+   */
+  private sortItems(items: IReel[], sortBy: string, sortOrder: string): IReel[] {
+    return items.sort((a, b) => {
+      const aVal = (a as any)[sortBy];
+      const bVal = (b as any)[sortBy];
+
+      if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
   }
 }
 

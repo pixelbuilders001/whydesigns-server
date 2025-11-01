@@ -1,80 +1,122 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import { BaseModel } from './base.model';
 
-export interface ILeadActivity extends Document {
-  leadId: mongoose.Types.ObjectId;
-  counselorId: mongoose.Types.ObjectId;
-  activityType: 'contacted' | 'follow_up' | 'meeting_scheduled' | 'meeting_completed' | 'interested' | 'not_interested' | 'converted' | 'closed' | 'other';
-  remarks: string;
-  activityDate: Date;
-  nextFollowUpDate?: Date;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+export type ActivityType =
+  | 'contacted'
+  | 'follow_up'
+  | 'meeting_scheduled'
+  | 'meeting_completed'
+  | 'interested'
+  | 'not_interested'
+  | 'converted'
+  | 'closed'
+  | 'other';
+
+export interface ILeadActivity extends BaseModel {
+  _id: string; // UUID - Primary Key (was activityId)
+  leadId: string; // Lead ID reference
+  counselorId: string; // Counselor/User ID reference
+  activityType: ActivityType;
+  remarks?: string;
+  activityDate: string; // ISO 8601 timestamp
+  nextFollowUpDate?: string; // ISO 8601 timestamp (optional)
 }
 
-const leadActivitySchema = new Schema<ILeadActivity>(
-  {
-    leadId: {
-      type: Schema.Types.ObjectId,
-      ref: 'Lead',
-      required: [true, 'Lead ID is required'],
-      index: true,
-    },
-    counselorId: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: [true, 'Counselor ID is required'],
-      index: true,
-    },
-    activityType: {
-      type: String,
-      enum: {
-        values: ['contacted', 'follow_up', 'meeting_scheduled', 'meeting_completed', 'interested', 'not_interested', 'converted', 'closed', 'other'],
-        message: '{VALUE} is not a valid activity type',
-      },
-      required: [true, 'Activity type is required'],
-      index: true,
-    },
-    remarks: {
-      type: String,
-      required: [true, 'Remarks are required'],
-      trim: true,
-      minlength: [5, 'Remarks must be at least 5 characters'],
-      maxlength: [2000, 'Remarks cannot exceed 2000 characters'],
-    },
-    activityDate: {
-      type: Date,
-      required: [true, 'Activity date is required'],
-      default: Date.now,
-      index: true,
-    },
-    nextFollowUpDate: {
-      type: Date,
-      default: null,
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
-      index: true,
-    },
-  },
-  {
-    timestamps: true,
-    toJSON: {
-      virtuals: true,
-      transform: function (doc, ret) {
-        ret.id = ret._id;
-        delete ret.__v;
-        return ret;
-      },
-    },
-    toObject: { virtuals: true },
+// Lead Activity creation input (without auto-generated fields)
+export interface CreateLeadActivityInput {
+  leadId: string;
+  counselorId: string;
+  activityType: ActivityType;
+  remarks?: string;
+  activityDate?: string;
+  nextFollowUpDate?: string;
+}
+
+// Lead Activity update input
+export interface UpdateLeadActivityInput {
+  activityType?: ActivityType;
+  remarks?: string;
+  activityDate?: string;
+  nextFollowUpDate?: string;
+  isActive?: boolean;
+}
+
+// Lead Activity response interface
+export interface LeadActivityResponse extends ILeadActivity {
+  formattedActivityDate: string;
+  formattedNextFollowUpDate?: string;
+}
+
+// Utility class for lead activity operations
+export class LeadActivityUtils {
+  // Activity type labels
+  static readonly ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
+    contacted: 'Contacted',
+    follow_up: 'Follow Up',
+    meeting_scheduled: 'Meeting Scheduled',
+    meeting_completed: 'Meeting Completed',
+    interested: 'Interested',
+    not_interested: 'Not Interested',
+    converted: 'Converted',
+    closed: 'Closed',
+    other: 'Other',
+  };
+
+  // Get activity type label
+  static getActivityTypeLabel(activityType: ActivityType): string {
+    return this.ACTIVITY_TYPE_LABELS[activityType] || activityType;
   }
-);
 
-// Compound indexes for efficient queries
-leadActivitySchema.index({ leadId: 1, activityDate: -1 });
-leadActivitySchema.index({ leadId: 1, isActive: 1 });
-leadActivitySchema.index({ counselorId: 1, activityDate: -1 });
+  // Format date to human readable format (YYYY-MM-DD HH:MM:SS)
+  static formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const seconds = date.getSeconds().toString().padStart(2, '0');
 
-export default mongoose.model<ILeadActivity>('LeadActivity', leadActivitySchema);
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  }
+
+  // Check if next follow-up is overdue
+  static isFollowUpOverdue(activity: ILeadActivity): boolean {
+    if (!activity.nextFollowUpDate) return false;
+    return new Date(activity.nextFollowUpDate) < new Date();
+  }
+
+  // Check if follow-up is due soon (within 3 days)
+  static isFollowUpDueSoon(activity: ILeadActivity): boolean {
+    if (!activity.nextFollowUpDate) return false;
+
+    const nextFollowUpDate = new Date(activity.nextFollowUpDate);
+    const now = new Date();
+    const daysUntilFollowUp = (nextFollowUpDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+
+    return daysUntilFollowUp <= 3 && daysUntilFollowUp >= 0;
+  }
+
+  // Get days until next follow-up
+  static getDaysUntilFollowUp(activity: ILeadActivity): number | null {
+    if (!activity.nextFollowUpDate) return null;
+
+    const nextFollowUpDate = new Date(activity.nextFollowUpDate);
+    const now = new Date();
+    const daysDifference = Math.ceil((nextFollowUpDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+    return daysDifference;
+  }
+
+  // Convert to response with formatted fields
+  static toResponse(activity: ILeadActivity): LeadActivityResponse {
+    return {
+      ...activity,
+      formattedActivityDate: this.formatDate(activity.activityDate),
+      formattedNextFollowUpDate: activity.nextFollowUpDate
+        ? this.formatDate(activity.nextFollowUpDate)
+        : undefined,
+    };
+  }
+}
+
+export default ILeadActivity;

@@ -1,24 +1,47 @@
-import { Material, IMaterial } from '../models/material.model';
+import { IMaterial } from '../models/material.model';
+import { BaseRepository } from './base.repository';
+import { TABLES } from '../config/dynamodb.tables';
 import { PaginationOptions } from '../types';
+import { createBaseFields } from '../models/base.model';
 
 /**
  * Material Repository
  * Handles all database operations for materials
  */
-export class MaterialRepository {
+export class MaterialRepository extends BaseRepository<IMaterial> {
+  constructor() {
+    super(TABLES.MATERIALS);
+  }
+
   /**
    * Create a new material
    */
   async create(data: Partial<IMaterial>): Promise<IMaterial> {
-    const material = await Material.create(data);
-    return material;
+    const _id = this.generateId();
+
+    const material: IMaterial = {
+      _id,
+      title: data.title || '',
+      description: data.description || '',
+      fileUrl: data.fileUrl || '',
+      fileType: data.fileType || '',
+      fileSize: data.fileSize || 0,
+      category: data.category || '',
+      uploadedBy: data.uploadedBy || '',
+      downloadCount: data.downloadCount || 0,
+      isPublished: data.isPublished || false,
+      publishedAt: data.publishedAt || null,
+      ...createBaseFields(),
+    };
+
+    return await this.putItem(material);
   }
 
   /**
    * Find material by ID
    */
   async findById(id: string): Promise<IMaterial | null> {
-    return await Material.findById(id).populate('uploadedBy', 'name email');
+    return await this.getItem({ _id: id });
   }
 
   /**
@@ -26,23 +49,32 @@ export class MaterialRepository {
    */
   async findAll(options: PaginationOptions, filters: { isActive?: boolean } = {}): Promise<{ items: IMaterial[]; total: number }> {
     const { page, limit, sortBy, order } = options;
+
+    // Build filter
+    const filterExpressions: string[] = [];
+    const expressionAttributeNames: Record<string, string> = {};
+    const expressionAttributeValues: Record<string, any> = {};
+
+    if (filters.isActive !== undefined) {
+      filterExpressions.push('#isActive = :isActive');
+      expressionAttributeNames['#isActive'] = 'isActive';
+      expressionAttributeValues[':isActive'] = filters.isActive;
+    }
+
+    const result = await this.scanItems({
+      filterExpression: filterExpressions.length > 0 ? filterExpressions.join(' AND ') : undefined,
+      expressionAttributeNames: Object.keys(expressionAttributeNames).length > 0 ? expressionAttributeNames : undefined,
+      expressionAttributeValues: Object.keys(expressionAttributeValues).length > 0 ? expressionAttributeValues : undefined,
+    });
+
+    // Sort in memory
+    const sortedItems = this.sortItems(result.items, sortBy, order);
+
+    // Paginate
     const skip = (page - 1) * limit;
-    const sortOrder = order === 'desc' ? -1 : 1;
-    const sortOptions: any = { [sortBy]: sortOrder };
+    const paginatedItems = sortedItems.slice(skip, skip + limit);
 
-    const filter: any = {};
-    if (filters.isActive !== undefined) filter.isActive = filters.isActive;
-
-    const [items, total] = await Promise.all([
-      Material.find(filter)
-        .populate('uploadedBy', 'name email')
-        .sort(sortOptions)
-        .skip(skip)
-        .limit(limit),
-      Material.countDocuments(filter),
-    ]);
-
-    return { items, total };
+    return { items: paginatedItems, total: sortedItems.length };
   }
 
   /**
@@ -53,22 +85,21 @@ export class MaterialRepository {
     options: PaginationOptions
   ): Promise<{ items: IMaterial[]; total: number }> {
     const { page, limit, sortBy, order } = options;
+
+    const result = await this.scanItems({
+      filterExpression: '#category = :category AND #isActive = :isActive',
+      expressionAttributeNames: { '#category': 'category', '#isActive': 'isActive' },
+      expressionAttributeValues: { ':category': category, ':isActive': true },
+    });
+
+    // Sort in memory
+    const sortedItems = this.sortItems(result.items, sortBy, order);
+
+    // Paginate
     const skip = (page - 1) * limit;
-    const sortOrder = order === 'desc' ? -1 : 1;
-    const sortOptions: any = { [sortBy]: sortOrder };
+    const paginatedItems = sortedItems.slice(skip, skip + limit);
 
-    const filter = { category, isActive: true };
-
-    const [items, total] = await Promise.all([
-      Material.find(filter)
-        .populate('uploadedBy', 'name email')
-        .sort(sortOptions)
-        .skip(skip)
-        .limit(limit),
-      Material.countDocuments(filter),
-    ]);
-
-    return { items, total };
+    return { items: paginatedItems, total: sortedItems.length };
   }
 
   /**
@@ -79,22 +110,26 @@ export class MaterialRepository {
     options: PaginationOptions
   ): Promise<{ items: IMaterial[]; total: number }> {
     const { page, limit, sortBy, order } = options;
+
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive',
+      expressionAttributeNames: { '#isActive': 'isActive' },
+      expressionAttributeValues: { ':isActive': true },
+    });
+
+    // Filter by tags in memory (category field)
+    const filteredItems = result.items.filter(material =>
+      material.category && tags.some(tag => material.category?.includes(tag))
+    );
+
+    // Sort in memory
+    const sortedItems = this.sortItems(filteredItems, sortBy, order);
+
+    // Paginate
     const skip = (page - 1) * limit;
-    const sortOrder = order === 'desc' ? -1 : 1;
-    const sortOptions: any = { [sortBy]: sortOrder };
+    const paginatedItems = sortedItems.slice(skip, skip + limit);
 
-    const filter = { tags: { $in: tags }, isActive: true };
-
-    const [items, total] = await Promise.all([
-      Material.find(filter)
-        .populate('uploadedBy', 'name email')
-        .sort(sortOptions)
-        .skip(skip)
-        .limit(limit),
-      Material.countDocuments(filter),
-    ]);
-
-    return { items, total };
+    return { items: paginatedItems, total: sortedItems.length };
   }
 
   /**
@@ -105,105 +140,132 @@ export class MaterialRepository {
     options: PaginationOptions
   ): Promise<{ items: IMaterial[]; total: number }> {
     const { page, limit, sortBy, order } = options;
+
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive',
+      expressionAttributeNames: { '#isActive': 'isActive' },
+      expressionAttributeValues: { ':isActive': true },
+    });
+
+    // Filter in memory
+    const queryLower = query.toLowerCase();
+    const filteredItems = result.items.filter((material) => {
+      return (
+        material.title?.toLowerCase().includes(queryLower) ||
+        material.description?.toLowerCase().includes(queryLower) ||
+        material.category?.toLowerCase().includes(queryLower)
+      );
+    });
+
+    // Sort in memory
+    const sortedItems = this.sortItems(filteredItems, sortBy, order);
+
+    // Paginate
     const skip = (page - 1) * limit;
-    const sortOrder = order === 'desc' ? -1 : 1;
-    const sortOptions: any = { [sortBy]: sortOrder };
+    const paginatedItems = sortedItems.slice(skip, skip + limit);
 
-    const filter = {
-      isActive: true,
-      $or: [
-        { name: { $regex: query, $options: 'i' } },
-        { description: { $regex: query, $options: 'i' } },
-        { category: { $regex: query, $options: 'i' } },
-        { tags: { $regex: query, $options: 'i' } },
-      ],
-    };
-
-    const [items, total] = await Promise.all([
-      Material.find(filter)
-        .populate('uploadedBy', 'name email')
-        .sort(sortOptions)
-        .skip(skip)
-        .limit(limit),
-      Material.countDocuments(filter),
-    ]);
-
-    return { items, total };
+    return { items: paginatedItems, total: filteredItems.length };
   }
 
   /**
    * Update material by ID
    */
   async update(id: string, data: Partial<IMaterial>): Promise<IMaterial | null> {
-    return await Material.findByIdAndUpdate(id, data, {
-      new: true,
-      runValidators: true,
-    }).populate('uploadedBy', 'name email');
+    return await this.updateItem({ _id: id }, data);
   }
 
   /**
    * Delete material by ID (hard delete)
    */
   async delete(id: string): Promise<IMaterial | null> {
-    return await Material.findByIdAndDelete(id);
+    const material = await this.findById(id);
+    await this.hardDeleteItem({ _id: id });
+    return material;
   }
 
   /**
    * Soft delete material by ID
    */
   async softDelete(id: string): Promise<IMaterial | null> {
-    return await Material.findByIdAndUpdate(
-      id,
-      { isActive: false },
-      { new: true }
-    ).populate('uploadedBy', 'name email');
+    return await this.softDeleteItem({ _id: id });
   }
 
   /**
    * Increment download count
    */
   async incrementDownloadCount(id: string): Promise<IMaterial | null> {
-    return await Material.findByIdAndUpdate(
-      id,
-      { $inc: { downloadCount: 1 } },
-      { new: true }
-    ).populate('uploadedBy', 'name email');
+    const material = await this.findById(id);
+    if (material) {
+      return await this.updateItem({ _id: id }, { downloadCount: (material.downloadCount || 0) + 1 });
+    }
+    return null;
   }
 
   /**
    * Get all unique categories
    */
   async getCategories(): Promise<string[]> {
-    const categories = await Material.distinct('category', { isActive: true });
-    return categories.filter(Boolean);
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive',
+      expressionAttributeNames: { '#isActive': 'isActive' },
+      expressionAttributeValues: { ':isActive': true },
+    });
+
+    const categoriesSet = new Set<string>();
+    result.items.forEach(material => {
+      if (material.category) categoriesSet.add(material.category);
+    });
+
+    return Array.from(categoriesSet).sort();
   }
 
   /**
    * Get all unique tags
    */
   async getTags(): Promise<string[]> {
-    const materials = await Material.find({ isActive: true }).select('tags');
-    const allTags = materials.flatMap((material) => material.tags);
-    return [...new Set(allTags)].filter(Boolean);
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive',
+      expressionAttributeNames: { '#isActive': 'isActive' },
+      expressionAttributeValues: { ':isActive': true },
+    });
+
+    const tagsSet = new Set<string>();
+    result.items.forEach(material => {
+      if (material.category) {
+        tagsSet.add(material.category);
+      }
+    });
+
+    return Array.from(tagsSet).sort();
   }
 
   /**
    * Get material count by category
    */
   async getCountByCategory(): Promise<{ category: string; count: number }[]> {
-    return await Material.aggregate([
-      { $match: { isActive: true } },
-      { $group: { _id: '$category', count: { $sum: 1 } } },
-      { $project: { _id: 0, category: '$_id', count: 1 } },
-      { $sort: { count: -1 } },
-    ]);
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive',
+      expressionAttributeNames: { '#isActive': 'isActive' },
+      expressionAttributeValues: { ':isActive': true },
+    });
+
+    // Count by category in memory
+    const categoryCount = result.items.reduce((acc: Record<string, number>, material) => {
+      const category = material.category || 'uncategorized';
+      acc[category] = (acc[category] || 0) + 1;
+      return acc;
+    }, {});
+
+    return Object.entries(categoryCount)
+      .map(([category, count]) => ({ category, count }))
+      .sort((a, b) => b.count - a.count);
   }
 
   /**
    * Publish material
    */
   async publish(id: string): Promise<IMaterial | null> {
-    return await this.update(id, { isPublished: true, publishedAt: new Date() });
+    return await this.update(id, { isPublished: true, publishedAt: new Date().toISOString() });
   }
 
   /**
@@ -217,28 +279,39 @@ export class MaterialRepository {
    * Get material statistics
    */
   async getStats(): Promise<any> {
-    const [total, published, unpublished, totalDownloads, categories] = await Promise.all([
-      Material.countDocuments({ isActive: true }),
-      Material.countDocuments({ isActive: true, isPublished: true }),
-      Material.countDocuments({ isActive: true, isPublished: false }),
-      Material.aggregate([
-        { $match: { isActive: true } },
-        { $group: { _id: null, total: { $sum: '$downloadCount' } } },
-      ]),
-      Material.aggregate([
-        { $match: { isActive: true } },
-        { $group: { _id: '$category', count: { $sum: 1 } } },
-        { $sort: { count: -1 } },
-      ]),
-    ]);
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive',
+      expressionAttributeNames: { '#isActive': 'isActive' },
+      expressionAttributeValues: { ':isActive': true },
+    });
+
+    const total = result.items.length;
+    const published = result.items.filter(m => m.isPublished).length;
+    const unpublished = result.items.filter(m => !m.isPublished).length;
+    const totalDownloads = result.items.reduce((sum, m) => sum + (m.downloadCount || 0), 0);
+    const categories = await this.getCountByCategory();
 
     return {
       total,
       published,
       unpublished,
-      totalDownloads: totalDownloads.length > 0 ? totalDownloads[0].total : 0,
+      totalDownloads,
       categories,
     };
+  }
+
+  /**
+   * Helper method to sort items in memory
+   */
+  private sortItems(items: IMaterial[], sortBy: string, order: string): IMaterial[] {
+    return items.sort((a, b) => {
+      const aVal = (a as any)[sortBy];
+      const bVal = (b as any)[sortBy];
+
+      if (aVal < bVal) return order === 'asc' ? -1 : 1;
+      if (aVal > bVal) return order === 'asc' ? 1 : -1;
+      return 0;
+    });
   }
 }
 

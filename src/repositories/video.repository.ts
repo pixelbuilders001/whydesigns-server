@@ -1,5 +1,7 @@
-import Video, { IVideo } from '../models/video.model';
-import mongoose from 'mongoose';
+import { IVideo } from '../models/video.model';
+import { BaseRepository } from './base.repository';
+import { TABLES } from '../config/dynamodb.tables';
+import { createBaseFields } from '../models/base.model';
 
 export interface VideoFilters {
   isActive?: boolean;
@@ -17,23 +19,45 @@ export interface PaginationOptions {
   sortOrder?: 'asc' | 'desc';
 }
 
-class VideoRepository {
+export class VideoRepository extends BaseRepository<IVideo> {
+  constructor() {
+    super(TABLES.VIDEOS);
+  }
+
   /**
    * Create a new video
    */
   async create(videoData: Partial<IVideo>): Promise<IVideo> {
-    const video = await Video.create(videoData);
-    return video;
+    const _id = this.generateId();
+
+    const video: IVideo = {
+      _id,
+      title: videoData.title || '',
+      description: videoData.description,
+      videoUrl: videoData.videoUrl || '',
+      thumbnailUrl: videoData.thumbnailUrl,
+      posterUrl: videoData.posterUrl,
+      duration: videoData.duration || 0,
+      fileSize: videoData.fileSize || 0,
+      category: videoData.category,
+      tags: videoData.tags || [],
+      viewCount: videoData.viewCount || 0,
+      likeCount: videoData.likeCount || 0,
+      uploadedBy: videoData.uploadedBy || '',
+      isPublished: videoData.isPublished || false,
+      publishedAt: videoData.publishedAt || null,
+      displayOrder: videoData.displayOrder || 0,
+      ...createBaseFields(),
+    };
+
+    return await this.putItem(video);
   }
 
   /**
    * Find video by ID
    */
   async findById(id: string): Promise<IVideo | null> {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return null;
-    }
-    return await Video.findById(id);
+    return await this.getItem({ _id: id });
   }
 
   /**
@@ -44,49 +68,72 @@ class VideoRepository {
     options: PaginationOptions = {}
   ): Promise<{ videos: IVideo[]; total: number; page: number; totalPages: number }> {
     const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc' } = options;
-    const skip = (page - 1) * limit;
 
-    // Build query
-    const query: any = {};
+    // Build filter expression
+    const filterExpressions: string[] = [];
+    const expressionAttributeNames: Record<string, string> = {};
+    const expressionAttributeValues: Record<string, any> = {};
 
     if (filters.isActive !== undefined) {
-      query.isActive = filters.isActive;
+      filterExpressions.push('#isActive = :isActive');
+      expressionAttributeNames['#isActive'] = 'isActive';
+      expressionAttributeValues[':isActive'] = filters.isActive;
     }
 
     if (filters.isPublished !== undefined) {
-      query.isPublished = filters.isPublished;
-    }
-
-    if (filters.category) {
-      query.category = new RegExp(filters.category, 'i');
-    }
-
-    if (filters.tags) {
-      query.tags = { $in: [new RegExp(filters.tags, 'i')] };
+      filterExpressions.push('#isPublished = :isPublished');
+      expressionAttributeNames['#isPublished'] = 'isPublished';
+      expressionAttributeValues[':isPublished'] = filters.isPublished;
     }
 
     if (filters.uploadedBy) {
-      query.uploadedBy = filters.uploadedBy;
+      filterExpressions.push('#uploadedBy = :uploadedBy');
+      expressionAttributeNames['#uploadedBy'] = 'uploadedBy';
+      expressionAttributeValues[':uploadedBy'] = filters.uploadedBy;
+    }
+
+    // Scan with filters
+    const result = await this.scanItems({
+      filterExpression: filterExpressions.length > 0 ? filterExpressions.join(' AND ') : undefined,
+      expressionAttributeNames: Object.keys(expressionAttributeNames).length > 0 ? expressionAttributeNames : undefined,
+      expressionAttributeValues: Object.keys(expressionAttributeValues).length > 0 ? expressionAttributeValues : undefined,
+    });
+
+    let videos = result.items;
+
+    // Filter by category/tags/search in memory
+    if (filters.category) {
+      const categoryLower = filters.category.toLowerCase();
+      videos = videos.filter(v => v.category?.toLowerCase().includes(categoryLower));
+    }
+
+    if (filters.tags) {
+      const tagsLower = filters.tags.toLowerCase();
+      videos = videos.filter(v => v.tags?.some(t => t.toLowerCase().includes(tagsLower)));
     }
 
     if (filters.search) {
-      query.$text = { $search: filters.search };
+      const queryLower = filters.search.toLowerCase();
+      videos = videos.filter(v =>
+        v.title?.toLowerCase().includes(queryLower) ||
+        v.description?.toLowerCase().includes(queryLower) ||
+        v.category?.toLowerCase().includes(queryLower) ||
+        v.tags?.some(t => t.toLowerCase().includes(queryLower))
+      );
     }
 
-    // Execute query
-    const [videos, total] = await Promise.all([
-      Video.find(query)
-        .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
-        .skip(skip)
-        .limit(limit),
-      Video.countDocuments(query),
-    ]);
+    // Sort in memory
+    const sortedVideos = this.sortItems(videos, sortBy, sortOrder);
+
+    // Paginate
+    const skip = (page - 1) * limit;
+    const paginatedVideos = sortedVideos.slice(skip, skip + limit);
 
     return {
-      videos,
-      total,
+      videos: paginatedVideos,
+      total: sortedVideos.length,
       page,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil(sortedVideos.length / limit),
     };
   }
 
@@ -123,27 +170,30 @@ class VideoRepository {
     options: PaginationOptions = {}
   ): Promise<{ videos: IVideo[]; total: number; page: number; totalPages: number }> {
     const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc' } = options;
+
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive AND #isPublished = :isPublished',
+      expressionAttributeNames: { '#isActive': 'isActive', '#isPublished': 'isPublished' },
+      expressionAttributeValues: { ':isActive': true, ':isPublished': true },
+    });
+
+    // Filter by tags in memory
+    const filteredVideos = result.items.filter(video =>
+      video.tags && tags.some(tag => video.tags.includes(tag))
+    );
+
+    // Sort
+    const sortedVideos = this.sortItems(filteredVideos, sortBy, sortOrder);
+
+    // Paginate
     const skip = (page - 1) * limit;
-
-    const query = {
-      isActive: true,
-      isPublished: true,
-      tags: { $in: tags },
-    };
-
-    const [videos, total] = await Promise.all([
-      Video.find(query)
-        .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
-        .skip(skip)
-        .limit(limit),
-      Video.countDocuments(query),
-    ]);
+    const paginatedVideos = sortedVideos.slice(skip, skip + limit);
 
     return {
-      videos,
-      total,
+      videos: paginatedVideos,
+      total: filteredVideos.length,
       page,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil(filteredVideos.length / limit),
     };
   }
 
@@ -151,87 +201,85 @@ class VideoRepository {
    * Find videos by uploader
    */
   async findByUploader(uploaderId: string): Promise<IVideo[]> {
-    if (!mongoose.Types.ObjectId.isValid(uploaderId)) {
-      return [];
-    }
-    return await Video.find({ uploadedBy: uploaderId, isActive: true }).sort({ createdAt: -1 });
+    const result = await this.scanItems({
+      filterExpression: '#uploadedBy = :uploadedBy AND #isActive = :isActive',
+      expressionAttributeNames: { '#uploadedBy': 'uploadedBy', '#isActive': 'isActive' },
+      expressionAttributeValues: { ':uploadedBy': uploaderId, ':isActive': true },
+    });
+
+    return this.sortItems(result.items, 'createdAt', 'desc');
   }
 
   /**
    * Find most viewed videos
    */
-  async findMostViewed(
-    limit: number = 10
-  ): Promise<IVideo[]> {
-    return await Video.find({ isActive: true, isPublished: true })
-      .sort({ viewCount: -1 })
-      .limit(limit);
+  async findMostViewed(limit: number = 10): Promise<IVideo[]> {
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive AND #isPublished = :isPublished',
+      expressionAttributeNames: { '#isActive': 'isActive', '#isPublished': 'isPublished' },
+      expressionAttributeValues: { ':isActive': true, ':isPublished': true },
+    });
+
+    const sorted = this.sortItems(result.items, 'viewCount', 'desc');
+    return sorted.slice(0, limit);
   }
 
   /**
    * Find most liked videos
    */
-  async findMostLiked(
-    limit: number = 10
-  ): Promise<IVideo[]> {
-    return await Video.find({ isActive: true, isPublished: true })
-      .sort({ likeCount: -1 })
-      .limit(limit);
+  async findMostLiked(limit: number = 10): Promise<IVideo[]> {
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive AND #isPublished = :isPublished',
+      expressionAttributeNames: { '#isActive': 'isActive', '#isPublished': 'isPublished' },
+      expressionAttributeValues: { ':isActive': true, ':isPublished': true },
+    });
+
+    const sorted = this.sortItems(result.items, 'likeCount', 'desc');
+    return sorted.slice(0, limit);
   }
 
   /**
    * Find recent videos
    */
-  async findRecent(
-    limit: number = 10
-  ): Promise<IVideo[]> {
-    return await Video.find({ isActive: true, isPublished: true })
-      .sort({ publishedAt: -1 })
-      .limit(limit);
+  async findRecent(limit: number = 10): Promise<IVideo[]> {
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive AND #isPublished = :isPublished',
+      expressionAttributeNames: { '#isActive': 'isActive', '#isPublished': 'isPublished' },
+      expressionAttributeValues: { ':isActive': true, ':isPublished': true },
+    });
+
+    const sorted = this.sortItems(result.items, 'publishedAt', 'desc');
+    return sorted.slice(0, limit);
   }
 
   /**
    * Update video
    */
   async update(id: string, updateData: Partial<IVideo>): Promise<IVideo | null> {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return null;
-    }
-    return await Video.findByIdAndUpdate(id, updateData, {
-      new: true,
-      runValidators: true,
-    });
+    return await this.updateItem({ _id: id }, updateData);
   }
 
   /**
    * Delete video (soft delete)
    */
   async softDelete(id: string): Promise<IVideo | null> {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return null;
-    }
-    return await Video.findByIdAndUpdate(
-      id,
-      { isActive: false },
-      { new: true }
-    );
+    return await this.softDeleteItem({ _id: id });
   }
 
   /**
    * Delete video (hard delete)
    */
   async delete(id: string): Promise<IVideo | null> {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return null;
-    }
-    return await Video.findByIdAndDelete(id);
+    const video = await this.findById(id);
+    await this.hardDeleteItem({ _id: id });
+    return video;
   }
 
   /**
    * Publish video
    */
   async publish(id: string): Promise<IVideo | null> {
-    return await this.update(id, { isPublished: true, publishedAt: new Date() });
+    return await this.update(id, { isPublished: true, publishedAt: new Date().toISOString() });
   }
 
   /**
@@ -245,79 +293,76 @@ class VideoRepository {
    * Increment view count
    */
   async incrementViewCount(id: string): Promise<IVideo | null> {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return null;
+    const video = await this.findById(id);
+    if (video) {
+      return await this.updateItem({ _id: id }, { viewCount: (video.viewCount || 0) + 1 });
     }
-    return await Video.findByIdAndUpdate(
-      id,
-      { $inc: { viewCount: 1 } },
-      { new: true }
-    );
+    return null;
   }
 
   /**
    * Increment like count
    */
   async incrementLikeCount(id: string): Promise<IVideo | null> {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return null;
+    const video = await this.findById(id);
+    if (video) {
+      return await this.updateItem({ _id: id }, { likeCount: (video.likeCount || 0) + 1 });
     }
-    return await Video.findByIdAndUpdate(
-      id,
-      { $inc: { likeCount: 1 } },
-      { new: true }
-    );
+    return null;
   }
 
   /**
    * Decrement like count
    */
   async decrementLikeCount(id: string): Promise<IVideo | null> {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return null;
+    const video = await this.findById(id);
+    if (video && video.likeCount > 0) {
+      return await this.updateItem({ _id: id }, { likeCount: video.likeCount - 1 });
     }
-    return await Video.findByIdAndUpdate(
-      id,
-      { $inc: { likeCount: -1 } },
-      { new: true }
-    );
+    return null;
   }
 
   /**
    * Get video statistics
    */
   async getStats(): Promise<any> {
-    const [total, published, unpublished, totalViews, totalLikes, categories] = await Promise.all([
-      Video.countDocuments({ isActive: true }),
-      Video.countDocuments({ isActive: true, isPublished: true }),
-      Video.countDocuments({ isActive: true, isPublished: false }),
-      Video.aggregate([
-        { $match: { isActive: true } },
-        { $group: { _id: null, total: { $sum: '$viewCount' } } },
-      ]),
-      Video.aggregate([
-        { $match: { isActive: true } },
-        { $group: { _id: null, total: { $sum: '$likeCount' } } },
-      ]),
-      Video.aggregate([
-        { $match: { isActive: true, isPublished: true } },
-        { $group: { _id: '$category', count: { $sum: 1 } } },
-        { $sort: { count: -1 } },
-      ]),
-    ]);
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive',
+      expressionAttributeNames: { '#isActive': 'isActive' },
+      expressionAttributeValues: { ':isActive': true },
+    });
 
-    const avgViews = await Video.aggregate([
-      { $match: { isActive: true, isPublished: true } },
-      { $group: { _id: null, average: { $avg: '$viewCount' } } },
-    ]);
+    const total = result.items.length;
+    const published = result.items.filter(v => v.isPublished).length;
+    const unpublished = result.items.filter(v => !v.isPublished).length;
+    const totalViews = result.items.reduce((sum, v) => sum + (v.viewCount || 0), 0);
+    const totalLikes = result.items.reduce((sum, v) => sum + (v.likeCount || 0), 0);
+
+    // Categories count
+    const categoryCount = result.items
+      .filter(v => v.isPublished)
+      .reduce((acc: Record<string, number>, v) => {
+        const category = v.category || 'uncategorized';
+        acc[category] = (acc[category] || 0) + 1;
+        return acc;
+      }, {});
+
+    const categories = Object.entries(categoryCount)
+      .map(([_id, count]) => ({ _id, count }))
+      .sort((a, b) => b.count - a.count);
+
+    const publishedVideos = result.items.filter(v => v.isPublished);
+    const avgViews = publishedVideos.length > 0
+      ? (publishedVideos.reduce((sum, v) => sum + (v.viewCount || 0), 0) / publishedVideos.length).toFixed(2)
+      : 0;
 
     return {
       total,
       published,
       unpublished,
-      totalViews: totalViews.length > 0 ? totalViews[0].total : 0,
-      totalLikes: totalLikes.length > 0 ? totalLikes[0].total : 0,
-      averageViews: avgViews.length > 0 ? avgViews[0].average.toFixed(2) : 0,
+      totalViews,
+      totalLikes,
+      averageViews: avgViews,
       categories,
     };
   }
@@ -326,16 +371,56 @@ class VideoRepository {
    * Get all unique categories
    */
   async getCategories(): Promise<string[]> {
-    const categories = await Video.distinct('category', { isActive: true, isPublished: true });
-    return categories.filter(cat => cat && cat.trim() !== '');
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive AND #isPublished = :isPublished',
+      expressionAttributeNames: { '#isActive': 'isActive', '#isPublished': 'isPublished' },
+      expressionAttributeValues: { ':isActive': true, ':isPublished': true },
+    });
+
+    const categoriesSet = new Set<string>();
+    result.items.forEach(video => {
+      if (video.category && video.category.trim() !== '') {
+        categoriesSet.add(video.category);
+      }
+    });
+
+    return Array.from(categoriesSet).sort();
   }
 
   /**
    * Get all unique tags
    */
   async getTags(): Promise<string[]> {
-    const tags = await Video.distinct('tags', { isActive: true, isPublished: true });
-    return tags.filter(tag => tag && tag.trim() !== '');
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive AND #isPublished = :isPublished',
+      expressionAttributeNames: { '#isActive': 'isActive', '#isPublished': 'isPublished' },
+      expressionAttributeValues: { ':isActive': true, ':isPublished': true },
+    });
+
+    const tagsSet = new Set<string>();
+    result.items.forEach(video => {
+      video.tags?.forEach(tag => {
+        if (tag && tag.trim() !== '') {
+          tagsSet.add(tag);
+        }
+      });
+    });
+
+    return Array.from(tagsSet).sort();
+  }
+
+  /**
+   * Helper method to sort items in memory
+   */
+  private sortItems(items: IVideo[], sortBy: string, sortOrder: string): IVideo[] {
+    return items.sort((a, b) => {
+      const aVal = (a as any)[sortBy];
+      const bVal = (b as any)[sortBy];
+
+      if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
   }
 }
 

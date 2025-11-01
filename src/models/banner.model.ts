@@ -1,115 +1,77 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import { BaseModel } from './base.model';
 
-export interface IBanner extends Document {
+export interface IBanner extends BaseModel {
+  _id: string; // UUID - Primary Key
   title: string;
   description?: string;
   imageUrl: string;
-  link?: string;
-  altText?: string;
+  linkUrl?: string;
   isPublished: boolean;
-  isActive: boolean;
-  publishedAt?: Date;
-  createdBy: mongoose.Types.ObjectId;
-  createdAt: Date;
-  updatedAt: Date;
-  creator?: any;
+  publishedAt: string | null; // ISO 8601 timestamp
+  displayOrder: number;
 }
 
-const bannerSchema = new Schema<IBanner>(
-  {
-    title: {
-      type: String,
-      required: [true, 'Banner title is required'],
-      trim: true,
-      minlength: [2, 'Title must be at least 2 characters long'],
-      maxlength: [100, 'Title cannot exceed 100 characters'],
-    },
-    description: {
-      type: String,
-      trim: true,
-      maxlength: [500, 'Description cannot exceed 500 characters'],
-    },
-    imageUrl: {
-      type: String,
-      required: [true, 'Banner image URL is required'],
-      trim: true,
-    },
-    link: {
-      type: String,
-      trim: true,
-    },
-    altText: {
-      type: String,
-      trim: true,
-      maxlength: [200, 'Alt text cannot exceed 200 characters'],
-    },
-    isPublished: {
-      type: Boolean,
-      default: false,
-      index: true,
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
-      index: true,
-    },
-    publishedAt: {
-      type: Date,
-      default: null,
-    },
-    createdBy: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: [true, 'Creator ID is required'],
-      index: true,
-    },
-  },
-  {
-    timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
+// Banner creation input (without auto-generated fields)
+export interface CreateBannerInput {
+  title: string;
+  description?: string;
+  imageUrl: string;
+  linkUrl?: string;
+  isPublished?: boolean;
+  displayOrder?: number;
+}
+
+// Banner update input
+export interface UpdateBannerInput {
+  title?: string;
+  description?: string;
+  imageUrl?: string;
+  linkUrl?: string;
+  isPublished?: boolean;
+  publishedAt?: string | null;
+  displayOrder?: number;
+  isActive?: boolean;
+}
+
+// Banner response interface
+export interface BannerResponse extends IBanner {}
+
+// Utility class for banner operations
+export class BannerUtils {
+  // Publish banner
+  static publishBanner(banner: IBanner): IBanner {
+    return {
+      ...banner,
+      isPublished: true,
+      publishedAt: new Date().toISOString(),
+    };
   }
-);
 
-// Indexes for better query performance
-bannerSchema.index({ createdAt: -1 });
-bannerSchema.index({ publishedAt: -1 });
-bannerSchema.index({ isPublished: 1, isActive: 1 });
-
-// Populate creator details before returning
-bannerSchema.pre('find', function (next) {
-  this.populate({
-    path: 'createdBy',
-    select: 'firstName lastName email',
-  });
-  next();
-});
-
-bannerSchema.pre('findOne', function (next) {
-  this.populate({
-    path: 'createdBy',
-    select: 'firstName lastName email',
-  });
-  next();
-});
-
-// Pre-save hook to set publishedAt when publishing
-bannerSchema.pre('save', function (next) {
-  if (this.isModified('isPublished') && this.isPublished && !this.publishedAt) {
-    this.publishedAt = new Date();
+  // Unpublish banner
+  static unpublishBanner(banner: IBanner): IBanner {
+    return {
+      ...banner,
+      isPublished: false,
+    };
   }
-  next();
-});
 
-// Transform output to remove __v
-bannerSchema.set('toJSON', {
-  virtuals: true,
-  transform: function (doc, ret) {
-    delete (ret as any).__v;
-    return ret;
-  },
-});
+  // Update display order
+  static updateDisplayOrder(banner: IBanner, order: number): IBanner {
+    return {
+      ...banner,
+      displayOrder: order,
+    };
+  }
 
-const Banner = mongoose.model<IBanner>('Banner', bannerSchema);
+  // Validate link URL
+  static isValidUrl(url: string): boolean {
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
 
-export default Banner;
+export default IBanner;

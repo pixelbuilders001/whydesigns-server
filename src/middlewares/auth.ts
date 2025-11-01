@@ -4,7 +4,6 @@ import { config } from '../config/env.config';
 import { UnauthorizedError, ForbiddenError } from '../utils/AppError';
 import { AuthenticatedRequest } from '../types';
 import userRepository from '../repositories/user.repository';
-import { IRole } from '../models/role.model';
 
 interface JwtPayload {
   id: string;
@@ -33,10 +32,13 @@ export const authenticate = async (
       throw new UnauthorizedError('User not found or inactive');
     }
 
+    // Extract role name from the populated role object
+    const roleName = (user as any).role?.name || '';
+
     req.user = {
       id: user._id,
       email: user.email,
-      role: (user.roleId as any as IRole)?.name || '',
+      role: roleName,
     };
 
     next();
@@ -98,10 +100,13 @@ export const optionalAuthenticate = async (
     const user = await userRepository.findByIdWithRole(decoded.id);
 
     if (user && user.isActive) {
+      // Extract role name from the populated role object
+      const roleName = (user as any).role?.name || '';
+
       req.user = {
         id: user._id,
         email: user.email,
-        role: (user.roleId as any as IRole)?.name || '',
+        role: roleName,
       };
     }
 

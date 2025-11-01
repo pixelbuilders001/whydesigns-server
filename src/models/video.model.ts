@@ -1,6 +1,26 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import { BaseModel } from './base.model';
 
-export interface IVideo extends Document {
+export interface IVideo extends BaseModel {
+  _id: string; // UUID - Primary Key
+  title: string;
+  description?: string;
+  videoUrl: string;
+  thumbnailUrl?: string;
+  posterUrl?: string;
+  duration: number; // in seconds
+  fileSize: number; // in bytes
+  uploadedBy: string; // User ID
+  tags: string[];
+  category?: string;
+  viewCount: number;
+  likeCount: number;
+  isPublished: boolean;
+  publishedAt: string | null; // ISO 8601 timestamp
+  displayOrder: number;
+}
+
+// Video creation input (without auto-generated fields)
+export interface CreateVideoInput {
   title: string;
   description?: string;
   videoUrl: string;
@@ -8,180 +28,117 @@ export interface IVideo extends Document {
   posterUrl?: string;
   duration: number;
   fileSize: number;
-  uploadedBy: mongoose.Types.ObjectId;
+  uploadedBy: string;
   tags?: string[];
   category?: string;
-  viewCount: number;
-  likeCount: number;
-  isPublished: boolean;
-  isActive: boolean;
+  isPublished?: boolean;
   displayOrder?: number;
-  publishedAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  uploader?: any;
-  fileSizeFormatted: string;
-  durationFormatted: string;
 }
 
-const videoSchema = new Schema<IVideo>(
-  {
-    title: {
-      type: String,
-      required: [true, 'Title is required'],
-      trim: true,
-      minlength: [2, 'Title must be at least 2 characters long'],
-      maxlength: [200, 'Title cannot exceed 200 characters'],
-    },
-    description: {
-      type: String,
-      trim: true,
-      maxlength: [2000, 'Description cannot exceed 2000 characters'],
-    },
-    videoUrl: {
-      type: String,
-      required: [true, 'Video URL is required'],
-      trim: true,
-    },
-    thumbnailUrl: {
-      type: String,
-      trim: true,
-    },
-    posterUrl: {
-      type: String,
-      trim: true,
-    },
-    duration: {
-      type: Number,
-      required: [true, 'Duration is required'],
-      min: [1, 'Duration must be at least 1 second'],
-    },
-    fileSize: {
-      type: Number,
-      required: [true, 'File size is required'],
-      min: [0, 'File size cannot be negative'],
-    },
-    uploadedBy: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: [true, 'Uploader ID is required'],
-      index: true,
-    },
-    tags: {
-      type: [String],
-      default: [],
-      validate: {
-        validator: function (tags: string[]) {
-          return tags.length <= 20;
-        },
-        message: 'Cannot have more than 20 tags',
-      },
-    },
-    category: {
-      type: String,
-      trim: true,
-      default: 'General',
-      maxlength: [50, 'Category cannot exceed 50 characters'],
-    },
-    viewCount: {
-      type: Number,
-      default: 0,
-      min: [0, 'View count cannot be negative'],
-    },
-    likeCount: {
-      type: Number,
-      default: 0,
-      min: [0, 'Like count cannot be negative'],
-    },
-    isPublished: {
-      type: Boolean,
-      default: false,
-      index: true,
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
-      index: true,
-    },
-    displayOrder: {
-      type: Number,
-      default: 0,
-      index: true,
-    },
-    publishedAt: {
-      type: Date,
-      default: null,
-    },
-  },
-  {
-    timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
+// Video update input
+export interface UpdateVideoInput {
+  title?: string;
+  description?: string;
+  videoUrl?: string;
+  thumbnailUrl?: string;
+  posterUrl?: string;
+  duration?: number;
+  fileSize?: number;
+  tags?: string[];
+  category?: string;
+  viewCount?: number;
+  likeCount?: number;
+  isPublished?: boolean;
+  publishedAt?: string | null;
+  displayOrder?: number;
+  isActive?: boolean;
+}
+
+// Video response interface
+export interface VideoResponse extends IVideo {
+  formattedDuration: string;
+  formattedFileSize: string;
+}
+
+// Utility class for video operations
+export class VideoUtils {
+  // Format duration (seconds to HH:MM:SS)
+  static formatDuration(seconds: number): string {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+
+    const parts = [];
+    if (hours > 0) parts.push(hours.toString().padStart(2, '0'));
+    parts.push(minutes.toString().padStart(2, '0'));
+    parts.push(secs.toString().padStart(2, '0'));
+
+    return parts.join(':');
   }
-);
 
-// Virtual for formatted file size
-videoSchema.virtual('fileSizeFormatted').get(function () {
-  const bytes = this.fileSize;
-  if (bytes === 0) return '0 Bytes';
+  // Format file size (bytes to human readable)
+  static formatFileSize(bytes: number): string {
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let size = bytes;
+    let unitIndex = 0;
 
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex++;
+    }
 
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-});
-
-// Virtual for formatted duration
-videoSchema.virtual('durationFormatted').get(function () {
-  const seconds = this.duration;
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const remainingSeconds = seconds % 60;
-
-  if (hours > 0) {
-    return `${hours}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-  } else if (minutes > 0) {
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    return `${size.toFixed(2)} ${units[unitIndex]}`;
   }
-  return `0:${remainingSeconds.toString().padStart(2, '0')}`;
-});
 
-// Indexes for better query performance
-videoSchema.index({ createdAt: -1 });
-videoSchema.index({ publishedAt: -1 });
-videoSchema.index({ viewCount: -1 });
-videoSchema.index({ likeCount: -1 });
-videoSchema.index({ isPublished: 1, isActive: 1 });
-videoSchema.index({ category: 1 });
-videoSchema.index({ tags: 1 });
-videoSchema.index({ title: 'text', description: 'text', tags: 'text' });
-
-// Populate uploader details before returning
-videoSchema.pre('find', function (next) {
-  this.populate({
-    path: 'uploadedBy',
-    select: 'firstName lastName email profilePicture',
-  });
-  next();
-});
-
-videoSchema.pre('findOne', function (next) {
-  this.populate({
-    path: 'uploadedBy',
-    select: 'firstName lastName email profilePicture',
-  });
-  next();
-});
-
-// Set publishedAt date when publishing
-videoSchema.pre('save', function (next) {
-  if (this.isModified('isPublished') && this.isPublished && !this.publishedAt) {
-    this.publishedAt = new Date();
+  // Publish video
+  static publishVideo(video: IVideo): IVideo {
+    return {
+      ...video,
+      isPublished: true,
+      publishedAt: new Date().toISOString(),
+    };
   }
-  next();
-});
 
-const Video = mongoose.model<IVideo>('Video', videoSchema);
+  // Unpublish video
+  static unpublishVideo(video: IVideo): IVideo {
+    return {
+      ...video,
+      isPublished: false,
+    };
+  }
 
-export default Video;
+  // Increment view count
+  static incrementViewCount(video: IVideo): IVideo {
+    return {
+      ...video,
+      viewCount: video.viewCount + 1,
+    };
+  }
+
+  // Increment like count
+  static incrementLikeCount(video: IVideo): IVideo {
+    return {
+      ...video,
+      likeCount: video.likeCount + 1,
+    };
+  }
+
+  // Decrement like count
+  static decrementLikeCount(video: IVideo): IVideo {
+    return {
+      ...video,
+      likeCount: Math.max(0, video.likeCount - 1),
+    };
+  }
+
+  // Convert to response with formatted fields
+  static toResponse(video: IVideo): VideoResponse {
+    return {
+      ...video,
+      formattedDuration: this.formatDuration(video.duration),
+      formattedFileSize: this.formatFileSize(video.fileSize),
+    };
+  }
+}
+
+export default IVideo;

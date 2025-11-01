@@ -10,7 +10,6 @@ class BannerService {
   async createBanner(createdBy: string, bannerData: Partial<IBanner>): Promise<IBanner> {
     const banner = await bannerRepository.create({
       ...bannerData,
-      createdBy: createdBy as any,
     });
 
     return banner;

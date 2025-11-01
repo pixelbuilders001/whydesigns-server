@@ -1,159 +1,221 @@
-import { Counselor, ICounselor } from '../models/counselor.model';
+import { ICounselor } from '../models/counselor.model';
+import { BaseRepository } from './base.repository';
+import { TABLES } from '../config/dynamodb.tables';
 import { PaginationOptions } from '../types';
+import { createBaseFields } from '../models/base.model';
 
-export class CounselorRepository {
+export class CounselorRepository extends BaseRepository<ICounselor> {
+  constructor() {
+    super(TABLES.COUNSELORS);
+  }
+
   async create(counselorData: Partial<ICounselor>): Promise<ICounselor> {
-    const counselor = await Counselor.create(counselorData);
-    return counselor;
+    const _id = this.generateId();
+
+    const counselor: ICounselor = {
+      _id,
+      fullName: counselorData.fullName || '',
+      email: counselorData.email || '',
+      title: counselorData.title || '',
+      bio: counselorData.bio || '',
+      avatarUrl: counselorData.avatarUrl || '',
+      specialties: counselorData.specialties || [],
+      rating: counselorData.rating || 0,
+      yearsOfExperience: counselorData.yearsOfExperience || 0,
+      ...createBaseFields(),
+    };
+
+    return await this.putItem(counselor);
   }
 
   async findById(id: string): Promise<ICounselor | null> {
-    return await Counselor.findById(id);
+    return await this.getItem({ _id: id });
   }
 
   async findAll(options: PaginationOptions, filters: { isActive?: boolean } = {}): Promise<{ counselors: ICounselor[]; total: number }> {
     const { page, limit, sortBy, order } = options;
-    const skip = (page - 1) * limit;
-
-    const sortOrder = order === 'desc' ? -1 : 1;
-    const sortOptions: any = { [sortBy]: sortOrder };
 
     // Build filter
-    const filter: any = {};
-    if (filters.isActive !== undefined) filter.isActive = filters.isActive;
+    const filterExpressions: string[] = [];
+    const expressionAttributeNames: Record<string, string> = {};
+    const expressionAttributeValues: Record<string, any> = {};
 
-    const [counselors, total] = await Promise.all([
-      Counselor.find(filter)
-        .sort(sortOptions)
-        .skip(skip)
-        .limit(limit),
-      Counselor.countDocuments(filter),
-    ]);
+    if (filters.isActive !== undefined) {
+      filterExpressions.push('#isActive = :isActive');
+      expressionAttributeNames['#isActive'] = 'isActive';
+      expressionAttributeValues[':isActive'] = filters.isActive;
+    }
 
-    return { counselors, total };
+    const result = await this.scanItems({
+      filterExpression: filterExpressions.length > 0 ? filterExpressions.join(' AND ') : undefined,
+      expressionAttributeNames: Object.keys(expressionAttributeNames).length > 0 ? expressionAttributeNames : undefined,
+      expressionAttributeValues: Object.keys(expressionAttributeValues).length > 0 ? expressionAttributeValues : undefined,
+    });
+
+    // Sort in memory
+    const sortedCounselors = this.sortItems(result.items, sortBy, order);
+
+    // Paginate
+    const skip = (page - 1) * limit;
+    const paginatedCounselors = sortedCounselors.slice(skip, skip + limit);
+
+    return { counselors: paginatedCounselors, total: sortedCounselors.length };
   }
 
   async update(id: string, updateData: Partial<ICounselor>): Promise<ICounselor | null> {
-    return await Counselor.findByIdAndUpdate(id, updateData, {
-      new: true,
-      runValidators: true,
-    });
+    return await this.updateItem({ _id: id }, updateData);
   }
 
   async hardDelete(id: string): Promise<ICounselor | null> {
-    return await Counselor.findByIdAndDelete(id);
+    const counselor = await this.findById(id);
+    await this.hardDeleteItem({ _id: id });
+    return counselor;
   }
 
   async softDelete(id: string): Promise<ICounselor | null> {
-    return await Counselor.findByIdAndUpdate(
-      id,
-      { isActive: false },
-      { new: true }
-    );
+    return await this.softDeleteItem({ _id: id });
   }
 
   async countActive(): Promise<number> {
-    return await Counselor.countDocuments({ isActive: true });
+    return await this.countItems(
+      '#isActive = :isActive',
+      { '#isActive': 'isActive' },
+      { ':isActive': true }
+    );
   }
 
   async countInactive(): Promise<number> {
-    return await Counselor.countDocuments({ isActive: false });
+    return await this.countItems(
+      '#isActive = :isActive',
+      { '#isActive': 'isActive' },
+      { ':isActive': false }
+    );
   }
 
   async search(query: string, options: PaginationOptions): Promise<{ counselors: ICounselor[]; total: number }> {
     const { page, limit, sortBy, order } = options;
+
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive',
+      expressionAttributeNames: { '#isActive': 'isActive' },
+      expressionAttributeValues: { ':isActive': true },
+    });
+
+    // Filter in memory
+    const queryLower = query.toLowerCase();
+    const filteredCounselors = result.items.filter((counselor) => {
+      return (
+        counselor.fullName?.toLowerCase().includes(queryLower) ||
+        counselor.title?.toLowerCase().includes(queryLower) ||
+        counselor.bio?.toLowerCase().includes(queryLower) ||
+        counselor.specialties?.some(s => s.toLowerCase().includes(queryLower))
+      );
+    });
+
+    // Sort
+    const sortedCounselors = this.sortItems(filteredCounselors, sortBy, order);
+
+    // Paginate
     const skip = (page - 1) * limit;
+    const paginatedCounselors = sortedCounselors.slice(skip, skip + limit);
 
-    const sortOrder = order === 'desc' ? -1 : 1;
-    const sortOptions: any = { [sortBy]: sortOrder };
-
-    const searchFilter = {
-      isActive: true,
-      $or: [
-        { fullName: { $regex: query, $options: 'i' } },
-        { title: { $regex: query, $options: 'i' } },
-        { bio: { $regex: query, $options: 'i' } },
-        { specialties: { $regex: query, $options: 'i' } },
-      ],
-    };
-
-    const [counselors, total] = await Promise.all([
-      Counselor.find(searchFilter)
-        .sort(sortOptions)
-        .skip(skip)
-        .limit(limit),
-      Counselor.countDocuments(searchFilter),
-    ]);
-
-    return { counselors, total };
+    return { counselors: paginatedCounselors, total: filteredCounselors.length };
   }
 
   async findBySpecialty(specialty: string, options: PaginationOptions): Promise<{ counselors: ICounselor[]; total: number }> {
     const { page, limit, sortBy, order } = options;
+
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive',
+      expressionAttributeNames: { '#isActive': 'isActive' },
+      expressionAttributeValues: { ':isActive': true },
+    });
+
+    // Filter by specialty in memory
+    const specialtyLower = specialty.toLowerCase();
+    const filteredCounselors = result.items.filter(counselor =>
+      counselor.specialties?.some(s => s.toLowerCase().includes(specialtyLower))
+    );
+
+    // Sort
+    const sortedCounselors = this.sortItems(filteredCounselors, sortBy, order);
+
+    // Paginate
     const skip = (page - 1) * limit;
+    const paginatedCounselors = sortedCounselors.slice(skip, skip + limit);
 
-    const sortOrder = order === 'desc' ? -1 : 1;
-    const sortOptions: any = { [sortBy]: sortOrder };
-
-    const filter = {
-      isActive: true,
-      specialties: { $regex: specialty, $options: 'i' },
-    };
-
-    const [counselors, total] = await Promise.all([
-      Counselor.find(filter)
-        .sort(sortOptions)
-        .skip(skip)
-        .limit(limit),
-      Counselor.countDocuments(filter),
-    ]);
-
-    return { counselors, total };
+    return { counselors: paginatedCounselors, total: filteredCounselors.length };
   }
 
   async findTopRated(limit: number = 10): Promise<ICounselor[]> {
-    return await Counselor.find({ isActive: true })
-      .sort({ rating: -1 })
-      .limit(limit);
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive',
+      expressionAttributeNames: { '#isActive': 'isActive' },
+      expressionAttributeValues: { ':isActive': true },
+    });
+
+    const sorted = this.sortItems(result.items, 'rating', 'desc');
+    return sorted.slice(0, limit);
   }
 
   async findMostExperienced(limit: number = 10): Promise<ICounselor[]> {
-    return await Counselor.find({ isActive: true })
-      .sort({ yearsOfExperience: -1 })
-      .limit(limit);
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive',
+      expressionAttributeNames: { '#isActive': 'isActive' },
+      expressionAttributeValues: { ':isActive': true },
+    });
+
+    const sorted = this.sortItems(result.items, 'yearsOfExperience', 'desc');
+    return sorted.slice(0, limit);
   }
 
   async getAverageRating(): Promise<number> {
-    const result = await Counselor.aggregate([
-      { $match: { isActive: true } },
-      { $group: { _id: null, avgRating: { $avg: '$rating' } } },
-    ]);
-    return result.length > 0 ? result[0].avgRating : 0;
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive',
+      expressionAttributeNames: { '#isActive': 'isActive' },
+      expressionAttributeValues: { ':isActive': true },
+    });
+
+    if (result.items.length === 0) return 0;
+
+    const totalRating = result.items.reduce((sum, counselor) => sum + (counselor.rating || 0), 0);
+    return totalRating / result.items.length;
   }
 
   async countBySpecialty(specialty: string): Promise<number> {
-    return await Counselor.countDocuments({
-      isActive: true,
-      specialties: { $regex: specialty, $options: 'i' },
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive',
+      expressionAttributeNames: { '#isActive': 'isActive' },
+      expressionAttributeValues: { ':isActive': true },
     });
+
+    const specialtyLower = specialty.toLowerCase();
+    return result.items.filter(counselor =>
+      counselor.specialties?.some(s => s.toLowerCase().includes(specialtyLower))
+    ).length;
   }
 
   async getAllSpecialties(): Promise<string[]> {
-    const counselors = await Counselor.find({ isActive: true }).select('specialties');
-    const specialtiesSet = new Set<string>();
-    counselors.forEach(counselor => {
-      counselor.specialties.forEach(specialty => specialtiesSet.add(specialty));
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive',
+      expressionAttributeNames: { '#isActive': 'isActive' },
+      expressionAttributeValues: { ':isActive': true },
     });
+
+    const specialtiesSet = new Set<string>();
+    result.items.forEach(counselor => {
+      counselor.specialties?.forEach(specialty => specialtiesSet.add(specialty));
+    });
+
     return Array.from(specialtiesSet).sort();
   }
 
   async getStats(): Promise<any> {
-    const [total, active, inactive] = await Promise.all([
-      Counselor.countDocuments(),
-      Counselor.countDocuments({ isActive: true }),
-      Counselor.countDocuments({ isActive: false }),
-    ]);
+    const allCounselors = await this.scanItems({});
 
+    const total = allCounselors.items.length;
+    const active = await this.countActive();
+    const inactive = await this.countInactive();
     const avgRating = await this.getAverageRating();
 
     return {
@@ -162,6 +224,20 @@ export class CounselorRepository {
       inactive,
       averageRating: avgRating.toFixed(2),
     };
+  }
+
+  /**
+   * Helper method to sort items in memory
+   */
+  private sortItems(items: ICounselor[], sortBy: string, order: string): ICounselor[] {
+    return items.sort((a, b) => {
+      const aVal = (a as any)[sortBy];
+      const bVal = (b as any)[sortBy];
+
+      if (aVal < bVal) return order === 'asc' ? -1 : 1;
+      if (aVal > bVal) return order === 'asc' ? 1 : -1;
+      return 0;
+    });
   }
 }
 

@@ -1,12 +1,12 @@
 # Why Designers - Backend API
 
-A professional Express.js backend API built with TypeScript, MongoDB, and following best practices including the Controller-Service-Repository pattern.
+A professional Express.js backend API built with TypeScript, AWS DynamoDB, and following best practices including the Controller-Service-Repository pattern.
 
 ## Features
 
 - **TypeScript** - Full type safety
 - **Express.js** - Fast, unopinionated web framework
-- **MongoDB** - NoSQL database with Mongoose ODM
+- **AWS DynamoDB** - Serverless NoSQL database with AWS SDK v3
 - **JWT Authentication** - Secure authentication with refresh tokens
 - **Role-based Authorization** - User and admin roles
 - **Email Verification** - OTP-based email verification with AWS SES
@@ -20,16 +20,18 @@ A professional Express.js backend API built with TypeScript, MongoDB, and follow
 - **Clean Architecture** - Controller-Service-Repository pattern
 - **Design Patterns** - Singleton, Factory, Repository patterns
 
+> **Note:** This application was recently migrated from MongoDB to AWS DynamoDB. See [MONGODB_TO_DYNAMODB_MIGRATION.md](./MONGODB_TO_DYNAMODB_MIGRATION.md) for details.
+
 ## Project Structure
 
 ```
 why-designers/
 ├── src/
-│   ├── config/           # Configuration files (database, env, swagger)
+│   ├── config/           # Configuration files (DynamoDB, env, swagger, tables)
 │   ├── controllers/      # Route controllers (handle requests)
 │   ├── services/         # Business logic layer
-│   ├── repositories/     # Data access layer (database operations)
-│   ├── models/           # Database models (Mongoose schemas)
+│   ├── repositories/     # Data access layer (DynamoDB operations)
+│   ├── models/           # TypeScript interfaces & utility classes
 │   ├── middlewares/      # Custom middlewares (auth, validation, error handling, upload)
 │   ├── routes/           # API routes
 │   ├── validators/       # Joi validation schemas
@@ -38,9 +40,11 @@ why-designers/
 │   ├── docs/             # API documentation (Swagger annotations)
 │   ├── app.ts            # Express app setup
 │   └── server.ts         # Server entry point
+├── scripts/              # Utility scripts (DynamoDB table creation)
 ├── dist/                 # Compiled JavaScript (generated)
 ├── .env.example          # Environment variables template
 ├── API_DOCS.md           # API endpoint documentation
+├── MONGODB_TO_DYNAMODB_MIGRATION.md  # Migration guide
 ├── .gitignore
 ├── tsconfig.json         # TypeScript configuration
 ├── package.json
@@ -52,7 +56,8 @@ why-designers/
 ### Prerequisites
 
 - Node.js (v16 or higher)
-- MongoDB (v4.4 or higher)
+- AWS Account with DynamoDB access (or DynamoDB Local for development)
+- AWS CLI configured
 - npm or yarn
 
 ### Installation
@@ -77,14 +82,42 @@ cp .env.example .env
 ```env
 NODE_ENV=development
 PORT=5000
-MONGODB_URI=mongodb://localhost:27017/why-designers
+
+# DynamoDB Configuration
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=your-aws-access-key-id
+AWS_SECRET_ACCESS_KEY=your-aws-secret-access-key
+DYNAMODB_TABLE_PREFIX=why-designers
+
+# For DynamoDB Local (development)
+# DYNAMODB_ENDPOINT=http://localhost:8000
+
+# JWT Configuration
 JWT_SECRET=your-super-secret-jwt-key
 JWT_EXPIRE=7d
 ```
 
-5. Start MongoDB (if running locally):
+5. Create DynamoDB tables:
+
+**Option A: AWS DynamoDB (Production)**
 ```bash
-mongod
+# Make sure AWS CLI is configured
+aws configure
+
+# Run the table creation script
+./scripts/create-dynamodb-tables.sh
+```
+
+**Option B: DynamoDB Local (Development)**
+```bash
+# Start DynamoDB Local with Docker
+docker run -d -p 8000:8000 --name dynamodb-local amazon/dynamodb-local
+
+# Create tables
+./scripts/create-dynamodb-tables.sh --endpoint-url http://localhost:8000
+
+# Set DYNAMODB_ENDPOINT in .env
+echo "DYNAMODB_ENDPOINT=http://localhost:8000" >> .env
 ```
 
 6. Run the development server:
@@ -93,6 +126,10 @@ npm run dev
 ```
 
 The server will start at `http://localhost:5000`
+
+### DynamoDB Setup
+
+See [MONGODB_TO_DYNAMODB_MIGRATION.md](./MONGODB_TO_DYNAMODB_MIGRATION.md) for detailed DynamoDB table structure and setup instructions.
 
 ## Available Scripts
 

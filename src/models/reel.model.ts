@@ -1,180 +1,141 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import { BaseModel } from './base.model';
 
-export interface IReel extends Document {
+export interface IReel extends BaseModel {
+  _id: string; // UUID - Primary Key
+  title: string;
+  description?: string;
+  videoUrl: string;
+  thumbnailUrl?: string;
+  duration: number; // in seconds
+  fileSize: number; // in bytes
+  uploadedBy: string; // User ID
+  tags: string[];
+  category?: string;
+  viewCount: number;
+  likeCount: number;
+  isPublished: boolean;
+  publishedAt: string | null; // ISO 8601 timestamp
+  displayOrder: number;
+}
+
+// Reel creation input (without auto-generated fields)
+export interface CreateReelInput {
   title: string;
   description?: string;
   videoUrl: string;
   thumbnailUrl?: string;
   duration: number;
   fileSize: number;
-  uploadedBy: mongoose.Types.ObjectId;
+  uploadedBy: string;
   tags?: string[];
   category?: string;
-  viewCount: number;
-  likeCount: number;
-  isPublished: boolean;
-  isActive: boolean;
+  isPublished?: boolean;
   displayOrder?: number;
-  publishedAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  uploader?: any;
-  fileSizeFormatted: string;
-  durationFormatted: string;
 }
 
-const reelSchema = new Schema<IReel>(
-  {
-    title: {
-      type: String,
-      required: [true, 'Title is required'],
-      trim: true,
-      minlength: [2, 'Title must be at least 2 characters long'],
-      maxlength: [200, 'Title cannot exceed 200 characters'],
-    },
-    description: {
-      type: String,
-      trim: true,
-      maxlength: [1000, 'Description cannot exceed 1000 characters'],
-    },
-    videoUrl: {
-      type: String,
-      required: [true, 'Video URL is required'],
-      trim: true,
-    },
-    thumbnailUrl: {
-      type: String,
-      trim: true,
-    },
-    duration: {
-      type: Number,
-      required: [true, 'Duration is required'],
-      min: [1, 'Duration must be at least 1 second'],
-      max: [180, 'Duration cannot exceed 180 seconds (3 minutes)'],
-    },
-    fileSize: {
-      type: Number,
-      required: [true, 'File size is required'],
-      min: [0, 'File size cannot be negative'],
-    },
-    uploadedBy: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: [true, 'Uploader ID is required'],
-      index: true,
-    },
-    tags: {
-      type: [String],
-      default: [],
-      validate: {
-        validator: function (tags: string[]) {
-          return tags.length <= 10;
-        },
-        message: 'Cannot have more than 10 tags',
-      },
-    },
-    category: {
-      type: String,
-      trim: true,
-      default: 'General',
-      maxlength: [50, 'Category cannot exceed 50 characters'],
-    },
-    viewCount: {
-      type: Number,
-      default: 0,
-      min: [0, 'View count cannot be negative'],
-    },
-    likeCount: {
-      type: Number,
-      default: 0,
-      min: [0, 'Like count cannot be negative'],
-    },
-    isPublished: {
-      type: Boolean,
-      default: false,
-      index: true,
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
-      index: true,
-    },
-    displayOrder: {
-      type: Number,
-      default: 0,
-      index: true,
-    },
-    publishedAt: {
-      type: Date,
-      default: null,
-    },
-  },
-  {
-    timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
+// Reel update input
+export interface UpdateReelInput {
+  title?: string;
+  description?: string;
+  videoUrl?: string;
+  thumbnailUrl?: string;
+  duration?: number;
+  fileSize?: number;
+  tags?: string[];
+  category?: string;
+  viewCount?: number;
+  likeCount?: number;
+  isPublished?: boolean;
+  publishedAt?: string | null;
+  displayOrder?: number;
+  isActive?: boolean;
+}
+
+// Reel response interface
+export interface ReelResponse extends IReel {
+  formattedDuration: string;
+  formattedFileSize: string;
+}
+
+// Utility class for reel operations
+export class ReelUtils {
+  // Format duration (seconds to HH:MM:SS)
+  static formatDuration(seconds: number): string {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+
+    const parts = [];
+    if (hours > 0) parts.push(hours.toString().padStart(2, '0'));
+    parts.push(minutes.toString().padStart(2, '0'));
+    parts.push(secs.toString().padStart(2, '0'));
+
+    return parts.join(':');
   }
-);
 
-// Virtual for formatted file size
-reelSchema.virtual('fileSizeFormatted').get(function () {
-  const bytes = this.fileSize;
-  if (bytes === 0) return '0 Bytes';
+  // Format file size (bytes to human readable)
+  static formatFileSize(bytes: number): string {
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let size = bytes;
+    let unitIndex = 0;
 
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex++;
+    }
 
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-});
-
-// Virtual for formatted duration
-reelSchema.virtual('durationFormatted').get(function () {
-  const seconds = this.duration;
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-
-  if (minutes > 0) {
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    return `${size.toFixed(2)} ${units[unitIndex]}`;
   }
-  return `0:${remainingSeconds.toString().padStart(2, '0')}`;
-});
 
-// Indexes for better query performance
-reelSchema.index({ createdAt: -1 });
-reelSchema.index({ publishedAt: -1 });
-reelSchema.index({ viewCount: -1 });
-reelSchema.index({ likeCount: -1 });
-reelSchema.index({ isPublished: 1, isActive: 1 });
-reelSchema.index({ category: 1 });
-reelSchema.index({ tags: 1 });
-reelSchema.index({ title: 'text', description: 'text', tags: 'text' });
-
-// Populate uploader details before returning
-reelSchema.pre('find', function (next) {
-  this.populate({
-    path: 'uploadedBy',
-    select: 'firstName lastName email profilePicture',
-  });
-  next();
-});
-
-reelSchema.pre('findOne', function (next) {
-  this.populate({
-    path: 'uploadedBy',
-    select: 'firstName lastName email profilePicture',
-  });
-  next();
-});
-
-// Set publishedAt date when publishing
-reelSchema.pre('save', function (next) {
-  if (this.isModified('isPublished') && this.isPublished && !this.publishedAt) {
-    this.publishedAt = new Date();
+  // Publish reel
+  static publishReel(reel: IReel): IReel {
+    return {
+      ...reel,
+      isPublished: true,
+      publishedAt: new Date().toISOString(),
+    };
   }
-  next();
-});
 
-const Reel = mongoose.model<IReel>('Reel', reelSchema);
+  // Unpublish reel
+  static unpublishReel(reel: IReel): IReel {
+    return {
+      ...reel,
+      isPublished: false,
+    };
+  }
 
-export default Reel;
+  // Increment view count
+  static incrementViewCount(reel: IReel): IReel {
+    return {
+      ...reel,
+      viewCount: reel.viewCount + 1,
+    };
+  }
+
+  // Increment like count
+  static incrementLikeCount(reel: IReel): IReel {
+    return {
+      ...reel,
+      likeCount: reel.likeCount + 1,
+    };
+  }
+
+  // Decrement like count
+  static decrementLikeCount(reel: IReel): IReel {
+    return {
+      ...reel,
+      likeCount: Math.max(0, reel.likeCount - 1),
+    };
+  }
+
+  // Convert to response with formatted fields
+  static toResponse(reel: IReel): ReelResponse {
+    return {
+      ...reel,
+      formattedDuration: this.formatDuration(reel.duration),
+      formattedFileSize: this.formatFileSize(reel.fileSize),
+    };
+  }
+}
+
+export default IReel;

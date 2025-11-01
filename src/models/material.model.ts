@@ -1,167 +1,125 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import { BaseModel } from './base.model';
 
 /**
  * Material Interface
  * Represents a downloadable material (PDF, documents, etc.)
  */
-export interface IMaterial extends Document {
-  _id: string;
-  name: string;
-  description: string;
+export interface IMaterial extends BaseModel {
+  _id: string; // UUID - Primary Key
+  title: string;
+  description?: string;
   fileUrl: string;
-  fileName: string;
-  fileType: string;
-  fileSize: number;
+  fileType: string; // e.g., 'pdf', 'doc', 'zip', 'image'
+  fileSize: number; // in bytes
+  uploadedBy: string; // User ID
   category?: string;
-  tags: string[];
-  uploadedBy: mongoose.Types.ObjectId;
   downloadCount: number;
   isPublished: boolean;
-  isActive: boolean;
-  publishedAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  publishedAt: string | null; // ISO 8601 timestamp
 }
 
 /**
- * Material Schema
+ * Material creation input (without auto-generated fields)
  */
-const materialSchema = new Schema<IMaterial>(
-  {
-    name: {
-      type: String,
-      required: [true, 'Material name is required'],
-      trim: true,
-      minlength: [2, 'Material name must be at least 2 characters'],
-      maxlength: [200, 'Material name must not exceed 200 characters'],
-    },
-    description: {
-      type: String,
-      trim: true,
-      maxlength: [1000, 'Description must not exceed 1000 characters'],
-      default: '',
-    },
-    fileUrl: {
-      type: String,
-      required: [true, 'File URL is required'],
-      trim: true,
-    },
-    fileName: {
-      type: String,
-      required: [true, 'File name is required'],
-      trim: true,
-    },
-    fileType: {
-      type: String,
-      required: [true, 'File type is required'],
-      trim: true,
-      lowercase: true,
-    },
-    fileSize: {
-      type: Number,
-      required: [true, 'File size is required'],
-      min: [0, 'File size must be a positive number'],
-    },
-    category: {
-      type: String,
-      trim: true,
-      maxlength: [100, 'Category must not exceed 100 characters'],
-      default: 'General',
-    },
-    tags: {
-      type: [String],
-      default: [],
-      validate: {
-        validator: function (tags: string[]) {
-          return tags.length <= 10;
-        },
-        message: 'Cannot have more than 10 tags',
-      },
-    },
-    uploadedBy: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: [true, 'Uploader information is required'],
-    },
-    downloadCount: {
-      type: Number,
-      default: 0,
-      min: [0, 'Download count cannot be negative'],
-    },
-    isPublished: {
-      type: Boolean,
-      default: false,
-      index: true,
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
-    publishedAt: {
-      type: Date,
-      default: null,
-    },
-  },
-  {
-    timestamps: true,
-    toJSON: {
-      virtuals: true,
-      transform: function (doc, ret) {
-        delete (ret as any).__v;
-        return ret;
-      },
-    },
-    toObject: {
-      virtuals: true,
-    },
-  }
-);
-
-// Indexes for query optimization
-materialSchema.index({ name: 1 });
-materialSchema.index({ category: 1 });
-materialSchema.index({ tags: 1 });
-materialSchema.index({ isActive: 1 });
-materialSchema.index({ isPublished: 1 });
-materialSchema.index({ publishedAt: -1 });
-materialSchema.index({ createdAt: -1 });
-materialSchema.index({ uploadedBy: 1 });
-materialSchema.index({ fileType: 1 });
-
-// Compound index for category + active
-materialSchema.index({ category: 1, isActive: 1 });
-materialSchema.index({ isPublished: 1, isActive: 1 });
-
-// Text index for search functionality
-materialSchema.index({ name: 'text', description: 'text', tags: 'text' });
-
-// Virtual for file size in human-readable format
-materialSchema.virtual('fileSizeFormatted').get(function (this: IMaterial) {
-  const bytes = this.fileSize;
-  if (bytes === 0) return '0 Bytes';
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-});
-
-// Virtual to populate uploader info
-materialSchema.virtual('uploader', {
-  ref: 'User',
-  localField: 'uploadedBy',
-  foreignField: '_id',
-  justOne: true,
-});
-
-// Pre-save hook to set publishedAt when publishing
-materialSchema.pre('save', function (next) {
-  if (this.isModified('isPublished') && this.isPublished && !this.publishedAt) {
-    this.publishedAt = new Date();
-  }
-  next();
-});
+export interface CreateMaterialInput {
+  title: string;
+  description?: string;
+  fileUrl: string;
+  fileType: string;
+  fileSize: number;
+  uploadedBy: string;
+  category?: string;
+  isPublished?: boolean;
+}
 
 /**
- * Export Material Model
+ * Material update input
  */
-export const Material = mongoose.model<IMaterial>('Material', materialSchema);
+export interface UpdateMaterialInput {
+  title?: string;
+  description?: string;
+  fileUrl?: string;
+  fileType?: string;
+  fileSize?: number;
+  category?: string;
+  downloadCount?: number;
+  isPublished?: boolean;
+  publishedAt?: string | null;
+  isActive?: boolean;
+}
+
+/**
+ * Material response interface
+ */
+export interface MaterialResponse extends IMaterial {
+  formattedFileSize: string;
+}
+
+/**
+ * Utility class for material operations
+ */
+export class MaterialUtils {
+  // Format file size (bytes to human readable)
+  static formatFileSize(bytes: number): string {
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let size = bytes;
+    let unitIndex = 0;
+
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex++;
+    }
+
+    return `${size.toFixed(2)} ${units[unitIndex]}`;
+  }
+
+  // Publish material
+  static publishMaterial(material: IMaterial): IMaterial {
+    return {
+      ...material,
+      isPublished: true,
+      publishedAt: new Date().toISOString(),
+    };
+  }
+
+  // Unpublish material
+  static unpublishMaterial(material: IMaterial): IMaterial {
+    return {
+      ...material,
+      isPublished: false,
+    };
+  }
+
+  // Increment download count
+  static incrementDownloadCount(material: IMaterial): IMaterial {
+    return {
+      ...material,
+      downloadCount: material.downloadCount + 1,
+    };
+  }
+
+  // Get file extension from file type
+  static getFileExtension(fileType: string): string {
+    const extensions: { [key: string]: string } = {
+      'pdf': 'pdf',
+      'document': 'doc',
+      'zip': 'zip',
+      'image': 'img',
+      'video': 'mp4',
+      'audio': 'mp3',
+      'text': 'txt',
+    };
+
+    return extensions[fileType.toLowerCase()] || fileType;
+  }
+
+  // Convert to response with formatted fields
+  static toResponse(material: IMaterial): MaterialResponse {
+    return {
+      ...material,
+      formattedFileSize: this.formatFileSize(material.fileSize),
+    };
+  }
+}
+
+export default IMaterial;

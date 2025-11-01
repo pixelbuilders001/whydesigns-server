@@ -1,4 +1,7 @@
-import LeadActivity, { ILeadActivity } from '../models/leadActivity.model';
+import { ILeadActivity } from '../models/leadActivity.model';
+import { BaseRepository } from './base.repository';
+import { TABLES } from '../config/dynamodb.tables';
+import { createBaseFields } from '../models/base.model';
 
 export interface PaginationOptions {
   page?: number;
@@ -7,22 +10,36 @@ export interface PaginationOptions {
   sortOrder?: 'asc' | 'desc';
 }
 
-class LeadActivityRepository {
+export class LeadActivityRepository extends BaseRepository<ILeadActivity> {
+  constructor() {
+    super(TABLES.LEAD_ACTIVITIES);
+  }
+
   /**
    * Create a new lead activity
    */
   async create(activityData: Partial<ILeadActivity>): Promise<ILeadActivity> {
-    const activity = new LeadActivity(activityData);
-    return await activity.save();
+    const _id = this.generateId();
+
+    const activity: ILeadActivity = {
+      _id,
+      leadId: activityData.leadId || '',
+      counselorId: activityData.counselorId || '',
+      activityType: activityData.activityType || 'other',
+      activityDate: activityData.activityDate || new Date().toISOString(),
+      remarks: activityData.remarks,
+      nextFollowUpDate: activityData.nextFollowUpDate,
+      ...createBaseFields(),
+    };
+
+    return await this.putItem(activity);
   }
 
   /**
    * Find activity by ID
    */
   async findById(id: string): Promise<ILeadActivity | null> {
-    return await LeadActivity.findById(id)
-      .populate('counselorId', 'firstName lastName email')
-      .populate('leadId', 'fullName email phone');
+    return await this.getItem({ _id: id });
   }
 
   /**
@@ -39,21 +56,24 @@ class LeadActivityRepository {
       sortOrder = 'desc',
     } = options;
 
+    // Scan for activities with this leadId
+    const result = await this.scanItems({
+      filterExpression: '#leadId = :leadId AND #isActive = :isActive',
+      expressionAttributeNames: { '#leadId': 'leadId', '#isActive': 'isActive' },
+      expressionAttributeValues: { ':leadId': leadId, ':isActive': true },
+    });
+
+    // Sort in memory
+    const sortedActivities = this.sortItems(result.items, sortBy, sortOrder);
+
+    // Paginate in memory
     const skip = (page - 1) * limit;
-    const sort: any = {};
-    sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+    const paginatedActivities = sortedActivities.slice(skip, skip + limit);
 
-    const [activities, total] = await Promise.all([
-      LeadActivity.find({ leadId, isActive: true })
-        .sort(sort)
-        .skip(skip)
-        .limit(limit)
-        .populate('counselorId', 'firstName lastName email')
-        .lean(),
-      LeadActivity.countDocuments({ leadId, isActive: true }),
-    ]);
-
-    return { activities: activities as ILeadActivity[], total };
+    return {
+      activities: paginatedActivities,
+      total: sortedActivities.length
+    };
   }
 
   /**
@@ -70,73 +90,77 @@ class LeadActivityRepository {
       sortOrder = 'desc',
     } = options;
 
+    // Scan for activities with this counselorId
+    const result = await this.scanItems({
+      filterExpression: '#counselorId = :counselorId AND #isActive = :isActive',
+      expressionAttributeNames: { '#counselorId': 'counselorId', '#isActive': 'isActive' },
+      expressionAttributeValues: { ':counselorId': counselorId, ':isActive': true },
+    });
+
+    // Sort in memory
+    const sortedActivities = this.sortItems(result.items, sortBy, sortOrder);
+
+    // Paginate in memory
     const skip = (page - 1) * limit;
-    const sort: any = {};
-    sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+    const paginatedActivities = sortedActivities.slice(skip, skip + limit);
 
-    const [activities, total] = await Promise.all([
-      LeadActivity.find({ counselorId, isActive: true })
-        .sort(sort)
-        .skip(skip)
-        .limit(limit)
-        .populate('leadId', 'fullName email phone')
-        .lean(),
-      LeadActivity.countDocuments({ counselorId, isActive: true }),
-    ]);
-
-    return { activities: activities as ILeadActivity[], total };
+    return {
+      activities: paginatedActivities,
+      total: sortedActivities.length
+    };
   }
 
   /**
    * Update activity by ID
    */
   async update(id: string, updateData: Partial<ILeadActivity>): Promise<ILeadActivity | null> {
-    return await LeadActivity.findByIdAndUpdate(id, updateData, {
-      new: true,
-      runValidators: true,
-    })
-      .populate('counselorId', 'firstName lastName email')
-      .populate('leadId', 'fullName email phone');
+    return await this.updateItem({ _id: id }, updateData);
   }
 
   /**
    * Soft delete activity
    */
   async softDelete(id: string): Promise<ILeadActivity | null> {
-    return await LeadActivity.findByIdAndUpdate(
-      id,
-      { isActive: false },
-      { new: true }
-    );
+    return await this.softDeleteItem({ _id: id });
   }
 
   /**
    * Hard delete activity
    */
   async delete(id: string): Promise<void> {
-    await LeadActivity.findByIdAndDelete(id);
+    await this.hardDeleteItem({ _id: id });
   }
 
   /**
    * Get activity statistics for a lead
    */
   async getLeadActivityStats(leadId: string): Promise<any> {
-    const stats = await LeadActivity.aggregate([
-      { $match: { leadId: leadId as any, isActive: true } },
-      {
-        $group: {
-          _id: '$activityType',
-          count: { $sum: 1 },
-          lastActivity: { $max: '$activityDate' },
-        },
-      },
-    ]);
+    const result = await this.scanItems({
+      filterExpression: '#leadId = :leadId AND #isActive = :isActive',
+      expressionAttributeNames: { '#leadId': 'leadId', '#isActive': 'isActive' },
+      expressionAttributeValues: { ':leadId': leadId, ':isActive': true },
+    });
 
-    const total = await LeadActivity.countDocuments({ leadId, isActive: true });
+    // Group by activity type in memory
+    const byType = result.items.reduce((acc: any, activity) => {
+      const type = activity.activityType;
+      if (!acc[type]) {
+        acc[type] = {
+          _id: type,
+          count: 0,
+          lastActivity: activity.activityDate,
+        };
+      }
+      acc[type].count++;
+      if (activity.activityDate > acc[type].lastActivity) {
+        acc[type].lastActivity = activity.activityDate;
+      }
+      return acc;
+    }, {});
 
     return {
-      total,
-      byType: stats,
+      total: result.items.length,
+      byType: Object.values(byType),
     };
   }
 
@@ -144,12 +168,29 @@ class LeadActivityRepository {
    * Get recent activities across all leads
    */
   async getRecentActivities(limit: number = 10): Promise<ILeadActivity[]> {
-    return await LeadActivity.find({ isActive: true })
-      .sort({ activityDate: -1 })
-      .limit(limit)
-      .populate('counselorId', 'firstName lastName email')
-      .populate('leadId', 'fullName email phone')
-      .lean() as ILeadActivity[];
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive',
+      expressionAttributeNames: { '#isActive': 'isActive' },
+      expressionAttributeValues: { ':isActive': true },
+    });
+
+    // Sort by activityDate descending and limit
+    const sortedActivities = this.sortItems(result.items, 'activityDate', 'desc');
+    return sortedActivities.slice(0, limit);
+  }
+
+  /**
+   * Helper method to sort items in memory
+   */
+  private sortItems(items: ILeadActivity[], sortBy: string, sortOrder: string): ILeadActivity[] {
+    return items.sort((a, b) => {
+      const aVal = (a as any)[sortBy];
+      const bVal = (b as any)[sortBy];
+
+      if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
   }
 }
 

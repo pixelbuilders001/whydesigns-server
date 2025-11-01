@@ -1,36 +1,58 @@
-import { Booking, IBooking, BookingStatus } from '../models/booking.model';
+import { IBooking, BookingStatus } from '../models/booking.model';
+import { BaseRepository } from './base.repository';
+import { TABLES } from '../config/dynamodb.tables';
 import { PaginationOptions } from '../types';
+import { createBaseFields } from '../models/base.model';
 
-export class BookingRepository {
+export class BookingRepository extends BaseRepository<IBooking> {
+  constructor() {
+    super(TABLES.BOOKINGS);
+  }
+
   async create(bookingData: Partial<IBooking>): Promise<IBooking> {
-    const booking = await Booking.create(bookingData);
-    return booking;
+    const _id = this.generateId();
+
+    const booking: IBooking = {
+      _id,
+      counselorId: bookingData.counselorId || '',
+      userId: bookingData.userId,
+      guestName: bookingData.guestName || '',
+      guestEmail: bookingData.guestEmail || '',
+      guestPhone: bookingData.guestPhone || '',
+      bookingDate: bookingData.bookingDate || new Date().toISOString(),
+      bookingTime: bookingData.bookingTime || '',
+      duration: bookingData.duration || 60,
+      discussionTopic: bookingData.discussionTopic || '',
+      status: bookingData.status || 'pending',
+      confirmationEmailSent: bookingData.confirmationEmailSent || false,
+      reminderEmailSent: bookingData.reminderEmailSent || false,
+      ...createBaseFields(),
+    };
+
+    return await this.putItem(booking);
   }
 
   async findById(id: string): Promise<IBooking | null> {
-    return await Booking.findById(id)
-      .populate('counselorId', '_id fullName title avatarUrl specialties rating')
-      .populate('userId', '_id firstName lastName email phoneNumber');
+    return await this.getItem({ _id: id });
   }
 
   async findAll(options: PaginationOptions): Promise<{ bookings: IBooking[]; total: number }> {
     const { page, limit, sortBy, order } = options;
+
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive',
+      expressionAttributeNames: { '#isActive': 'isActive' },
+      expressionAttributeValues: { ':isActive': true },
+    });
+
+    // Sort in memory
+    const sortedBookings = this.sortItems(result.items, sortBy, order);
+
+    // Paginate
     const skip = (page - 1) * limit;
+    const paginatedBookings = sortedBookings.slice(skip, skip + limit);
 
-    const sortOrder = order === 'desc' ? -1 : 1;
-    const sortOptions: any = { [sortBy]: sortOrder };
-
-    const [bookings, total] = await Promise.all([
-      Booking.find({ isActive: true })
-        .populate('counselorId', '_id fullName title avatarUrl specialties rating')
-        .populate('userId', '_id firstName lastName email phoneNumber')
-        .sort(sortOptions)
-        .skip(skip)
-        .limit(limit),
-      Booking.countDocuments({ isActive: true }),
-    ]);
-
-    return { bookings, total };
+    return { bookings: paginatedBookings, total: sortedBookings.length };
   }
 
   async findByStatus(
@@ -38,22 +60,21 @@ export class BookingRepository {
     options: PaginationOptions
   ): Promise<{ bookings: IBooking[]; total: number }> {
     const { page, limit, sortBy, order } = options;
+
+    const result = await this.scanItems({
+      filterExpression: '#status = :status AND #isActive = :isActive',
+      expressionAttributeNames: { '#status': 'status', '#isActive': 'isActive' },
+      expressionAttributeValues: { ':status': status, ':isActive': true },
+    });
+
+    // Sort in memory
+    const sortedBookings = this.sortItems(result.items, sortBy, order);
+
+    // Paginate
     const skip = (page - 1) * limit;
+    const paginatedBookings = sortedBookings.slice(skip, skip + limit);
 
-    const sortOrder = order === 'desc' ? -1 : 1;
-    const sortOptions: any = { [sortBy]: sortOrder };
-
-    const [bookings, total] = await Promise.all([
-      Booking.find({ status, isActive: true })
-        .populate('counselorId', '_id fullName title avatarUrl specialties rating')
-        .populate('userId', '_id firstName lastName email phoneNumber')
-        .sort(sortOptions)
-        .skip(skip)
-        .limit(limit),
-      Booking.countDocuments({ status, isActive: true }),
-    ]);
-
-    return { bookings, total };
+    return { bookings: paginatedBookings, total: sortedBookings.length };
   }
 
   async findByCounselor(
@@ -61,22 +82,21 @@ export class BookingRepository {
     options: PaginationOptions
   ): Promise<{ bookings: IBooking[]; total: number }> {
     const { page, limit, sortBy, order } = options;
+
+    const result = await this.scanItems({
+      filterExpression: '#counselorId = :counselorId AND #isActive = :isActive',
+      expressionAttributeNames: { '#counselorId': 'counselorId', '#isActive': 'isActive' },
+      expressionAttributeValues: { ':counselorId': counselorId, ':isActive': true },
+    });
+
+    // Sort in memory
+    const sortedBookings = this.sortItems(result.items, sortBy, order);
+
+    // Paginate
     const skip = (page - 1) * limit;
+    const paginatedBookings = sortedBookings.slice(skip, skip + limit);
 
-    const sortOrder = order === 'desc' ? -1 : 1;
-    const sortOptions: any = { [sortBy]: sortOrder };
-
-    const [bookings, total] = await Promise.all([
-      Booking.find({ counselorId, isActive: true })
-        .populate('counselorId', '_id fullName title avatarUrl specialties rating')
-        .populate('userId', '_id firstName lastName email phoneNumber')
-        .sort(sortOptions)
-        .skip(skip)
-        .limit(limit),
-      Booking.countDocuments({ counselorId, isActive: true }),
-    ]);
-
-    return { bookings, total };
+    return { bookings: paginatedBookings, total: sortedBookings.length };
   }
 
   async findByUser(
@@ -84,22 +104,21 @@ export class BookingRepository {
     options: PaginationOptions
   ): Promise<{ bookings: IBooking[]; total: number }> {
     const { page, limit, sortBy, order } = options;
+
+    const result = await this.scanItems({
+      filterExpression: '#userId = :userId AND #isActive = :isActive',
+      expressionAttributeNames: { '#userId': 'userId', '#isActive': 'isActive' },
+      expressionAttributeValues: { ':userId': userId, ':isActive': true },
+    });
+
+    // Sort in memory
+    const sortedBookings = this.sortItems(result.items, sortBy, order);
+
+    // Paginate
     const skip = (page - 1) * limit;
+    const paginatedBookings = sortedBookings.slice(skip, skip + limit);
 
-    const sortOrder = order === 'desc' ? -1 : 1;
-    const sortOptions: any = { [sortBy]: sortOrder };
-
-    const [bookings, total] = await Promise.all([
-      Booking.find({ userId, isActive: true })
-        .populate('counselorId', '_id fullName title avatarUrl specialties rating')
-        .populate('userId', '_id firstName lastName email phoneNumber')
-        .sort(sortOptions)
-        .skip(skip)
-        .limit(limit),
-      Booking.countDocuments({ userId, isActive: true }),
-    ]);
-
-    return { bookings, total };
+    return { bookings: paginatedBookings, total: sortedBookings.length };
   }
 
   async findByEmail(
@@ -107,105 +126,169 @@ export class BookingRepository {
     options: PaginationOptions
   ): Promise<{ bookings: IBooking[]; total: number }> {
     const { page, limit, sortBy, order } = options;
+
+    const result = await this.scanItems({
+      filterExpression: '#guestEmail = :guestEmail AND #isActive = :isActive',
+      expressionAttributeNames: { '#guestEmail': 'guestEmail', '#isActive': 'isActive' },
+      expressionAttributeValues: { ':guestEmail': email.toLowerCase(), ':isActive': true },
+    });
+
+    // Sort in memory
+    const sortedBookings = this.sortItems(result.items, sortBy, order);
+
+    // Paginate
     const skip = (page - 1) * limit;
+    const paginatedBookings = sortedBookings.slice(skip, skip + limit);
 
-    const sortOrder = order === 'desc' ? -1 : 1;
-    const sortOptions: any = { [sortBy]: sortOrder };
-
-    const [bookings, total] = await Promise.all([
-      Booking.find({ guestEmail: email.toLowerCase(), isActive: true })
-        .populate('counselorId', '_id fullName title avatarUrl specialties rating')
-        .populate('userId', '_id firstName lastName email phoneNumber')
-        .sort(sortOptions)
-        .skip(skip)
-        .limit(limit),
-      Booking.countDocuments({ guestEmail: email.toLowerCase(), isActive: true }),
-    ]);
-
-    return { bookings, total };
+    return { bookings: paginatedBookings, total: sortedBookings.length };
   }
 
   async findUpcomingBookings(limit: number = 10): Promise<IBooking[]> {
-    const now = new Date();
-    return await Booking.find({
-      bookingDate: { $gte: now },
-      status: { $in: ['pending', 'confirmed'] },
-      isActive: true,
-    })
-      .populate('counselorId', '_id fullName title avatarUrl specialties rating')
-      .populate('userId', '_id firstName lastName email phoneNumber')
-      .sort({ bookingDate: 1, bookingTime: 1 })
-      .limit(limit);
+    const now = new Date().toISOString();
+
+    const result = await this.scanItems({
+      filterExpression: '#bookingDate >= :now AND (#status = :pending OR #status = :confirmed) AND #isActive = :isActive',
+      expressionAttributeNames: {
+        '#bookingDate': 'bookingDate',
+        '#status': 'status',
+        '#isActive': 'isActive',
+      },
+      expressionAttributeValues: {
+        ':now': now,
+        ':pending': 'pending',
+        ':confirmed': 'confirmed',
+        ':isActive': true,
+      },
+    });
+
+    // Sort by bookingDate and bookingTime
+    const sorted = result.items.sort((a, b) => {
+      const dateCompare = a.bookingDate.localeCompare(b.bookingDate);
+      if (dateCompare !== 0) return dateCompare;
+      return a.bookingTime.localeCompare(b.bookingTime);
+    });
+
+    return sorted.slice(0, limit);
   }
 
   async findUpcomingByUser(userId: string): Promise<IBooking[]> {
-    const now = new Date();
-    return await Booking.find({
-      userId,
-      bookingDate: { $gte: now },
-      status: { $in: ['pending', 'confirmed'] },
-      isActive: true,
-    })
-      .populate('counselorId', '_id fullName title avatarUrl specialties rating')
-      .sort({ bookingDate: 1, bookingTime: 1 });
+    const now = new Date().toISOString();
+
+    const result = await this.scanItems({
+      filterExpression: '#userId = :userId AND #bookingDate >= :now AND (#status = :pending OR #status = :confirmed) AND #isActive = :isActive',
+      expressionAttributeNames: {
+        '#userId': 'userId',
+        '#bookingDate': 'bookingDate',
+        '#status': 'status',
+        '#isActive': 'isActive',
+      },
+      expressionAttributeValues: {
+        ':userId': userId,
+        ':now': now,
+        ':pending': 'pending',
+        ':confirmed': 'confirmed',
+        ':isActive': true,
+      },
+    });
+
+    return result.items.sort((a, b) => {
+      const dateCompare = a.bookingDate.localeCompare(b.bookingDate);
+      if (dateCompare !== 0) return dateCompare;
+      return a.bookingTime.localeCompare(b.bookingTime);
+    });
   }
 
   async findUpcomingByEmail(email: string): Promise<IBooking[]> {
-    const now = new Date();
-    return await Booking.find({
-      guestEmail: email.toLowerCase(),
-      bookingDate: { $gte: now },
-      status: { $in: ['pending', 'confirmed'] },
-      isActive: true,
-    })
-      .populate('counselorId', '_id fullName title avatarUrl specialties rating')
-      .sort({ bookingDate: 1, bookingTime: 1 });
+    const now = new Date().toISOString();
+
+    const result = await this.scanItems({
+      filterExpression: '#guestEmail = :guestEmail AND #bookingDate >= :now AND (#status = :pending OR #status = :confirmed) AND #isActive = :isActive',
+      expressionAttributeNames: {
+        '#guestEmail': 'guestEmail',
+        '#bookingDate': 'bookingDate',
+        '#status': 'status',
+        '#isActive': 'isActive',
+      },
+      expressionAttributeValues: {
+        ':guestEmail': email.toLowerCase(),
+        ':now': now,
+        ':pending': 'pending',
+        ':confirmed': 'confirmed',
+        ':isActive': true,
+      },
+    });
+
+    return result.items.sort((a, b) => {
+      const dateCompare = a.bookingDate.localeCompare(b.bookingDate);
+      if (dateCompare !== 0) return dateCompare;
+      return a.bookingTime.localeCompare(b.bookingTime);
+    });
   }
 
   async findUpcomingByCounselor(counselorId: string): Promise<IBooking[]> {
-    const now = new Date();
-    return await Booking.find({
-      counselorId,
-      bookingDate: { $gte: now },
-      status: { $in: ['pending', 'confirmed'] },
-      isActive: true,
-    })
-      .populate('userId', '_id firstName lastName email phoneNumber')
-      .sort({ bookingDate: 1, bookingTime: 1 });
+    const now = new Date().toISOString();
+
+    const result = await this.scanItems({
+      filterExpression: '#counselorId = :counselorId AND #bookingDate >= :now AND (#status = :pending OR #status = :confirmed) AND #isActive = :isActive',
+      expressionAttributeNames: {
+        '#counselorId': 'counselorId',
+        '#bookingDate': 'bookingDate',
+        '#status': 'status',
+        '#isActive': 'isActive',
+      },
+      expressionAttributeValues: {
+        ':counselorId': counselorId,
+        ':now': now,
+        ':pending': 'pending',
+        ':confirmed': 'confirmed',
+        ':isActive': true,
+      },
+    });
+
+    return result.items.sort((a, b) => {
+      const dateCompare = a.bookingDate.localeCompare(b.bookingDate);
+      if (dateCompare !== 0) return dateCompare;
+      return a.bookingTime.localeCompare(b.bookingTime);
+    });
   }
 
   async update(id: string, updateData: Partial<IBooking>): Promise<IBooking | null> {
-    return await Booking.findByIdAndUpdate(id, updateData, {
-      new: true,
-      runValidators: true,
-    })
-      .populate('counselorId', '_id fullName title avatarUrl specialties rating')
-      .populate('userId', '_id firstName lastName email phoneNumber');
+    return await this.updateItem({ _id: id }, updateData);
   }
 
   async delete(id: string): Promise<IBooking | null> {
-    return await Booking.findByIdAndDelete(id);
+    const booking = await this.findById(id);
+    await this.hardDeleteItem({ _id: id });
+    return booking;
   }
 
   async softDelete(id: string): Promise<IBooking | null> {
-    return await Booking.findByIdAndUpdate(
-      id,
-      { isActive: false },
-      { new: true }
-    );
+    return await this.softDeleteItem({ _id: id });
   }
 
   async checkAvailability(counselorId: string, bookingDate: Date, bookingTime: string): Promise<boolean> {
-    // Check if there's any existing booking for the counselor at the same date and time
-    const existingBooking = await Booking.findOne({
-      counselorId,
-      bookingDate,
-      bookingTime,
-      status: { $in: ['pending', 'confirmed'] },
-      isActive: true,
+    const dateStr = bookingDate.toISOString();
+
+    const result = await this.scanItems({
+      filterExpression: '#counselorId = :counselorId AND #bookingDate = :bookingDate AND #bookingTime = :bookingTime AND (#status = :pending OR #status = :confirmed) AND #isActive = :isActive',
+      expressionAttributeNames: {
+        '#counselorId': 'counselorId',
+        '#bookingDate': 'bookingDate',
+        '#bookingTime': 'bookingTime',
+        '#status': 'status',
+        '#isActive': 'isActive',
+      },
+      expressionAttributeValues: {
+        ':counselorId': counselorId,
+        ':bookingDate': dateStr,
+        ':bookingTime': bookingTime,
+        ':pending': 'pending',
+        ':confirmed': 'confirmed',
+        ':isActive': true,
+      },
     });
 
-    return !existingBooking; // Available if no existing booking found
+    return result.items.length === 0; // Available if no existing booking found
   }
 
   async getCounselorBookingsForDate(counselorId: string, date: Date): Promise<IBooking[]> {
@@ -215,23 +298,41 @@ export class BookingRepository {
     const endOfDay = new Date(date);
     endOfDay.setHours(23, 59, 59, 999);
 
-    return await Booking.find({
-      counselorId,
-      bookingDate: {
-        $gte: startOfDay,
-        $lte: endOfDay,
+    const result = await this.scanItems({
+      filterExpression: '#counselorId = :counselorId AND #bookingDate BETWEEN :startOfDay AND :endOfDay AND (#status = :pending OR #status = :confirmed) AND #isActive = :isActive',
+      expressionAttributeNames: {
+        '#counselorId': 'counselorId',
+        '#bookingDate': 'bookingDate',
+        '#status': 'status',
+        '#isActive': 'isActive',
       },
-      status: { $in: ['pending', 'confirmed'] },
-      isActive: true,
-    }).sort({ bookingTime: 1 });
+      expressionAttributeValues: {
+        ':counselorId': counselorId,
+        ':startOfDay': startOfDay.toISOString(),
+        ':endOfDay': endOfDay.toISOString(),
+        ':pending': 'pending',
+        ':confirmed': 'confirmed',
+        ':isActive': true,
+      },
+    });
+
+    return result.items.sort((a, b) => a.bookingTime.localeCompare(b.bookingTime));
   }
 
   async countByStatus(status: BookingStatus): Promise<number> {
-    return await Booking.countDocuments({ status, isActive: true });
+    return await this.countItems(
+      '#status = :status AND #isActive = :isActive',
+      { '#status': 'status', '#isActive': 'isActive' },
+      { ':status': status, ':isActive': true }
+    );
   }
 
   async countByCounselor(counselorId: string): Promise<number> {
-    return await Booking.countDocuments({ counselorId, isActive: true });
+    return await this.countItems(
+      '#counselorId = :counselorId AND #isActive = :isActive',
+      { '#counselorId': 'counselorId', '#isActive': 'isActive' },
+      { ':counselorId': counselorId, ':isActive': true }
+    );
   }
 
   async getStats(): Promise<{
@@ -242,14 +343,18 @@ export class BookingRepository {
     completed: number;
     noShow: number;
   }> {
-    const [total, pending, confirmed, cancelled, completed, noShow] = await Promise.all([
-      Booking.countDocuments({ isActive: true }),
-      Booking.countDocuments({ status: 'pending', isActive: true }),
-      Booking.countDocuments({ status: 'confirmed', isActive: true }),
-      Booking.countDocuments({ status: 'cancelled', isActive: true }),
-      Booking.countDocuments({ status: 'completed', isActive: true }),
-      Booking.countDocuments({ status: 'no-show', isActive: true }),
-    ]);
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive',
+      expressionAttributeNames: { '#isActive': 'isActive' },
+      expressionAttributeValues: { ':isActive': true },
+    });
+
+    const total = result.items.length;
+    const pending = result.items.filter(b => b.status === 'pending').length;
+    const confirmed = result.items.filter(b => b.status === 'confirmed').length;
+    const cancelled = result.items.filter(b => b.status === 'cancelled').length;
+    const completed = result.items.filter(b => b.status === 'completed').length;
+    const noShow = result.items.filter(b => b.status === 'no-show').length;
 
     return {
       total,
@@ -266,17 +371,38 @@ export class BookingRepository {
     const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    return await Booking.find({
-      bookingDate: {
-        $gte: now,
-        $lte: tomorrow,
+    const result = await this.scanItems({
+      filterExpression: '#bookingDate BETWEEN :now AND :tomorrow AND #status = :confirmed AND #reminderEmailSent = :false AND #isActive = :isActive',
+      expressionAttributeNames: {
+        '#bookingDate': 'bookingDate',
+        '#status': 'status',
+        '#reminderEmailSent': 'reminderEmailSent',
+        '#isActive': 'isActive',
       },
-      status: 'confirmed',
-      reminderEmailSent: false,
-      isActive: true,
-    })
-      .populate('counselorId', '_id fullName title avatarUrl')
-      .populate('userId', '_id firstName lastName email phoneNumber');
+      expressionAttributeValues: {
+        ':now': now.toISOString(),
+        ':tomorrow': tomorrow.toISOString(),
+        ':confirmed': 'confirmed',
+        ':false': false,
+        ':isActive': true,
+      },
+    });
+
+    return result.items;
+  }
+
+  /**
+   * Helper method to sort items in memory
+   */
+  private sortItems(items: IBooking[], sortBy: string, order: string): IBooking[] {
+    return items.sort((a, b) => {
+      const aVal = (a as any)[sortBy];
+      const bVal = (b as any)[sortBy];
+
+      if (aVal < bVal) return order === 'asc' ? -1 : 1;
+      if (aVal > bVal) return order === 'asc' ? 1 : -1;
+      return 0;
+    });
   }
 }
 

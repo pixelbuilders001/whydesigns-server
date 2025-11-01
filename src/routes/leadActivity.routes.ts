@@ -7,7 +7,6 @@ import {
   updateLeadActivitySchema,
   getActivitiesQuerySchema,
   leadIdParamSchema,
-  activityIdParamSchema,
   leadActivityParamsSchema,
 } from '../validators/leadActivity.validator';
 

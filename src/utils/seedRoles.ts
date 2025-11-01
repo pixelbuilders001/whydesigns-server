@@ -2,13 +2,12 @@ import roleRepository from '../repositories/role.repository';
 
 const defaultRoles = [
   {
-    name: 'USER',
+    name: 'USER' as const,
     description: 'Regular user with basic permissions',
     permissions: ['read:own_profile', 'update:own_profile'],
-    isActive: true,
   },
   {
-    name: 'ADMIN',
+    name: 'ADMIN' as const,
     description: 'Administrator with full system access',
     permissions: [
       'read:users',
@@ -25,22 +24,39 @@ const defaultRoles = [
       'delete:counselors',
       'manage:all',
     ],
-    isActive: true,
   },
 ];
 
 export const seedRoles = async (): Promise<void> => {
   try {
-    console.log('🌱 Seeding roles...');
+    console.log('🌱 Checking roles...');
+
+    // Check if all required roles exist
+    const allExist = await Promise.all(
+      defaultRoles.map(role => roleRepository.exists(role.name))
+    );
+
+    // If all roles exist, skip seeding
+    if (allExist.every(exists => exists)) {
+      console.log('✅ All roles already exist, skipping seed');
+      return;
+    }
+
+    console.log('📝 Seeding missing roles...');
 
     for (const roleData of defaultRoles) {
-      const exists = await roleRepository.exists(roleData.name);
+      try {
+        const existingRole = await roleRepository.findByName(roleData.name);
 
-      if (!exists) {
-        await roleRepository.create(roleData);
-        console.log(`✅ Created role: ${roleData.name}`);
-      } else {
-        console.log(`⏭️  Role already exists: ${roleData.name}`);
+        if (!existingRole) {
+          await roleRepository.create(roleData);
+          console.log(`✅ Created role: ${roleData.name}`);
+        } else {
+          console.log(`⏭️  Role already exists: ${roleData.name} (ID: ${existingRole._id})`);
+        }
+      } catch (error) {
+        console.error(`❌ Error processing role ${roleData.name}:`, error);
+        // Continue with other roles even if one fails
       }
     }
 

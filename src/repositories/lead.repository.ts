@@ -1,5 +1,7 @@
-import Lead, { ILead } from '../models/lead.model';
-import mongoose from 'mongoose';
+import { ILead } from '../models/lead.model';
+import { BaseRepository } from './base.repository';
+import { TABLES } from '../config/dynamodb.tables';
+import { createBaseFields } from '../models/base.model';
 
 export interface LeadFilters {
   isActive?: boolean;
@@ -15,23 +17,38 @@ export interface PaginationOptions {
   sortOrder?: 'asc' | 'desc';
 }
 
-class LeadRepository {
+export class LeadRepository extends BaseRepository<ILead> {
+  constructor() {
+    super(TABLES.LEADS);
+  }
+
   /**
    * Create a new lead
    */
   async create(leadData: Partial<ILead>): Promise<ILead> {
-    const lead = await Lead.create(leadData);
-    return lead;
+    const _id = this.generateId();
+
+    const lead: ILead = {
+      _id,
+      fullName: leadData.fullName || '',
+      email: leadData.email || '',
+      phone: leadData.phone || '',
+      areaOfInterest: leadData.areaOfInterest || '',
+      message: leadData.message || '',
+      contacted: leadData.contacted || false,
+      contactedAt: leadData.contactedAt,
+      contactedBy: leadData.contactedBy,
+      ...createBaseFields(),
+    };
+
+    return await this.putItem(lead);
   }
 
   /**
    * Find lead by ID
    */
   async findById(id: string): Promise<ILead | null> {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return null;
-    }
-    return await Lead.findById(id);
+    return await this.getItem({ _id: id });
   }
 
   /**
@@ -42,45 +59,65 @@ class LeadRepository {
     options: PaginationOptions = {}
   ): Promise<{ leads: ILead[]; total: number; page: number; totalPages: number }> {
     const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc' } = options;
-    const skip = (page - 1) * limit;
 
-    // Build query
-    const query: any = {};
+    // Build filter expression
+    const filterExpressions: string[] = [];
+    const expressionAttributeNames: Record<string, string> = {};
+    const expressionAttributeValues: Record<string, any> = {};
 
     if (filters.isActive !== undefined) {
-      query.isActive = filters.isActive;
+      filterExpressions.push('#isActive = :isActive');
+      expressionAttributeNames['#isActive'] = 'isActive';
+      expressionAttributeValues[':isActive'] = filters.isActive;
     }
 
     if (filters.contacted !== undefined) {
-      query.contacted = filters.contacted;
+      filterExpressions.push('#contacted = :contacted');
+      expressionAttributeNames['#contacted'] = 'contacted';
+      expressionAttributeValues[':contacted'] = filters.contacted;
     }
 
     if (filters.areaOfInterest) {
-      query.areaOfInterest = new RegExp(filters.areaOfInterest, 'i');
+      filterExpressions.push('contains(#areaOfInterest, :areaOfInterest)');
+      expressionAttributeNames['#areaOfInterest'] = 'areaOfInterest';
+      expressionAttributeValues[':areaOfInterest'] = filters.areaOfInterest;
     }
 
+    // Scan with filters
+    const result = await this.scanItems({
+      filterExpression: filterExpressions.length > 0 ? filterExpressions.join(' AND ') : undefined,
+      expressionAttributeNames: Object.keys(expressionAttributeNames).length > 0 ? expressionAttributeNames : undefined,
+      expressionAttributeValues: Object.keys(expressionAttributeValues).length > 0 ? expressionAttributeValues : undefined,
+    });
+
+    let leads = result.items;
+
+    // Handle search filter in memory (DynamoDB doesn't support full-text search)
     if (filters.search) {
-      query.$text = { $search: filters.search };
+      const queryLower = filters.search.toLowerCase();
+      leads = leads.filter((lead) => {
+        return (
+          lead.fullName?.toLowerCase().includes(queryLower) ||
+          lead.email?.toLowerCase().includes(queryLower) ||
+          lead.phone?.toLowerCase().includes(queryLower) ||
+          lead.areaOfInterest?.toLowerCase().includes(queryLower) ||
+          lead.message?.toLowerCase().includes(queryLower)
+        );
+      });
     }
 
-    // Execute query
-    const [leads, total] = await Promise.all([
-      Lead.find(query)
-        .populate({
-          path: 'contactedBy',
-          select: 'firstName lastName email',
-        })
-        .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
-        .skip(skip)
-        .limit(limit),
-      Lead.countDocuments(query),
-    ]);
+    // Sort in memory
+    const sortedLeads = this.sortItems(leads, sortBy, sortOrder);
+
+    // Paginate in memory
+    const skip = (page - 1) * limit;
+    const paginatedLeads = sortedLeads.slice(skip, skip + limit);
 
     return {
-      leads,
-      total,
+      leads: paginatedLeads,
+      total: sortedLeads.length,
       page,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil(sortedLeads.length / limit),
     };
   }
 
@@ -88,100 +125,71 @@ class LeadRepository {
    * Update lead
    */
   async update(id: string, updateData: Partial<ILead>): Promise<ILead | null> {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return null;
-    }
-    return await Lead.findByIdAndUpdate(id, updateData, {
-      new: true,
-      runValidators: true,
-    });
+    return await this.updateItem({ _id: id }, updateData);
   }
 
   /**
    * Delete lead (soft delete)
    */
   async softDelete(id: string): Promise<ILead | null> {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return null;
-    }
-    return await Lead.findByIdAndUpdate(
-      id,
-      { isActive: false },
-      { new: true }
-    );
+    return await this.softDeleteItem({ _id: id });
   }
 
   /**
-   * Hard delete lead
+   * Delete lead (hard delete)
    */
   async delete(id: string): Promise<ILead | null> {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return null;
-    }
-    return await Lead.findByIdAndDelete(id);
+    const lead = await this.findById(id);
+    await this.hardDeleteItem({ _id: id });
+    return lead;
   }
 
   /**
    * Update isActive status
    */
   async updateActiveStatus(id: string, isActive: boolean): Promise<ILead | null> {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return null;
-    }
-    return await Lead.findByIdAndUpdate(
-      id,
-      { isActive },
-      { new: true }
-    );
+    return await this.updateItem({ _id: id }, { isActive });
   }
 
   /**
    * Check if lead exists by email
    */
   async existsByEmail(email: string): Promise<boolean> {
-    const count = await Lead.countDocuments({
-      email: email.toLowerCase(),
-      isActive: true,
+    const result = await this.scanItems({
+      filterExpression: '#email = :email AND #isActive = :isActive',
+      expressionAttributeNames: { '#email': 'email', '#isActive': 'isActive' },
+      expressionAttributeValues: { ':email': email.toLowerCase(), ':isActive': true },
+      limit: 1,
     });
-    return count > 0;
+
+    return result.items.length > 0;
   }
 
   /**
    * Mark lead as contacted
    */
   async markAsContacted(id: string, userId: string): Promise<ILead | null> {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return null;
-    }
-    return await Lead.findByIdAndUpdate(
-      id,
+    return await this.updateItem(
+      { _id: id },
       {
         contacted: true,
-        contactedAt: new Date(),
+        contactedAt: new Date().toISOString(),
         contactedBy: userId,
-      },
-      { new: true }
-    ).populate({
-      path: 'contactedBy',
-      select: 'firstName lastName email',
-    });
+      }
+    );
   }
 
   /**
    * Mark lead as not contacted
    */
   async markAsNotContacted(id: string): Promise<ILead | null> {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return null;
-    }
-    return await Lead.findByIdAndUpdate(
-      id,
+    return await this.updateItem(
+      { _id: id },
       {
         contacted: false,
-        contactedAt: null,
-        contactedBy: null,
-      },
-      { new: true }
+        contactedAt: undefined,
+        contactedBy: undefined,
+      }
     );
   }
 
@@ -189,13 +197,13 @@ class LeadRepository {
    * Get lead statistics
    */
   async getStats(): Promise<any> {
-    const [total, active, inactive, contacted, notContacted] = await Promise.all([
-      Lead.countDocuments(),
-      Lead.countDocuments({ isActive: true }),
-      Lead.countDocuments({ isActive: false }),
-      Lead.countDocuments({ contacted: true }),
-      Lead.countDocuments({ contacted: false }),
-    ]);
+    const allLeads = await this.scanItems({});
+
+    const total = allLeads.items.length;
+    const active = allLeads.items.filter((lead) => lead.isActive).length;
+    const inactive = allLeads.items.filter((lead) => !lead.isActive).length;
+    const contacted = allLeads.items.filter((lead) => lead.contacted).length;
+    const notContacted = allLeads.items.filter((lead) => !lead.contacted).length;
 
     return {
       total,
@@ -204,6 +212,20 @@ class LeadRepository {
       contacted,
       notContacted,
     };
+  }
+
+  /**
+   * Helper method to sort items in memory
+   */
+  private sortItems(items: ILead[], sortBy: string, sortOrder: string): ILead[] {
+    return items.sort((a, b) => {
+      const aVal = (a as any)[sortBy];
+      const bVal = (b as any)[sortBy];
+
+      if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
   }
 }
 

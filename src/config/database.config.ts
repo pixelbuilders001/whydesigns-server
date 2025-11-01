@@ -1,10 +1,45 @@
-import mongoose from 'mongoose';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { config } from './env.config';
 
 export class Database {
   private static instance: Database;
+  private client: DynamoDBClient;
+  private docClient: DynamoDBDocumentClient;
 
-  private constructor() {}
+  private constructor() {
+    // Configure DynamoDB client
+    const dynamoConfig: any = {
+      region: config.AWS_REGION,
+    };
+
+    // Add credentials if provided (for non-AWS environments)
+    if (config.AWS_ACCESS_KEY_ID && config.AWS_SECRET_ACCESS_KEY) {
+      dynamoConfig.credentials = {
+        accessKeyId: config.AWS_ACCESS_KEY_ID,
+        secretAccessKey: config.AWS_SECRET_ACCESS_KEY,
+      };
+    }
+
+    // Add custom endpoint for local development (DynamoDB Local)
+    if (config.DYNAMODB_ENDPOINT) {
+      dynamoConfig.endpoint = config.DYNAMODB_ENDPOINT;
+    }
+
+    this.client = new DynamoDBClient(dynamoConfig);
+
+    // Create DynamoDB Document Client for easier document operations
+    this.docClient = DynamoDBDocumentClient.from(this.client, {
+      marshallOptions: {
+        removeUndefinedValues: true, // Remove undefined values
+        convertEmptyValues: false, // Don't convert empty strings to null
+        convertClassInstanceToMap: true, // Convert Date objects and other class instances
+      },
+      unmarshallOptions: {
+        wrapNumbers: false, // Return numbers as JavaScript numbers
+      },
+    });
+  }
 
   public static getInstance(): Database {
     if (!Database.instance) {
@@ -15,40 +50,33 @@ export class Database {
 
   public async connect(): Promise<void> {
     try {
-      mongoose.set('strictQuery', false);
-
-      await mongoose.connect(config.MONGODB_URI, {
-        retryWrites: true,
-        w: 'majority',
-      });
-
-      console.log('✅ MongoDB connected successfully');
-
-      mongoose.connection.on('error', (error) => {
-        console.error('❌ MongoDB connection error:', error);
-      });
-
-      mongoose.connection.on('disconnected', () => {
-        console.warn('⚠️  MongoDB disconnected');
-      });
-
-      process.on('SIGINT', async () => {
-        await mongoose.connection.close();
-        console.log('MongoDB connection closed due to application termination');
-        process.exit(0);
-      });
+      // Test connection by listing tables (optional)
+      console.log('✅ DynamoDB client initialized successfully');
+      console.log(`📍 Region: ${config.AWS_REGION}`);
+      if (config.DYNAMODB_ENDPOINT) {
+        console.log(`🔧 Using custom endpoint: ${config.DYNAMODB_ENDPOINT}`);
+      }
     } catch (error) {
-      console.error('❌ MongoDB connection failed:', error);
+      console.error('❌ DynamoDB initialization failed:', error);
       process.exit(1);
     }
   }
 
   public async disconnect(): Promise<void> {
-    await mongoose.connection.close();
+    try {
+      this.client.destroy();
+      console.log('DynamoDB connection closed');
+    } catch (error) {
+      console.error('Error closing DynamoDB connection:', error);
+    }
   }
 
-  public getConnection() {
-    return mongoose.connection;
+  public getClient(): DynamoDBClient {
+    return this.client;
+  }
+
+  public getDocClient(): DynamoDBDocumentClient {
+    return this.docClient;
   }
 }
 

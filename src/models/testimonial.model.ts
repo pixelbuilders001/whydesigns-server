@@ -1,7 +1,8 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import { BaseModel } from './base.model';
 
-export interface ITestimonial extends Document {
-  userId?: mongoose.Types.ObjectId;
+export interface ITestimonial extends BaseModel {
+  _id: string; // UUID - Primary Key
+  userId?: string; // Optional - guests can submit testimonials
   name: string;
   email: string;
   city?: string;
@@ -14,8 +15,7 @@ export interface ITestimonial extends Document {
   profileImage?: string;
   isFavorite: boolean;
   isPublished: boolean;
-  isActive: boolean;
-  publishedAt?: Date;
+  publishedAt?: string; // ISO 8601 timestamp
   socialMedia?: {
     facebook?: string;
     instagram?: string;
@@ -23,173 +23,57 @@ export interface ITestimonial extends Document {
     linkedin?: string;
   };
   displayOrder?: number;
-  createdAt: Date;
-  updatedAt: Date;
-  user?: any;
-  fullLocation: string;
 }
 
-const testimonialSchema = new Schema<ITestimonial>(
-  {
-    userId: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: false, // Optional - guests can submit testimonials
-      index: true,
-    },
-    name: {
-      type: String,
-      required: [true, 'Name is required'],
-      trim: true,
-      minlength: [2, 'Name must be at least 2 characters long'],
-      maxlength: [100, 'Name cannot exceed 100 characters'],
-    },
-    email: {
-      type: String,
-      required: [true, 'Email is required'],
-      trim: true,
-      lowercase: true,
-      match: [
-        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-        'Please provide a valid email address',
-      ],
-    },
-    city: {
-      type: String,
-      required: false,
-      trim: true,
-      minlength: [2, 'City must be at least 2 characters long'],
-      maxlength: [100, 'City cannot exceed 100 characters'],
-    },
-    state: {
-      type: String,
-      required: false,
-      trim: true,
-      minlength: [2, 'State must be at least 2 characters long'],
-      maxlength: [100, 'State cannot exceed 100 characters'],
-    },
-    country: {
-      type: String,
-      trim: true,
-      default: 'India',
-      maxlength: [100, 'Country cannot exceed 100 characters'],
-    },
-    rating: {
-      type: Number,
-      required: [true, 'Rating is required'],
-      min: [1, 'Rating must be at least 1'],
-      max: [5, 'Rating cannot exceed 5'],
-      default: 5,
-    },
-    message: {
-      type: String,
-      required: [true, 'Testimonial message is required'],
-      trim: true,
-      minlength: [10, 'Message must be at least 10 characters long'],
-      maxlength: [2000, 'Message cannot exceed 2000 characters'],
-    },
-    designation: {
-      type: String,
-      trim: true,
-      maxlength: [100, 'Designation cannot exceed 100 characters'],
-    },
-    company: {
-      type: String,
-      trim: true,
-      maxlength: [100, 'Company name cannot exceed 100 characters'],
-    },
-    profileImage: {
-      type: String,
-      trim: true,
-    },
-    isFavorite: {
-      type: Boolean,
-      default: false,
-      index: true,
-    },
-    isPublished: {
-      type: Boolean,
-      default: false,
-      index: true,
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
-      index: true,
-    },
-    publishedAt: {
-      type: Date,
-      default: null,
-    },
-    socialMedia: {
-      facebook: {
-        type: String,
-        trim: true,
-      },
-      instagram: {
-        type: String,
-        trim: true,
-      },
-      twitter: {
-        type: String,
-        trim: true,
-      },
-      linkedin: {
-        type: String,
-        trim: true,
-      },
-    },
-    displayOrder: {
-      type: Number,
-      default: 0,
-      index: true,
-    },
-  },
-  {
-    timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
+export interface CreateTestimonialInput {
+  userId?: string;
+  name: string;
+  email: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  rating: number;
+  message: string;
+  designation?: string;
+  company?: string;
+  profileImage?: string;
+  socialMedia?: {
+    facebook?: string;
+    instagram?: string;
+    twitter?: string;
+    linkedin?: string;
+  };
+}
+
+export interface UpdateTestimonialInput {
+  name?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  rating?: number;
+  message?: string;
+  designation?: string;
+  company?: string;
+  profileImage?: string;
+  isFavorite?: boolean;
+  isPublished?: boolean;
+  publishedAt?: string;
+  socialMedia?: {
+    facebook?: string;
+    instagram?: string;
+    twitter?: string;
+    linkedin?: string;
+  };
+  displayOrder?: number;
+  isActive?: boolean;
+}
+
+// Utility class
+export class TestimonialUtils {
+  static getFullLocation(testimonial: ITestimonial): string {
+    const parts = [testimonial.city, testimonial.state, testimonial.country].filter(Boolean);
+    return parts.join(', ');
   }
-);
+}
 
-// Virtual for full location
-testimonialSchema.virtual('fullLocation').get(function () {
-  return `${this.city}, ${this.state}${this.country ? `, ${this.country}` : ''}`;
-});
-
-// Indexes for better query performance
-testimonialSchema.index({ rating: -1 });
-testimonialSchema.index({ createdAt: -1 });
-testimonialSchema.index({ publishedAt: -1 });
-testimonialSchema.index({ isFavorite: 1, isPublished: 1, isActive: 1 });
-testimonialSchema.index({ city: 1, state: 1 });
-testimonialSchema.index({ name: 'text', message: 'text' });
-
-// Populate user details before returning
-testimonialSchema.pre('find', function (next) {
-  this.populate({
-    path: 'userId',
-    select: 'firstName lastName email profilePicture',
-  });
-  next();
-});
-
-testimonialSchema.pre('findOne', function (next) {
-  this.populate({
-    path: 'userId',
-    select: 'firstName lastName email profilePicture',
-  });
-  next();
-});
-
-// Pre-save hook to set publishedAt when publishing
-testimonialSchema.pre('save', function (next) {
-  if (this.isModified('isPublished') && this.isPublished && !this.publishedAt) {
-    this.publishedAt = new Date();
-  }
-  next();
-});
-
-const Testimonial = mongoose.model<ITestimonial>('Testimonial', testimonialSchema);
-
-export default Testimonial;
+export default ITestimonial;

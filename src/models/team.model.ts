@@ -1,88 +1,67 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import { BaseModel } from './base.model';
 
-export interface ITeam extends Document {
+export interface ITeam extends BaseModel {
+  _id: string; // UUID - Primary Key
   name: string;
   designation: string;
-  description: string;
-  image: string;
+  description?: string;
+  image?: string;
   isPublished: boolean;
-  isActive: boolean;
-  displayOrder?: number;
-  publishedAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  publishedAt: string | null; // ISO 8601 timestamp
+  displayOrder: number;
 }
 
-const teamSchema = new Schema<ITeam>(
-  {
-    name: {
-      type: String,
-      required: [true, 'Name is required'],
-      trim: true,
-      minlength: [2, 'Name must be at least 2 characters long'],
-      maxlength: [100, 'Name cannot exceed 100 characters'],
-    },
-    designation: {
-      type: String,
-      required: [true, 'Designation is required'],
-      trim: true,
-      minlength: [2, 'Designation must be at least 2 characters long'],
-      maxlength: [100, 'Designation cannot exceed 100 characters'],
-    },
-    description: {
-      type: String,
-      required: [true, 'Description is required'],
-      trim: true,
-      minlength: [10, 'Description must be at least 10 characters long'],
-      maxlength: [1000, 'Description cannot exceed 1000 characters'],
-    },
-    image: {
-      type: String,
-      required: [true, 'Image is required'],
-      trim: true,
-    },
-    isPublished: {
-      type: Boolean,
-      default: false,
-      index: true,
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
-      index: true,
-    },
-    displayOrder: {
-      type: Number,
-      default: 0,
-      index: true,
-    },
-    publishedAt: {
-      type: Date,
-      default: null,
-    },
-  },
-  {
-    timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
+// Team creation input (without auto-generated fields)
+export interface CreateTeamInput {
+  name: string;
+  designation: string;
+  description?: string;
+  image?: string;
+  isPublished?: boolean;
+  displayOrder?: number;
+}
+
+// Team update input
+export interface UpdateTeamInput {
+  name?: string;
+  designation?: string;
+  description?: string;
+  image?: string;
+  isPublished?: boolean;
+  publishedAt?: string | null;
+  displayOrder?: number;
+  isActive?: boolean;
+}
+
+// Team response interface
+export interface TeamResponse extends ITeam {}
+
+// Utility class for team operations
+export class TeamUtils {
+  // Publish team member
+  static publishTeam(team: ITeam): ITeam {
+    return {
+      ...team,
+      isPublished: true,
+      publishedAt: new Date().toISOString(),
+    };
   }
-);
 
-// Indexes for better query performance
-teamSchema.index({ createdAt: -1 });
-teamSchema.index({ publishedAt: -1 });
-teamSchema.index({ isPublished: 1, isActive: 1 });
-teamSchema.index({ displayOrder: 1 });
-teamSchema.index({ name: 'text', designation: 'text', description: 'text' });
-
-// Set publishedAt date when publishing
-teamSchema.pre('save', function (next) {
-  if (this.isModified('isPublished') && this.isPublished && !this.publishedAt) {
-    this.publishedAt = new Date();
+  // Unpublish team member
+  static unpublishTeam(team: ITeam): ITeam {
+    return {
+      ...team,
+      isPublished: false,
+    };
   }
-  next();
-});
 
-const Team = mongoose.model<ITeam>('Team', teamSchema);
+  // Update display order
+  static updateDisplayOrder(team: ITeam, order: number): ITeam {
+    return {
+      ...team,
+      displayOrder: order,
+    };
+  }
+}
 
-export default Team;
+export default ITeam;

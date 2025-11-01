@@ -1,5 +1,5 @@
 import blogRepository, { BlogFilters } from '../repositories/blog.repository';
-import { IBlog, Blog, BlogStatus } from '../models/blog.model';
+import { IBlog, BlogStatus } from '../models/blog.model';
 import { PaginationOptions } from '../types';
 import { NotFoundError, BadRequestError, ConflictError, ForbiddenError } from '../utils/AppError';
 
@@ -29,7 +29,7 @@ export class BlogService {
     const { title, slug, content, excerpt, featuredImage, authorId, tags, status } = data;
 
     // Generate slug from title if not provided
-    const blogSlug = slug || (Blog as any).generateSlug(title);
+    const blogSlug = slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
     // Check if slug already exists
     const existingSlug = await blogRepository.existsBySlug(blogSlug);
@@ -161,7 +161,7 @@ export class BlogService {
       updateData.status = status;
       // Set publishedAt if status is changing to published
       if (status === 'published' && !existingBlog.publishedAt) {
-        updateData.publishedAt = new Date();
+        updateData.publishedAt = new Date().toISOString();
       }
     }
 

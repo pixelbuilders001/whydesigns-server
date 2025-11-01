@@ -1,5 +1,5 @@
 import categoryRepository from '../repositories/category.repository';
-import { ICategory, Category } from '../models/category.model';
+import { ICategory } from '../models/category.model';
 import { PaginationOptions } from '../types';
 import { NotFoundError, BadRequestError, ConflictError } from '../utils/AppError';
 
@@ -28,7 +28,7 @@ export class CategoryService {
     }
 
     // Generate slug from name if not provided
-    const categorySlug = slug || (Category as any).generateSlug(name);
+    const categorySlug = slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
     // Check if slug already exists
     const existingSlug = await categoryRepository.existsBySlug(categorySlug);

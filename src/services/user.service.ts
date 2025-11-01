@@ -5,7 +5,7 @@ import s3Service from './s3.service';
 import otpService from './otp.service';
 import emailService from './email.service';
 import leadService from './lead.service';
-import { IUser } from '../models/user.model';
+import { IUser, UserUtils } from '../models/user.model';
 import { config } from '../config/env.config';
 import {
   NotFoundError,
@@ -21,7 +21,7 @@ export interface RegisterUserData {
   email: string;
   password: string;
   phoneNumber?: string;
-  dateOfBirth?: Date;
+  dateOfBirth?: string;
   gender?: 'male' | 'female' | 'other';
   address?: string;
   profilePicture?: string;
@@ -53,7 +53,6 @@ export class UserService {
         name: 'USER',
         description: 'Regular user with basic permissions',
         permissions: ['read:own_profile', 'update:own_profile'],
-        isActive: true,
       });
       console.log('✅ USER role created');
     }
@@ -124,7 +123,7 @@ export class UserService {
     }
 
     // Verify password
-    const isPasswordValid = await user.comparePassword(password);
+    const isPasswordValid = await UserUtils.comparePassword(password, user.password);
     if (!isPasswordValid) {
       throw new UnauthorizedError('Invalid credentials');
     }
@@ -217,7 +216,7 @@ export class UserService {
       const existingPhone = await userRepository.existsByPhone(filteredData.phoneNumber);
       if (existingPhone) {
         const existingUser = await userRepository.findByPhone(filteredData.phoneNumber);
-        if (existingUser && existingUser._id.toString() !== id) {
+        if (existingUser && existingUser._id !== id) {
           throw new ConflictError('Phone number is already in use');
         }
       }
@@ -257,7 +256,7 @@ export class UserService {
       const existingPhone = await userRepository.existsByPhone(filteredData.phoneNumber);
       if (existingPhone) {
         const existingUser = await userRepository.findByPhone(filteredData.phoneNumber);
-        if (existingUser && existingUser._id.toString() !== id) {
+        if (existingUser && existingUser._id !== id) {
           throw new ConflictError('Phone number is already in use');
         }
       }
@@ -290,14 +289,14 @@ export class UserService {
     }
 
     // Verify current password
-    const isPasswordValid = await user.comparePassword(currentPassword);
+    const isPasswordValid = await UserUtils.comparePassword(currentPassword, user.password);
     if (!isPasswordValid) {
       throw new UnauthorizedError('Current password is incorrect');
     }
 
-    // Update password
-    user.password = newPassword;
-    await user.save();
+    // Hash and update password
+    const hashedPassword = await UserUtils.hashPassword(newPassword);
+    await userRepository.update(id, { password: hashedPassword } as any);
   }
 
   async forgotPassword(email: string): Promise<void> {
@@ -363,15 +362,9 @@ export class UserService {
       throw error; // Re-throw OTP verification errors
     }
 
-    // Get user with password field to update it
-    const userWithPassword = await userRepository.findByIdWithPassword(user._id);
-    if (!userWithPassword) {
-      throw new NotFoundError('User not found');
-    }
-
-    // Update password
-    userWithPassword.password = newPassword;
-    await userWithPassword.save();
+    // Hash new password and update
+    const hashedPassword = await UserUtils.hashPassword(newPassword);
+    await userRepository.update(user._id, { password: hashedPassword } as any);
 
     // Invalidate all refresh tokens for security
     await userRepository.updateRefreshToken(user._id, null);

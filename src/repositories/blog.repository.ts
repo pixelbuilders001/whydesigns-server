@@ -1,5 +1,8 @@
-import { Blog, IBlog, BlogStatus } from '../models/blog.model';
+import { IBlog, BlogStatus } from '../models/blog.model';
+import { BaseRepository } from './base.repository';
+import { TABLES } from '../config/dynamodb.tables';
 import { PaginationOptions } from '../types';
+import { createBaseFields } from '../models/base.model';
 
 export interface BlogFilters {
   status?: BlogStatus;
@@ -8,24 +11,45 @@ export interface BlogFilters {
   isActive?: boolean;
 }
 
-export class BlogRepository {
+export class BlogRepository extends BaseRepository<IBlog> {
+  constructor() {
+    super(TABLES.BLOGS);
+  }
+
   async create(blogData: Partial<IBlog>): Promise<IBlog> {
-    const blog = await Blog.create(blogData);
-    const createdBlog = await this.findById(blog._id);
-    if (!createdBlog) {
-      throw new Error('Failed to create blog');
-    }
-    return createdBlog;
+    const _id = this.generateId();
+
+    const blog: IBlog = {
+      _id,
+      title: blogData.title || '',
+      slug: blogData.slug || '',
+      content: blogData.content || '',
+      excerpt: blogData.excerpt || '',
+      featuredImage: blogData.featuredImage || '',
+      authorId: blogData.authorId || '',
+      status: blogData.status || 'draft',
+      tags: blogData.tags || [],
+      viewCount: blogData.viewCount || 0,
+      publishedAt: blogData.publishedAt || null,
+      ...createBaseFields(),
+    };
+
+    return await this.putItem(blog);
   }
 
   async findById(id: string): Promise<IBlog | null> {
-    return await Blog.findById(id)
-      .populate('authorId', 'firstName lastName email profilePicture');
+    return await this.getItem({ _id: id });
   }
 
   async findBySlug(slug: string): Promise<IBlog | null> {
-    return await Blog.findOne({ slug, isActive: true })
-      .populate('authorId', 'firstName lastName email profilePicture');
+    const result = await this.scanItems({
+      filterExpression: '#slug = :slug AND #isActive = :isActive',
+      expressionAttributeNames: { '#slug': 'slug', '#isActive': 'isActive' },
+      expressionAttributeValues: { ':slug': slug, ':isActive': true },
+      limit: 1,
+    });
+
+    return result.items[0] || null;
   }
 
   async findAll(
@@ -33,30 +57,54 @@ export class BlogRepository {
     filters: BlogFilters = {}
   ): Promise<{ blogs: IBlog[]; total: number }> {
     const { page, limit, sortBy, order } = options;
-    const skip = (page - 1) * limit;
 
-    const sortOrder = order === 'desc' ? -1 : 1;
-    const sortOptions: any = { [sortBy]: sortOrder };
+    // Build filter expression
+    const filterExpressions: string[] = [];
+    const expressionAttributeNames: Record<string, string> = {};
+    const expressionAttributeValues: Record<string, any> = {};
 
-    // Build filter
-    const filter: any = {};
-    if (filters.status) filter.status = filters.status;
-    if (filters.authorId) filter.authorId = filters.authorId;
-    if (filters.isActive !== undefined) filter.isActive = filters.isActive;
-    if (filters.tags && filters.tags.length > 0) {
-      filter.tags = { $in: filters.tags };
+    if (filters.status) {
+      filterExpressions.push('#status = :status');
+      expressionAttributeNames['#status'] = 'status';
+      expressionAttributeValues[':status'] = filters.status;
     }
 
-    const [blogs, total] = await Promise.all([
-      Blog.find(filter)
-        .populate('authorId', 'firstName lastName email profilePicture')
-        .sort(sortOptions)
-        .skip(skip)
-        .limit(limit),
-      Blog.countDocuments(filter),
-    ]);
+    if (filters.authorId) {
+      filterExpressions.push('#authorId = :authorId');
+      expressionAttributeNames['#authorId'] = 'authorId';
+      expressionAttributeValues[':authorId'] = filters.authorId;
+    }
 
-    return { blogs, total };
+    if (filters.isActive !== undefined) {
+      filterExpressions.push('#isActive = :isActive');
+      expressionAttributeNames['#isActive'] = 'isActive';
+      expressionAttributeValues[':isActive'] = filters.isActive;
+    }
+
+    // Scan with filters
+    const result = await this.scanItems({
+      filterExpression: filterExpressions.length > 0 ? filterExpressions.join(' AND ') : undefined,
+      expressionAttributeNames: Object.keys(expressionAttributeNames).length > 0 ? expressionAttributeNames : undefined,
+      expressionAttributeValues: Object.keys(expressionAttributeValues).length > 0 ? expressionAttributeValues : undefined,
+    });
+
+    let blogs = result.items;
+
+    // Filter by tags in memory if specified
+    if (filters.tags && filters.tags.length > 0) {
+      blogs = blogs.filter(blog =>
+        blog.tags && filters.tags!.some(tag => blog.tags.includes(tag))
+      );
+    }
+
+    // Sort in memory
+    const sortedBlogs = this.sortItems(blogs, sortBy, order);
+
+    // Paginate in memory
+    const skip = (page - 1) * limit;
+    const paginatedBlogs = sortedBlogs.slice(skip, skip + limit);
+
+    return { blogs: paginatedBlogs, total: sortedBlogs.length };
   }
 
   async findPublishedBlogs(options: PaginationOptions): Promise<{ blogs: IBlog[]; total: number }> {
@@ -79,29 +127,28 @@ export class BlogRepository {
   }
 
   async update(id: string, updateData: Partial<IBlog>): Promise<IBlog | null> {
-    const blog = await Blog.findByIdAndUpdate(id, updateData, {
-      new: true,
-      runValidators: true,
-    })
-      .populate('authorId', 'firstName lastName email profilePicture');
-
-    return blog;
+    return await this.updateItem({ _id: id }, updateData);
   }
 
   async delete(id: string): Promise<IBlog | null> {
-    return await Blog.findByIdAndDelete(id);
+    const blog = await this.findById(id);
+    await this.hardDeleteItem({ _id: id });
+    return blog;
   }
 
   async softDelete(id: string): Promise<IBlog | null> {
-    return await this.update(id, { isActive: false });
+    return await this.softDeleteItem({ _id: id });
   }
 
   async incrementViewCount(id: string): Promise<void> {
-    await Blog.findByIdAndUpdate(id, { $inc: { viewCount: 1 } });
+    const blog = await this.findById(id);
+    if (blog) {
+      await this.updateItem({ _id: id }, { viewCount: (blog.viewCount || 0) + 1 });
+    }
   }
 
   async publishBlog(id: string): Promise<IBlog | null> {
-    return await this.update(id, { status: 'published', publishedAt: new Date() });
+    return await this.update(id, { status: 'published', publishedAt: new Date().toISOString() });
   }
 
   async unpublishBlog(id: string): Promise<IBlog | null> {
@@ -113,12 +160,18 @@ export class BlogRepository {
   }
 
   async existsBySlug(slug: string, excludeId?: string): Promise<boolean> {
-    const filter: any = { slug };
+    const result = await this.scanItems({
+      filterExpression: '#slug = :slug',
+      expressionAttributeNames: { '#slug': 'slug' },
+      expressionAttributeValues: { ':slug': slug },
+      limit: 2,
+    });
+
     if (excludeId) {
-      filter._id = { $ne: excludeId };
+      return result.items.some(blog => blog._id !== excludeId);
     }
-    const count = await Blog.countDocuments(filter);
-    return count > 0;
+
+    return result.items.length > 0;
   }
 
   async search(
@@ -126,123 +179,152 @@ export class BlogRepository {
     options: PaginationOptions
   ): Promise<{ blogs: IBlog[]; total: number }> {
     const { page, limit, sortBy, order } = options;
+
+    // Scan all published blogs
+    const result = await this.scanItems({
+      filterExpression: '#status = :status AND #isActive = :isActive',
+      expressionAttributeNames: { '#status': 'status', '#isActive': 'isActive' },
+      expressionAttributeValues: { ':status': 'published', ':isActive': true },
+    });
+
+    // Filter in memory (DynamoDB doesn't support full-text search like MongoDB)
+    const queryLower = query.toLowerCase();
+    const filteredBlogs = result.items.filter((blog) => {
+      return (
+        blog.title?.toLowerCase().includes(queryLower) ||
+        blog.content?.toLowerCase().includes(queryLower) ||
+        blog.excerpt?.toLowerCase().includes(queryLower) ||
+        blog.tags?.some(tag => tag.toLowerCase().includes(queryLower))
+      );
+    });
+
+    // Sort
+    const sortedBlogs = this.sortItems(filteredBlogs, sortBy, order);
+
+    // Paginate
     const skip = (page - 1) * limit;
+    const paginatedBlogs = sortedBlogs.slice(skip, skip + limit);
 
-    const sortOrder = order === 'desc' ? -1 : 1;
-    const sortOptions: any = { [sortBy]: sortOrder };
-
-    // Use text search for better performance
-    const searchFilter: any = {
-      $text: { $search: query },
-      status: 'published',
-      isActive: true,
+    return {
+      blogs: paginatedBlogs,
+      total: filteredBlogs.length,
     };
-
-    const [blogs, total] = await Promise.all([
-      Blog.find(searchFilter, { score: { $meta: 'textScore' } })
-        .populate('authorId', 'firstName lastName email profilePicture')
-        .sort({ score: { $meta: 'textScore' }, ...sortOptions })
-        .skip(skip)
-        .limit(limit),
-      Blog.countDocuments(searchFilter),
-    ]);
-
-    return { blogs, total };
   }
 
   async searchFallback(
     query: string,
     options: PaginationOptions
   ): Promise<{ blogs: IBlog[]; total: number }> {
-    const { page, limit, sortBy, order } = options;
-    const skip = (page - 1) * limit;
-
-    const sortOrder = order === 'desc' ? -1 : 1;
-    const sortOptions: any = { [sortBy]: sortOrder };
-
-    // Fallback to regex search if text index doesn't exist
-    const searchFilter = {
-      status: 'published' as BlogStatus,
-      isActive: true,
-      $or: [
-        { title: { $regex: query, $options: 'i' } },
-        { content: { $regex: query, $options: 'i' } },
-        { excerpt: { $regex: query, $options: 'i' } },
-        { tags: { $in: [new RegExp(query, 'i')] } },
-      ],
-    };
-
-    const [blogs, total] = await Promise.all([
-      Blog.find(searchFilter)
-        .populate('authorId', 'firstName lastName email profilePicture')
-        .sort(sortOptions)
-        .skip(skip)
-        .limit(limit),
-      Blog.countDocuments(searchFilter),
-    ]);
-
-    return { blogs, total };
+    // Same as search for DynamoDB
+    return this.search(query, options);
   }
 
   async countByAuthor(authorId: string, status?: BlogStatus): Promise<number> {
-    const filter: any = { authorId, isActive: true };
-    if (status) filter.status = status;
-    return await Blog.countDocuments(filter);
+    const filterExpressions: string[] = ['#authorId = :authorId', '#isActive = :isActive'];
+    const expressionAttributeNames: Record<string, string> = { '#authorId': 'authorId', '#isActive': 'isActive' };
+    const expressionAttributeValues: Record<string, any> = { ':authorId': authorId, ':isActive': true };
+
+    if (status) {
+      filterExpressions.push('#status = :status');
+      expressionAttributeNames['#status'] = 'status';
+      expressionAttributeValues[':status'] = status;
+    }
+
+    return await this.countItems(
+      filterExpressions.join(' AND '),
+      expressionAttributeNames,
+      expressionAttributeValues
+    );
   }
 
   async countByStatus(status: BlogStatus): Promise<number> {
-    return await Blog.countDocuments({ status, isActive: true });
+    return await this.countItems(
+      '#status = :status AND #isActive = :isActive',
+      { '#status': 'status', '#isActive': 'isActive' },
+      { ':status': status, ':isActive': true }
+    );
   }
 
   async getMostViewedBlogs(limit: number = 10): Promise<IBlog[]> {
-    return await Blog.find({ status: 'published', isActive: true })
-      .populate('authorId', 'firstName lastName email profilePicture')
-      .sort({ viewCount: -1 })
-      .limit(limit);
+    const result = await this.scanItems({
+      filterExpression: '#status = :status AND #isActive = :isActive',
+      expressionAttributeNames: { '#status': 'status', '#isActive': 'isActive' },
+      expressionAttributeValues: { ':status': 'published', ':isActive': true },
+    });
+
+    const sorted = this.sortItems(result.items, 'viewCount', 'desc');
+    return sorted.slice(0, limit);
   }
 
   async getRecentBlogs(limit: number = 10): Promise<IBlog[]> {
-    return await Blog.find({ status: 'published', isActive: true })
-      .populate('authorId', 'firstName lastName email profilePicture')
-      .sort({ publishedAt: -1 })
-      .limit(limit);
+    const result = await this.scanItems({
+      filterExpression: '#status = :status AND #isActive = :isActive',
+      expressionAttributeNames: { '#status': 'status', '#isActive': 'isActive' },
+      expressionAttributeValues: { ':status': 'published', ':isActive': true },
+    });
+
+    const sorted = this.sortItems(result.items, 'publishedAt', 'desc');
+    return sorted.slice(0, limit);
   }
 
   async getAllTags(): Promise<string[]> {
-    const result = await Blog.aggregate([
-      { $match: { status: 'published', isActive: true } },
-      { $unwind: '$tags' },
-      { $group: { _id: '$tags' } },
-      { $sort: { _id: 1 } },
-    ]);
-    return result.map((r) => r._id);
+    const result = await this.scanItems({
+      filterExpression: '#status = :status AND #isActive = :isActive',
+      expressionAttributeNames: { '#status': 'status', '#isActive': 'isActive' },
+      expressionAttributeValues: { ':status': 'published', ':isActive': true },
+    });
+
+    // Extract all unique tags
+    const tagsSet = new Set<string>();
+    result.items.forEach(blog => {
+      if (blog.tags) {
+        blog.tags.forEach(tag => tagsSet.add(tag));
+      }
+    });
+
+    return Array.from(tagsSet).sort();
   }
 
   async getStats(): Promise<any> {
-    const [total, published, draft, archived, totalViews] = await Promise.all([
-      Blog.countDocuments({ isActive: true }),
-      Blog.countDocuments({ status: 'published', isActive: true }),
-      Blog.countDocuments({ status: 'draft', isActive: true }),
-      Blog.countDocuments({ status: 'archived', isActive: true }),
-      Blog.aggregate([
-        { $match: { isActive: true } },
-        { $group: { _id: null, total: { $sum: '$viewCount' } } },
-      ]),
-    ]);
+    const result = await this.scanItems({
+      filterExpression: '#isActive = :isActive',
+      expressionAttributeNames: { '#isActive': 'isActive' },
+      expressionAttributeValues: { ':isActive': true },
+    });
 
-    const avgViews = await Blog.aggregate([
-      { $match: { status: 'published', isActive: true } },
-      { $group: { _id: null, average: { $avg: '$viewCount' } } },
-    ]);
+    const total = result.items.length;
+    const published = result.items.filter(b => b.status === 'published').length;
+    const draft = result.items.filter(b => b.status === 'draft').length;
+    const archived = result.items.filter(b => b.status === 'archived').length;
+    const totalViews = result.items.reduce((sum, b) => sum + (b.viewCount || 0), 0);
+
+    const publishedBlogs = result.items.filter(b => b.status === 'published');
+    const avgViews = publishedBlogs.length > 0
+      ? (publishedBlogs.reduce((sum, b) => sum + (b.viewCount || 0), 0) / publishedBlogs.length).toFixed(2)
+      : 0;
 
     return {
       total,
       published,
       draft,
       archived,
-      totalViews: totalViews.length > 0 ? totalViews[0].total : 0,
-      averageViews: avgViews.length > 0 ? avgViews[0].average.toFixed(2) : 0,
+      totalViews,
+      averageViews: avgViews,
     };
+  }
+
+  /**
+   * Helper method to sort items in memory
+   */
+  private sortItems(items: IBlog[], sortBy: string, order: string): IBlog[] {
+    return items.sort((a, b) => {
+      const aVal = (a as any)[sortBy];
+      const bVal = (b as any)[sortBy];
+
+      if (aVal < bVal) return order === 'asc' ? -1 : 1;
+      if (aVal > bVal) return order === 'asc' ? 1 : -1;
+      return 0;
+    });
   }
 }
 

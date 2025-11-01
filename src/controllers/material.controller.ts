@@ -33,14 +33,12 @@ export class MaterialController {
 
     // Prepare material data
     const data = {
-      name: req.body.name,
+      title: req.body.title || req.body.name,
       description: req.body.description || '',
       fileUrl,
-      fileName: req.file.originalname,
       fileType: req.file.mimetype,
       fileSize: req.file.size,
       category: req.body.category || 'General',
-      tags: req.body.tags ? (Array.isArray(req.body.tags) ? req.body.tags : [req.body.tags]) : [],
       uploadedBy,
     };
 
@@ -265,9 +263,8 @@ export class MaterialController {
    * @access Public
    */
   getTags = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    const tags = await materialService.getTags();
-
-    return ApiResponse.success(res, tags, 'Tags retrieved successfully');
+    // Tags feature has been removed from materials
+    return ApiResponse.success(res, [], 'Tags feature is no longer available');
   });
 
   /**
