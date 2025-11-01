@@ -109,17 +109,15 @@ class VideoService {
   }
 
   /**
-   * Delete video (Admin only) - Soft delete
+   * Delete video (Admin only) - Hard delete
    */
-  async deleteVideo(id: string): Promise<IVideo> {
+  async deleteVideo(id: string): Promise<void> {
     await this.getVideoById(id);
 
-    const deleted = await videoRepository.softDelete(id);
+    const deleted = await videoRepository.delete(id);
     if (!deleted) {
       throw new AppError('Failed to delete video', 500);
     }
-
-    return deleted;
   }
 
   /**

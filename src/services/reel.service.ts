@@ -109,17 +109,15 @@ class ReelService {
   }
 
   /**
-   * Delete reel (Admin only) - Soft delete
+   * Delete reel (Admin only) - Hard delete
    */
-  async deleteReel(id: string): Promise<IReel> {
+  async deleteReel(id: string): Promise<void> {
     await this.getReelById(id);
 
-    const deleted = await reelRepository.softDelete(id);
+    const deleted = await reelRepository.delete(id);
     if (!deleted) {
       throw new AppError('Failed to delete reel', 500);
     }
-
-    return deleted;
   }
 
   /**
