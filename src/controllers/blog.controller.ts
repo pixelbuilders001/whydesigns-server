@@ -48,12 +48,12 @@ export class BlogController {
     if (search && search.trim() !== '') {
       result = await blogService.searchBlogs(search, { page, limit, sortBy, order });
     } else {
-      result = await blogService.getAllBlogs({ page, limit, sortBy, order }, filters);
+      result = await blogService.getAllBlogsWithAuthor({ page, limit, sortBy, order }, filters);
     }
 
     return ApiResponse.paginated(
       res,
-      result.blogs,
+      result.blogs as any,
       page,
       limit,
       result.total,
@@ -94,7 +94,7 @@ export class BlogController {
     const userId = req.user?.id;
     const userRole = req.user?.role;
 
-    const blog = await blogService.getBlogById(id, userId, userRole);
+    const blog = await blogService.getBlogByIdWithAuthor(id, userId, userRole);
 
     return ApiResponse.success(res, blog, 'Blog retrieved successfully');
   });
@@ -104,7 +104,7 @@ export class BlogController {
     const userId = req.user?.id;
     const userRole = req.user?.role;
 
-    const blog = await blogService.getBlogBySlug(slug, userId, userRole);
+    const blog = await blogService.getBlogBySlugWithAuthor(slug, userId, userRole);
 
     return ApiResponse.success(res, blog, 'Blog retrieved successfully');
   });

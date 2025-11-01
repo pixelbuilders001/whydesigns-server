@@ -1,7 +1,9 @@
 import blogRepository, { BlogFilters } from '../repositories/blog.repository';
-import { IBlog, BlogStatus } from '../models/blog.model';
+import { IBlog, BlogStatus, BlogResponse, BlogAuthor } from '../models/blog.model';
 import { PaginationOptions } from '../types';
 import { NotFoundError, BadRequestError, ConflictError, ForbiddenError } from '../utils/AppError';
+import userRepository from '../repositories/user.repository';
+import { BlogUtils } from '../models/blog.model';
 
 interface CreateBlogData {
   title: string;
@@ -25,6 +27,32 @@ interface UpdateBlogData {
 }
 
 export class BlogService {
+  /**
+   * Helper method to populate author data
+   */
+  private async populateAuthor(blog: IBlog): Promise<BlogResponse> {
+    const user = await userRepository.findById(blog.authorId);
+
+    const author: BlogAuthor = user
+      ? {
+          id: user.id,
+          name: `${user.firstName} ${user.lastName}`.trim() || 'Unknown Author',
+          email: user.email,
+        }
+      : {
+          id: blog.authorId,
+          name: 'Unknown Author',
+          email: '',
+        };
+
+    const { authorId, ...blogData } = blog;
+    return {
+      ...blogData,
+      author,
+      readTime: BlogUtils.calculateReadTime(blog.content),
+    };
+  }
+
   async createBlog(data: CreateBlogData): Promise<IBlog> {
     const { title, slug, content, excerpt, featuredImage, authorId, tags, status } = data;
 
@@ -59,8 +87,24 @@ export class BlogService {
     return await blogRepository.findAll(options, filters);
   }
 
+  async getAllBlogsWithAuthor(options: PaginationOptions, filters: BlogFilters = {}): Promise<{ blogs: BlogResponse[]; total: number }> {
+    const result = await blogRepository.findAll(options, filters);
+    const blogsWithAuthor = await Promise.all(
+      result.blogs.map(blog => this.populateAuthor(blog))
+    );
+    return { blogs: blogsWithAuthor, total: result.total };
+  }
+
   async getPublishedBlogs(options: PaginationOptions): Promise<{ blogs: IBlog[]; total: number }> {
     return await blogRepository.findPublishedBlogs(options);
+  }
+
+  async getPublishedBlogsWithAuthor(options: PaginationOptions): Promise<{ blogs: BlogResponse[]; total: number }> {
+    const result = await blogRepository.findPublishedBlogs(options);
+    const blogsWithAuthor = await Promise.all(
+      result.blogs.map(blog => this.populateAuthor(blog))
+    );
+    return { blogs: blogsWithAuthor, total: result.total };
   }
 
   async getBlogById(id: string, userId?: string, userRole?: string): Promise<IBlog> {
@@ -87,6 +131,11 @@ export class BlogService {
     return blog;
   }
 
+  async getBlogByIdWithAuthor(id: string, userId?: string, userRole?: string): Promise<BlogResponse> {
+    const blog = await this.getBlogById(id, userId, userRole);
+    return await this.populateAuthor(blog);
+  }
+
   async getBlogBySlug(slug: string, userId?: string, userRole?: string): Promise<IBlog> {
     const blog = await blogRepository.findBySlug(slug);
     if (!blog) {
@@ -109,6 +158,11 @@ export class BlogService {
     }
 
     return blog;
+  }
+
+  async getBlogBySlugWithAuthor(slug: string, userId?: string, userRole?: string): Promise<BlogResponse> {
+    const blog = await this.getBlogBySlug(slug, userId, userRole);
+    return await this.populateAuthor(blog);
   }
 
   async getMyBlogs(authorId: string, options: PaginationOptions, filters: BlogFilters = {}): Promise<{ blogs: IBlog[]; total: number }> {

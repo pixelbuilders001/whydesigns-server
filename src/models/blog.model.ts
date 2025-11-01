@@ -40,6 +40,23 @@ export interface UpdateBlogInput {
   isActive?: boolean;
 }
 
+/**
+ * Author info for blog response
+ */
+export interface BlogAuthor {
+  id: string;
+  name: string;
+  email: string;
+}
+
+/**
+ * Blog response interface with populated author
+ */
+export interface BlogResponse extends Omit<IBlog, 'authorId'> {
+  author: BlogAuthor;
+  readTime: number;
+}
+
 // Utility class for blog operations
 export class BlogUtils {
   // Generate slug from title
