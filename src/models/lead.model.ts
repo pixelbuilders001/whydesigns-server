@@ -1,4 +1,5 @@
 import { BaseModel } from './base.model';
+import { ActivityType } from './leadActivity.model';
 
 export interface ILead extends BaseModel {
   id: string; // UUID - Primary Key
@@ -30,6 +31,37 @@ export interface UpdateLeadInput {
   contactedAt?: string;
   contactedBy?: string;
   isActive?: boolean;
+}
+
+/**
+ * User info for contactedBy field
+ */
+export interface LeadContactedByUser {
+  id: string;
+  name: string;
+  email: string;
+}
+
+/**
+ * Latest activity info for lead
+ */
+export interface LeadLatestActivity {
+  id: string;
+  activityType: ActivityType;
+  activityDate: string;
+  remarks?: string;
+  nextFollowUpDate?: string;
+  counselorId: string;
+  counselorName: string;
+}
+
+/**
+ * Lead response interface with populated data
+ */
+export interface LeadResponse extends Omit<ILead, 'contactedBy'> {
+  contactedBy?: LeadContactedByUser;
+  latestActivity?: LeadLatestActivity;
+  totalActivities: number;
 }
 
 export default ILead;

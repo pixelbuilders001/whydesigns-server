@@ -1,8 +1,91 @@
 import leadRepository, { LeadFilters, PaginationOptions } from '../repositories/lead.repository';
-import { ILead } from '../models/lead.model';
+import { ILead, LeadResponse, LeadContactedByUser, LeadLatestActivity } from '../models/lead.model';
 import { AppError } from '../utils/AppError';
+import userRepository from '../repositories/user.repository';
+import leadActivityRepository from '../repositories/leadActivity.repository';
 
 class LeadService {
+  /**
+   * Helper method to populate contacted by user info
+   */
+  private async populateContactedBy(lead: ILead): Promise<LeadContactedByUser | undefined> {
+    if (!lead.contactedBy) {
+      return undefined;
+    }
+
+    const user = await userRepository.findById(lead.contactedBy);
+
+    if (!user) {
+      return {
+        id: lead.contactedBy,
+        name: 'Unknown User',
+        email: '',
+      };
+    }
+
+    return {
+      id: user.id,
+      name: `${user.firstName} ${user.lastName}`.trim() || 'Unknown User',
+      email: user.email,
+    };
+  }
+
+  /**
+   * Helper method to populate latest activity info
+   */
+  private async populateLatestActivity(leadId: string): Promise<{ latestActivity?: LeadLatestActivity; totalActivities: number }> {
+    // Get all activities for this lead
+    const { activities, total } = await leadActivityRepository.findByLeadId(leadId, {
+      page: 1,
+      limit: 1,
+      sortBy: 'activityDate',
+      sortOrder: 'desc',
+    });
+
+    if (activities.length === 0) {
+      return { latestActivity: undefined, totalActivities: 0 };
+    }
+
+    const activity = activities[0];
+
+    // Get counselor info
+    const counselor = await userRepository.findById(activity.counselorId);
+    const counselorName = counselor
+      ? `${counselor.firstName} ${counselor.lastName}`.trim() || 'Unknown User'
+      : 'Unknown User';
+
+    return {
+      latestActivity: {
+        id: activity.id,
+        activityType: activity.activityType,
+        activityDate: activity.activityDate,
+        remarks: activity.remarks,
+        nextFollowUpDate: activity.nextFollowUpDate,
+        counselorId: activity.counselorId,
+        counselorName,
+      },
+      totalActivities: total,
+    };
+  }
+
+  /**
+   * Helper method to populate lead with related data
+   */
+  private async populateLead(lead: ILead): Promise<LeadResponse> {
+    const [contactedBy, activityData] = await Promise.all([
+      this.populateContactedBy(lead),
+      this.populateLatestActivity(lead.id),
+    ]);
+
+    const { contactedBy: contactedById, ...leadData } = lead;
+
+    return {
+      ...leadData,
+      contactedBy,
+      latestActivity: activityData.latestActivity,
+      totalActivities: activityData.totalActivities,
+    };
+  }
   /**
    * Create a new lead
    */
@@ -22,6 +105,25 @@ class LeadService {
   }
 
   /**
+   * Get all leads with populated data (activity and contacted user)
+   */
+  async getAllLeadsWithData(
+    filters: LeadFilters = {},
+    options: PaginationOptions = {}
+  ): Promise<{ leads: LeadResponse[]; total: number; page: number; totalPages: number }> {
+    const result = await leadRepository.findAll(filters, options);
+    const leadsWithData = await Promise.all(
+      result.leads.map(lead => this.populateLead(lead))
+    );
+    return {
+      leads: leadsWithData,
+      total: result.total,
+      page: result.page,
+      totalPages: result.totalPages,
+    };
+  }
+
+  /**
    * Get lead by ID
    */
   async getLeadById(id: string): Promise<ILead> {
@@ -30,6 +132,14 @@ class LeadService {
       throw new AppError('Lead not found', 404);
     }
     return lead;
+  }
+
+  /**
+   * Get lead by ID with populated data
+   */
+  async getLeadByIdWithData(id: string): Promise<LeadResponse> {
+    const lead = await this.getLeadById(id);
+    return await this.populateLead(lead);
   }
 
   /**

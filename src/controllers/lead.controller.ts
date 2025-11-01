@@ -43,7 +43,7 @@ class LeadController {
       sortOrder: (sortOrder as 'asc' | 'desc') || 'desc',
     };
 
-    const result = await leadService.getAllLeads(filters, options);
+    const result = await leadService.getAllLeadsWithData(filters, options);
 
     return ApiResponse.success(
       res,
@@ -59,7 +59,7 @@ class LeadController {
    */
   getLeadById = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const lead = await leadService.getLeadById(id);
+    const lead = await leadService.getLeadByIdWithData(id);
 
     return ApiResponse.success(
       res,
