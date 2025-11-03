@@ -17,16 +17,63 @@ class LeadActivityService {
       email: counselor?.email || 'N/A',
     };
 
-    // Remove counselorId and add counselor object
-    const { counselorId, ...activityWithoutCounselorId } = activity;
+    // Remove counselorId, nextFollowUpDate, and followupDate to handle them separately
+    const { counselorId, nextFollowUpDate, followupDate, ...activityCore } = activity;
 
-    return {
-      ...activityWithoutCounselorId,
-      counselor: counselorInfo,
-      formattedActivityDate: new Date(activity.activityDate).toISOString(),
-      formattedNextFollowUpDate: activity.nextFollowUpDate ? new Date(activity.nextFollowUpDate).toISOString() : undefined,
-      formattedFollowupDate: activity.followupDate ? new Date(activity.followupDate).toISOString() : undefined,
+    // Helper to check if a value is a valid non-empty string
+    const isValidString = (val: any): val is string => {
+      return typeof val === 'string' && val.length > 0;
     };
+
+    // Helper to check if value is an empty object (from DynamoDB)
+    const isEmptyObject = (val: any): boolean => {
+      return val !== null &&
+             val !== undefined &&
+             typeof val === 'object' &&
+             !Array.isArray(val) &&
+             Object.keys(val).length === 0;
+    };
+
+    // Helper to clean a value - return undefined if it's an empty object
+    const cleanValue = (val: any): any => {
+      if (isEmptyObject(val)) {
+        return undefined;
+      }
+      return val;
+    };
+
+    // Build response object manually to avoid spreading empty objects from DynamoDB
+    const response: LeadActivityResponse = {
+      id: activityCore.id,
+      leadId: activityCore.leadId,
+      activityType: activityCore.activityType,
+      activityDate: activityCore.activityDate,
+      createdAt: activityCore.createdAt,
+      updatedAt: activityCore.updatedAt,
+      isActive: activityCore.isActive,
+      counselor: counselorInfo,
+      formattedActivityDate: activity.activityDate, // Already ISO string from DynamoDB
+    };
+
+    // Only add optional fields if they have valid values
+    if (activityCore.remarks) {
+      response.remarks = activityCore.remarks;
+    }
+
+    // Clean and add date fields only if they are valid strings (not empty objects)
+    const cleanedNextFollowUpDate = cleanValue(nextFollowUpDate);
+    if (isValidString(cleanedNextFollowUpDate)) {
+      response.nextFollowUpDate = cleanedNextFollowUpDate;
+      response.formattedNextFollowUpDate = cleanedNextFollowUpDate;
+    }
+
+    const cleanedFollowupDate = cleanValue(followupDate);
+    if (isValidString(cleanedFollowupDate)) {
+      response.followupDate = cleanedFollowupDate;
+      response.formattedFollowupDate = cleanedFollowupDate;
+    }
+
+    return response;
   }
 
   /**

@@ -21,17 +21,36 @@ export class LeadActivityRepository extends BaseRepository<ILeadActivity> {
   async create(activityData: Partial<ILeadActivity>): Promise<ILeadActivity> {
     const id = this.generateId();
 
-    const activity: ILeadActivity = {
+    // Ensure date is stored as string, not as Date object
+    const activityDateStr = activityData.activityDate
+      ? (typeof activityData.activityDate === 'string' ? activityData.activityDate : new Date(activityData.activityDate).toISOString())
+      : new Date().toISOString();
+
+    const activity: any = {
       id,
       leadId: activityData.leadId || '',
       counselorId: activityData.counselorId || '',
       activityType: activityData.activityType || 'other',
-      activityDate: activityData.activityDate || new Date().toISOString(),
-      remarks: activityData.remarks,
-      nextFollowUpDate: activityData.nextFollowUpDate,
-      followupDate: activityData.followupDate,
+      activityDate: activityDateStr,
       ...createBaseFields(),
     };
+
+    // Only add optional fields if they have values (and ensure dates are strings)
+    if (activityData.remarks) {
+      activity.remarks = activityData.remarks;
+    }
+
+    if (activityData.nextFollowUpDate) {
+      activity.nextFollowUpDate = typeof activityData.nextFollowUpDate === 'string'
+        ? activityData.nextFollowUpDate
+        : new Date(activityData.nextFollowUpDate).toISOString();
+    }
+
+    if (activityData.followupDate) {
+      activity.followupDate = typeof activityData.followupDate === 'string'
+        ? activityData.followupDate
+        : new Date(activityData.followupDate).toISOString();
+    }
 
     return await this.putItem(activity);
   }
