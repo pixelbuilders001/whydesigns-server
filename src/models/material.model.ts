@@ -13,6 +13,7 @@ export interface IMaterial extends BaseModel {
   fileSize: number; // in bytes
   uploadedBy: string; // User ID
   category?: string;
+  tags?: string[]; // Multiple tags for material
   downloadCount: number;
   isPublished: boolean;
   publishedAt: string | null; // ISO 8601 timestamp
@@ -29,6 +30,7 @@ export interface CreateMaterialInput {
   fileSize: number;
   uploadedBy: string;
   category?: string;
+  tags?: string[];
   isPublished?: boolean;
 }
 
@@ -42,6 +44,7 @@ export interface UpdateMaterialInput {
   fileType?: string;
   fileSize?: number;
   category?: string;
+  tags?: string[];
   downloadCount?: number;
   isPublished?: boolean;
   publishedAt?: string | null;

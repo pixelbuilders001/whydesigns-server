@@ -27,6 +27,7 @@ export class MaterialRepository extends BaseRepository<IMaterial> {
       fileType: data.fileType || '',
       fileSize: data.fileSize || 0,
       category: data.category || '',
+      tags: data.tags || [],
       uploadedBy: data.uploadedBy || '',
       downloadCount: data.downloadCount || 0,
       isPublished: data.isPublished || false,
@@ -117,10 +118,12 @@ export class MaterialRepository extends BaseRepository<IMaterial> {
       expressionAttributeValues: { ':isActive': true },
     });
 
-    // Filter by tags in memory (category field)
-    const filteredItems = result.items.filter(material =>
-      material.category && tags.some(tag => material.category?.includes(tag))
-    );
+    // Filter by tags in memory - check if material has any of the requested tags
+    const filteredItems = result.items.filter(material => {
+      if (!material.tags || material.tags.length === 0) return false;
+      // Check if material has any of the requested tags
+      return tags.some(tag => material.tags?.includes(tag));
+    });
 
     // Sort in memory
     const sortedItems = this.sortItems(filteredItems, sortBy, order);
@@ -150,10 +153,14 @@ export class MaterialRepository extends BaseRepository<IMaterial> {
     // Filter in memory
     const queryLower = query.toLowerCase();
     const filteredItems = result.items.filter((material) => {
+      // Search in tags array
+      const tagsMatch = material.tags?.some(tag => tag.toLowerCase().includes(queryLower)) || false;
+
       return (
         material.name?.toLowerCase().includes(queryLower) ||
         material.description?.toLowerCase().includes(queryLower) ||
-        material.category?.toLowerCase().includes(queryLower)
+        material.category?.toLowerCase().includes(queryLower) ||
+        tagsMatch
       );
     });
 
@@ -231,8 +238,9 @@ export class MaterialRepository extends BaseRepository<IMaterial> {
 
     const tagsSet = new Set<string>();
     result.items.forEach(material => {
-      if (material.category) {
-        tagsSet.add(material.category);
+      // Add all tags from the tags array
+      if (material.tags && material.tags.length > 0) {
+        material.tags.forEach(tag => tagsSet.add(tag));
       }
     });
 

@@ -192,6 +192,18 @@ export class UserService {
       throw new BadRequestError('Cannot update password, email, or refresh token through this endpoint');
     }
 
+    // Check if phone number is being changed and if it's already in use by another user
+    if (updateData.phoneNumber) {
+      const existingPhone = await userRepository.existsByPhone(updateData.phoneNumber);
+      if (existingPhone) {
+        const existingUser = await userRepository.findByPhone(updateData.phoneNumber);
+        // If phone exists and belongs to a different user, throw error
+        if (existingUser && existingUser.id !== id) {
+          throw new ConflictError('Phone number is already in use by another user');
+        }
+      }
+    }
+
     const user = await userRepository.update(id, updateData);
     if (!user) {
       throw new NotFoundError('User not found');
@@ -211,13 +223,14 @@ export class UserService {
       }
     }
 
-    // Check if phone number is being changed and if it's already in use
+    // Check if phone number is being changed and if it's already in use by another user
     if (filteredData.phoneNumber) {
       const existingPhone = await userRepository.existsByPhone(filteredData.phoneNumber);
       if (existingPhone) {
         const existingUser = await userRepository.findByPhone(filteredData.phoneNumber);
+        // If phone exists and belongs to a different user, throw error
         if (existingUser && existingUser.id !== id) {
-          throw new ConflictError('Phone number is already in use');
+          throw new ConflictError('Phone number is already in use by another user');
         }
       }
     }
@@ -251,13 +264,14 @@ export class UserService {
       }
     }
 
-    // Check if phone number is being changed and if it's already in use
+    // Check if phone number is being changed and if it's already in use by another user
     if (filteredData.phoneNumber) {
       const existingPhone = await userRepository.existsByPhone(filteredData.phoneNumber);
       if (existingPhone) {
         const existingUser = await userRepository.findByPhone(filteredData.phoneNumber);
+        // If phone exists and belongs to a different user, throw error
         if (existingUser && existingUser.id !== id) {
-          throw new ConflictError('Phone number is already in use');
+          throw new ConflictError('Phone number is already in use by another user');
         }
       }
     }
