@@ -19,7 +19,7 @@ export class BlogRepository extends BaseRepository<IBlog> {
   async create(blogData: Partial<IBlog>): Promise<IBlog> {
     const id = this.generateId();
 
-    const blog: IBlog = {
+    const blog: any = {
       id,
       title: blogData.title || '',
       slug: blogData.slug || '',
@@ -30,9 +30,16 @@ export class BlogRepository extends BaseRepository<IBlog> {
       status: blogData.status || 'draft',
       tags: blogData.tags || [],
       viewCount: blogData.viewCount || 0,
-      publishedAt: blogData.publishedAt || null,
+      publishedAt: null, // Default to null for draft blogs
       ...createBaseFields(),
     };
+
+    // Only add publishedAt if it has a value and ensure it's a string
+    if (blogData.publishedAt) {
+      blog.publishedAt = typeof blogData.publishedAt === 'string'
+        ? blogData.publishedAt
+        : new Date(blogData.publishedAt).toISOString();
+    }
 
     return await this.putItem(blog);
   }

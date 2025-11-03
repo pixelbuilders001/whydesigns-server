@@ -12,14 +12,18 @@ export class BookingRepository extends BaseRepository<IBooking> {
   async create(bookingData: Partial<IBooking>): Promise<IBooking> {
     const id = this.generateId();
 
-    const booking: IBooking = {
+    // Ensure bookingDate is stored as string, not as Date object
+    const bookingDateStr = bookingData.bookingDate
+      ? (typeof bookingData.bookingDate === 'string' ? bookingData.bookingDate : new Date(bookingData.bookingDate).toISOString())
+      : new Date().toISOString();
+
+    const booking: any = {
       id,
       counselorId: bookingData.counselorId || '',
-      userId: bookingData.userId,
       guestName: bookingData.guestName || '',
       guestEmail: bookingData.guestEmail || '',
       guestPhone: bookingData.guestPhone || '',
-      bookingDate: bookingData.bookingDate || new Date().toISOString(),
+      bookingDate: bookingDateStr,
       bookingTime: bookingData.bookingTime || '',
       duration: bookingData.duration || 60,
       discussionTopic: bookingData.discussionTopic || '',
@@ -28,6 +32,29 @@ export class BookingRepository extends BaseRepository<IBooking> {
       reminderEmailSent: bookingData.reminderEmailSent || false,
       ...createBaseFields(),
     };
+
+    // Only add optional fields if they have values
+    if (bookingData.userId) {
+      booking.userId = bookingData.userId;
+    }
+
+    if (bookingData.meetingLink) {
+      booking.meetingLink = bookingData.meetingLink;
+    }
+
+    if (bookingData.cancelledAt) {
+      booking.cancelledAt = typeof bookingData.cancelledAt === 'string'
+        ? bookingData.cancelledAt
+        : new Date(bookingData.cancelledAt).toISOString();
+    }
+
+    if (bookingData.cancelledBy) {
+      booking.cancelledBy = bookingData.cancelledBy;
+    }
+
+    if (bookingData.cancellationReason) {
+      booking.cancellationReason = bookingData.cancellationReason;
+    }
 
     return await this.putItem(booking);
   }

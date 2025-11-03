@@ -20,16 +20,51 @@ export class UserRepository extends BaseRepository<IUser> {
       ? await UserUtils.hashPassword(userData.password)
       : '';
 
-    const user: IUser = {
+    // Ensure dateOfBirth is stored as string if provided
+    const dateOfBirth = userData.dateOfBirth
+      ? (typeof userData.dateOfBirth === 'string' ? userData.dateOfBirth : new Date(userData.dateOfBirth).toISOString())
+      : undefined;
+
+    const user: any = {
       id,
-      ...userData,
+      email: userData.email,
       password: hashedPassword,
+      roleId: userData.roleId,
       isEmailVerified: userData.isEmailVerified || false,
       isPhoneVerified: userData.isPhoneVerified || false,
       provider: userData.provider || 'local',
       refreshToken: null,
       ...createBaseFields(),
     };
+
+    // Only add optional fields if they have values
+    if (userData.firstName) {
+      user.firstName = userData.firstName;
+    }
+
+    if (userData.lastName) {
+      user.lastName = userData.lastName;
+    }
+
+    if (dateOfBirth) {
+      user.dateOfBirth = dateOfBirth;
+    }
+
+    if (userData.phoneNumber) {
+      user.phoneNumber = userData.phoneNumber;
+    }
+
+    if (userData.address) {
+      user.address = userData.address;
+    }
+
+    if (userData.profilePicture) {
+      user.profilePicture = userData.profilePicture;
+    }
+
+    if (userData.gender) {
+      user.gender = userData.gender;
+    }
 
     return await this.putItem(user);
   }

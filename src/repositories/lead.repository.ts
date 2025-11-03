@@ -28,18 +28,30 @@ export class LeadRepository extends BaseRepository<ILead> {
   async create(leadData: Partial<ILead>): Promise<ILead> {
     const id = this.generateId();
 
-    const lead: ILead = {
+    const lead: any = {
       id,
       fullName: leadData.fullName || '',
       email: leadData.email || '',
       phone: leadData.phone || '',
       areaOfInterest: leadData.areaOfInterest || '',
-      message: leadData.message || '',
       contacted: leadData.contacted || false,
-      contactedAt: leadData.contactedAt,
-      contactedBy: leadData.contactedBy,
       ...createBaseFields(),
     };
+
+    // Only add optional fields if they have values
+    if (leadData.message) {
+      lead.message = leadData.message;
+    }
+
+    if (leadData.contactedAt) {
+      lead.contactedAt = typeof leadData.contactedAt === 'string'
+        ? leadData.contactedAt
+        : new Date(leadData.contactedAt).toISOString();
+    }
+
+    if (leadData.contactedBy) {
+      lead.contactedBy = leadData.contactedBy;
+    }
 
     return await this.putItem(lead);
   }
@@ -183,12 +195,12 @@ export class LeadRepository extends BaseRepository<ILead> {
    * Mark lead as not contacted
    */
   async markAsNotContacted(id: string): Promise<ILead | null> {
+    // Note: Setting undefined doesn't remove the field in DynamoDB, so we leave it as is
+    // The service layer should handle not displaying these fields when contacted is false
     return await this.updateItem(
       { id: id },
       {
         contacted: false,
-        contactedAt: undefined,
-        contactedBy: undefined,
       }
     );
   }
