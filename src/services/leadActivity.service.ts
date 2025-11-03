@@ -1,9 +1,34 @@
 import leadActivityRepository, { PaginationOptions } from '../repositories/leadActivity.repository';
 import leadRepository from '../repositories/lead.repository';
-import { ILeadActivity } from '../models/leadActivity.model';
+import userRepository from '../repositories/user.repository';
+import { ILeadActivity, LeadActivityResponse, CounselorInfo } from '../models/leadActivity.model';
 import { NotFoundError, BadRequestError } from '../utils/AppError';
 
 class LeadActivityService {
+  /**
+   * Helper method to populate counselor data in activity
+   */
+  private async populateCounselorData(activity: ILeadActivity): Promise<LeadActivityResponse> {
+    const counselor = await userRepository.findById(activity.counselorId);
+
+    const counselorInfo: CounselorInfo = {
+      id: activity.counselorId,
+      name: counselor ? `${counselor.firstName || ''} ${counselor.lastName || ''}`.trim() || 'Unknown' : 'Unknown',
+      email: counselor?.email || 'N/A',
+    };
+
+    // Remove counselorId and add counselor object
+    const { counselorId, ...activityWithoutCounselorId } = activity;
+
+    return {
+      ...activityWithoutCounselorId,
+      counselor: counselorInfo,
+      formattedActivityDate: new Date(activity.activityDate).toISOString(),
+      formattedNextFollowUpDate: activity.nextFollowUpDate ? new Date(activity.nextFollowUpDate).toISOString() : undefined,
+      formattedFollowupDate: activity.followupDate ? new Date(activity.followupDate).toISOString() : undefined,
+    };
+  }
+
   /**
    * Create a new lead activity
    */
@@ -34,7 +59,7 @@ class LeadActivityService {
   async getLeadActivities(
     leadId: string,
     options: PaginationOptions = {}
-  ): Promise<{ activities: ILeadActivity[]; total: number; page: number; totalPages: number }> {
+  ): Promise<{ activities: LeadActivityResponse[]; total: number; page: number; totalPages: number }> {
     // Verify lead exists
     const lead = await leadRepository.findById(leadId);
     if (!lead) {
@@ -44,8 +69,13 @@ class LeadActivityService {
     const { page = 1, limit = 10 } = options;
     const { activities, total } = await leadActivityRepository.findByLeadId(leadId, options);
 
+    // Populate counselor data for all activities
+    const populatedActivities = await Promise.all(
+      activities.map(activity => this.populateCounselorData(activity))
+    );
+
     return {
-      activities,
+      activities: populatedActivities,
       total,
       page,
       totalPages: Math.ceil(total / limit),
@@ -132,12 +162,17 @@ class LeadActivityService {
   async getCounselorActivities(
     counselorId: string,
     options: PaginationOptions = {}
-  ): Promise<{ activities: ILeadActivity[]; total: number; page: number; totalPages: number }> {
+  ): Promise<{ activities: LeadActivityResponse[]; total: number; page: number; totalPages: number }> {
     const { page = 1, limit = 10 } = options;
     const { activities, total } = await leadActivityRepository.findByCounselorId(counselorId, options);
 
+    // Populate counselor data for all activities
+    const populatedActivities = await Promise.all(
+      activities.map(activity => this.populateCounselorData(activity))
+    );
+
     return {
-      activities,
+      activities: populatedActivities,
       total,
       page,
       totalPages: Math.ceil(total / limit),
@@ -147,8 +182,15 @@ class LeadActivityService {
   /**
    * Get recent activities
    */
-  async getRecentActivities(limit: number = 10): Promise<ILeadActivity[]> {
-    return await leadActivityRepository.getRecentActivities(limit);
+  async getRecentActivities(limit: number = 10): Promise<LeadActivityResponse[]> {
+    const activities = await leadActivityRepository.getRecentActivities(limit);
+
+    // Populate counselor data for all activities
+    const populatedActivities = await Promise.all(
+      activities.map(activity => this.populateCounselorData(activity))
+    );
+
+    return populatedActivities;
   }
 }
 

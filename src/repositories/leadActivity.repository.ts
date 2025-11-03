@@ -29,6 +29,7 @@ export class LeadActivityRepository extends BaseRepository<ILeadActivity> {
       activityDate: activityData.activityDate || new Date().toISOString(),
       remarks: activityData.remarks,
       nextFollowUpDate: activityData.nextFollowUpDate,
+      followupDate: activityData.followupDate,
       ...createBaseFields(),
     };
 
@@ -52,7 +53,7 @@ export class LeadActivityRepository extends BaseRepository<ILeadActivity> {
     const {
       page = 1,
       limit = 10,
-      sortBy = 'activityDate',
+      sortBy = 'createdAt',
       sortOrder = 'desc',
     } = options;
 
@@ -63,7 +64,7 @@ export class LeadActivityRepository extends BaseRepository<ILeadActivity> {
       expressionAttributeValues: { ':leadId': leadId, ':isActive': true },
     });
 
-    // Sort in memory
+    // Sort in memory - by createdAt desc (most recent first)
     const sortedActivities = this.sortItems(result.items, sortBy, sortOrder);
 
     // Paginate in memory

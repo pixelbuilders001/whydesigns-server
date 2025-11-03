@@ -19,6 +19,7 @@ export interface ILeadActivity extends BaseModel {
   remarks?: string;
   activityDate: string; // ISO 8601 timestamp
   nextFollowUpDate?: string; // ISO 8601 timestamp (optional)
+  followupDate?: string; // ISO 8601 timestamp (optional)
 }
 
 // Lead Activity creation input (without auto-generated fields)
@@ -29,6 +30,7 @@ export interface CreateLeadActivityInput {
   remarks?: string;
   activityDate?: string;
   nextFollowUpDate?: string;
+  followupDate?: string;
 }
 
 // Lead Activity update input
@@ -37,13 +39,23 @@ export interface UpdateLeadActivityInput {
   remarks?: string;
   activityDate?: string;
   nextFollowUpDate?: string;
+  followupDate?: string;
   isActive?: boolean;
 }
 
+// Counselor info in response
+export interface CounselorInfo {
+  id: string;
+  name: string;
+  email: string;
+}
+
 // Lead Activity response interface
-export interface LeadActivityResponse extends ILeadActivity {
+export interface LeadActivityResponse extends Omit<ILeadActivity, 'counselorId'> {
+  counselor: CounselorInfo;
   formattedActivityDate: string;
   formattedNextFollowUpDate?: string;
+  formattedFollowupDate?: string;
 }
 
 // Utility class for lead activity operations
@@ -108,12 +120,18 @@ export class LeadActivityUtils {
   }
 
   // Convert to response with formatted fields
-  static toResponse(activity: ILeadActivity): LeadActivityResponse {
+  // Note: This method cannot populate counselor data - use the service layer for that
+  static toResponse(activity: ILeadActivity, counselor: CounselorInfo): LeadActivityResponse {
+    const { counselorId, ...activityWithoutCounselorId } = activity;
     return {
-      ...activity,
+      ...activityWithoutCounselorId,
+      counselor,
       formattedActivityDate: this.formatDate(activity.activityDate),
       formattedNextFollowUpDate: activity.nextFollowUpDate
         ? this.formatDate(activity.nextFollowUpDate)
+        : undefined,
+      formattedFollowupDate: activity.followupDate
+        ? this.formatDate(activity.followupDate)
         : undefined,
     };
   }

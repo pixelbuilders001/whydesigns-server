@@ -1,7 +1,7 @@
 import bookingRepository from '../repositories/booking.repository';
 import counselorRepository from '../repositories/counselor.repository';
 import bookingEmailService from './bookingEmail.service';
-import { IBooking, BookingStatus } from '../models/booking.model';
+import { IBooking, BookingStatus, BookingResponse, CounselorInfo } from '../models/booking.model';
 import { ICounselor } from '../models/counselor.model';
 import { PaginationOptions } from '../types';
 import { AppError } from '../utils/AppError';
@@ -32,7 +32,28 @@ interface CancelBookingInput {
 }
 
 export class BookingService {
-  async createBooking(data: CreateBookingInput): Promise<IBooking> {
+  /**
+   * Helper method to populate counselor data in booking
+   */
+  private async populateCounselorData(booking: IBooking): Promise<BookingResponse> {
+    const counselor = await counselorRepository.findById(booking.counselorId);
+
+    const counselorInfo: CounselorInfo = {
+      id: booking.counselorId,
+      name: counselor?.fullName || 'Unknown',
+      email: counselor?.email || 'N/A',
+    };
+
+    // Remove counselorId and add counselor object
+    const { counselorId, ...bookingWithoutCounselorId } = booking;
+
+    return {
+      ...bookingWithoutCounselorId,
+      counselor: counselorInfo,
+    };
+  }
+
+  async createBooking(data: CreateBookingInput): Promise<BookingResponse> {
     // 1. Validate counselor exists and is active
     const counselor = await counselorRepository.findById(data.counselorId);
     if (!counselor) {
@@ -83,23 +104,28 @@ export class BookingService {
       console.error('Failed to send confirmation email:', error);
     });
 
-    return booking;
+    return this.populateCounselorData(booking);
   }
 
-  async getBookingById(id: string): Promise<IBooking> {
+  async getBookingById(id: string): Promise<BookingResponse> {
     const booking = await bookingRepository.findById(id);
     if (!booking) {
       throw new AppError('Booking not found', 404);
     }
-    return booking;
+    return this.populateCounselorData(booking);
   }
 
-  async getAllBookings(options: PaginationOptions): Promise<{ bookings: IBooking[]; total: number; page: number; totalPages: number }> {
+  async getAllBookings(options: PaginationOptions): Promise<{ bookings: BookingResponse[]; total: number; page: number; totalPages: number }> {
     const { bookings, total } = await bookingRepository.findAll(options);
     const totalPages = Math.ceil(total / options.limit);
 
+    // Populate counselor data for all bookings
+    const populatedBookings = await Promise.all(
+      bookings.map(booking => this.populateCounselorData(booking))
+    );
+
     return {
-      bookings,
+      bookings: populatedBookings,
       total,
       page: options.page,
       totalPages,
@@ -109,12 +135,17 @@ export class BookingService {
   async getBookingsByStatus(
     status: BookingStatus,
     options: PaginationOptions
-  ): Promise<{ bookings: IBooking[]; total: number; page: number; totalPages: number }> {
+  ): Promise<{ bookings: BookingResponse[]; total: number; page: number; totalPages: number }> {
     const { bookings, total } = await bookingRepository.findByStatus(status, options);
     const totalPages = Math.ceil(total / options.limit);
 
+    // Populate counselor data for all bookings
+    const populatedBookings = await Promise.all(
+      bookings.map(booking => this.populateCounselorData(booking))
+    );
+
     return {
-      bookings,
+      bookings: populatedBookings,
       total,
       page: options.page,
       totalPages,
@@ -124,12 +155,17 @@ export class BookingService {
   async getBookingsByCounselor(
     counselorId: string,
     options: PaginationOptions
-  ): Promise<{ bookings: IBooking[]; total: number; page: number; totalPages: number }> {
+  ): Promise<{ bookings: BookingResponse[]; total: number; page: number; totalPages: number }> {
     const { bookings, total } = await bookingRepository.findByCounselor(counselorId, options);
     const totalPages = Math.ceil(total / options.limit);
 
+    // Populate counselor data for all bookings
+    const populatedBookings = await Promise.all(
+      bookings.map(booking => this.populateCounselorData(booking))
+    );
+
     return {
-      bookings,
+      bookings: populatedBookings,
       total,
       page: options.page,
       totalPages,
@@ -139,12 +175,17 @@ export class BookingService {
   async getBookingsByUser(
     userId: string,
     options: PaginationOptions
-  ): Promise<{ bookings: IBooking[]; total: number; page: number; totalPages: number }> {
+  ): Promise<{ bookings: BookingResponse[]; total: number; page: number; totalPages: number }> {
     const { bookings, total } = await bookingRepository.findByUser(userId, options);
     const totalPages = Math.ceil(total / options.limit);
 
+    // Populate counselor data for all bookings
+    const populatedBookings = await Promise.all(
+      bookings.map(booking => this.populateCounselorData(booking))
+    );
+
     return {
-      bookings,
+      bookings: populatedBookings,
       total,
       page: options.page,
       totalPages,
@@ -154,36 +195,48 @@ export class BookingService {
   async getBookingsByEmail(
     email: string,
     options: PaginationOptions
-  ): Promise<{ bookings: IBooking[]; total: number; page: number; totalPages: number }> {
+  ): Promise<{ bookings: BookingResponse[]; total: number; page: number; totalPages: number }> {
     const { bookings, total } = await bookingRepository.findByEmail(email, options);
     const totalPages = Math.ceil(total / options.limit);
 
+    // Populate counselor data for all bookings
+    const populatedBookings = await Promise.all(
+      bookings.map(booking => this.populateCounselorData(booking))
+    );
+
     return {
-      bookings,
+      bookings: populatedBookings,
       total,
       page: options.page,
       totalPages,
     };
   }
 
-  async getUpcomingBookings(limit: number = 10): Promise<IBooking[]> {
-    return await bookingRepository.findUpcomingBookings(limit);
+  async getUpcomingBookings(limit: number = 10): Promise<BookingResponse[]> {
+    const bookings = await bookingRepository.findUpcomingBookings(limit);
+    return Promise.all(bookings.map(booking => this.populateCounselorData(booking)));
   }
 
-  async getUpcomingBookingsByUser(userId: string): Promise<IBooking[]> {
-    return await bookingRepository.findUpcomingByUser(userId);
+  async getUpcomingBookingsByUser(userId: string): Promise<BookingResponse[]> {
+    const bookings = await bookingRepository.findUpcomingByUser(userId);
+    return Promise.all(bookings.map(booking => this.populateCounselorData(booking)));
   }
 
-  async getUpcomingBookingsByEmail(email: string): Promise<IBooking[]> {
-    return await bookingRepository.findUpcomingByEmail(email);
+  async getUpcomingBookingsByEmail(email: string): Promise<BookingResponse[]> {
+    const bookings = await bookingRepository.findUpcomingByEmail(email);
+    return Promise.all(bookings.map(booking => this.populateCounselorData(booking)));
   }
 
-  async getUpcomingBookingsByCounselor(counselorId: string): Promise<IBooking[]> {
-    return await bookingRepository.findUpcomingByCounselor(counselorId);
+  async getUpcomingBookingsByCounselor(counselorId: string): Promise<BookingResponse[]> {
+    const bookings = await bookingRepository.findUpcomingByCounselor(counselorId);
+    return Promise.all(bookings.map(booking => this.populateCounselorData(booking)));
   }
 
-  async updateBooking(id: string, data: UpdateBookingInput): Promise<IBooking> {
-    const booking = await this.getBookingById(id);
+  async updateBooking(id: string, data: UpdateBookingInput): Promise<BookingResponse> {
+    const booking = await bookingRepository.findById(id);
+    if (!booking) {
+      throw new AppError('Booking not found', 404);
+    }
 
     // Don't allow updates to cancelled or completed bookings
     if (booking.status === 'cancelled' || booking.status === 'completed') {
@@ -234,11 +287,14 @@ export class BookingService {
       throw new AppError('Booking not found', 404);
     }
 
-    return updatedBooking;
+    return this.populateCounselorData(updatedBooking);
   }
 
-  async confirmBooking(id: string, meetingLink: string): Promise<IBooking> {
-    const booking = await this.getBookingById(id);
+  async confirmBooking(id: string, meetingLink: string): Promise<BookingResponse> {
+    const booking = await bookingRepository.findById(id);
+    if (!booking) {
+      throw new AppError('Booking not found', 404);
+    }
 
     if (booking.status !== 'pending') {
       throw new AppError('Only pending bookings can be confirmed', 400);
@@ -276,11 +332,14 @@ export class BookingService {
       });
     }
 
-    return updatedBooking;
+    return this.populateCounselorData(updatedBooking);
   }
 
-  async cancelBooking(id: string, cancelData: CancelBookingInput): Promise<IBooking> {
-    const booking = await this.getBookingById(id);
+  async cancelBooking(id: string, cancelData: CancelBookingInput): Promise<BookingResponse> {
+    const booking = await bookingRepository.findById(id);
+    if (!booking) {
+      throw new AppError('Booking not found', 404);
+    }
 
     if (booking.status === 'cancelled') {
       throw new AppError('Booking is already cancelled', 400);
@@ -314,11 +373,14 @@ export class BookingService {
       });
     }
 
-    return updatedBooking;
+    return this.populateCounselorData(updatedBooking);
   }
 
-  async completeBooking(id: string): Promise<IBooking> {
-    const booking = await this.getBookingById(id);
+  async completeBooking(id: string): Promise<BookingResponse> {
+    const booking = await bookingRepository.findById(id);
+    if (!booking) {
+      throw new AppError('Booking not found', 404);
+    }
 
     if (booking.status !== 'confirmed') {
       throw new AppError('Only confirmed bookings can be marked as completed', 400);
@@ -329,11 +391,14 @@ export class BookingService {
       throw new AppError('Booking not found', 404);
     }
 
-    return updatedBooking;
+    return this.populateCounselorData(updatedBooking);
   }
 
-  async markNoShow(id: string): Promise<IBooking> {
-    const booking = await this.getBookingById(id);
+  async markNoShow(id: string): Promise<BookingResponse> {
+    const booking = await bookingRepository.findById(id);
+    if (!booking) {
+      throw new AppError('Booking not found', 404);
+    }
 
     if (booking.status !== 'confirmed') {
       throw new AppError('Only confirmed bookings can be marked as no-show', 400);
@@ -344,7 +409,7 @@ export class BookingService {
       throw new AppError('Booking not found', 404);
     }
 
-    return updatedBooking;
+    return this.populateCounselorData(updatedBooking);
   }
 
   async deleteBooking(id: string): Promise<void> {

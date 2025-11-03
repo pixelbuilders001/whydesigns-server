@@ -52,6 +52,18 @@ export interface UpdateBookingInput {
   isActive?: boolean;
 }
 
+// Counselor info in response
+export interface CounselorInfo {
+  id: string;
+  name: string;
+  email: string;
+}
+
+// Booking response interface with populated counselor
+export interface BookingResponse extends Omit<IBooking, 'counselorId'> {
+  counselor: CounselorInfo;
+}
+
 // Utility class for booking operations
 export class BookingUtils {
   // Get booking datetime as Date object

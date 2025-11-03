@@ -29,6 +29,12 @@ export const createLeadActivitySchema = Joi.object({
     .messages({
       'date.base': 'Next follow-up date must be a valid date',
     }),
+  followupDate: Joi.date()
+    .optional()
+    .allow(null)
+    .messages({
+      'date.base': 'Follow-up date must be a valid date',
+    }),
 });
 
 // Update lead activity validation schema
@@ -57,6 +63,12 @@ export const updateLeadActivitySchema = Joi.object({
     .allow(null)
     .messages({
       'date.base': 'Next follow-up date must be a valid date',
+    }),
+  followupDate: Joi.date()
+    .optional()
+    .allow(null)
+    .messages({
+      'date.base': 'Follow-up date must be a valid date',
     }),
 }).min(1);
 
