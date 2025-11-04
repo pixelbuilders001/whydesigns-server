@@ -34,11 +34,11 @@ class LeadService {
    * Helper method to populate latest activity info
    */
   private async populateLatestActivity(leadId: string): Promise<{ latestActivity?: LeadLatestActivity; totalActivities: number }> {
-    // Get all activities for this lead
+    // Get all activities for this lead sorted by createdAt (most recent first)
     const { activities, total } = await leadActivityRepository.findByLeadId(leadId, {
       page: 1,
       limit: 1,
-      sortBy: 'activityDate',
+      sortBy: 'createdAt',
       sortOrder: 'desc',
     });
 
