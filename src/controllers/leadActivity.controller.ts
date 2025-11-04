@@ -33,12 +33,12 @@ class LeadActivityController {
     const { leadId } = req.params;
     const { page, limit, sortBy, sortOrder } = req.query;
 
-    const options = {
-      page: page ? parseInt(page as string) : undefined,
-      limit: limit ? parseInt(limit as string) : undefined,
-      sortBy: sortBy as string,
-      sortOrder: sortOrder as 'asc' | 'desc',
-    };
+    const options: any = {};
+
+    if (page) options.page = parseInt(page as string);
+    if (limit) options.limit = parseInt(limit as string);
+    if (sortBy) options.sortBy = sortBy as string;
+    if (sortOrder) options.sortOrder = sortOrder as 'asc' | 'desc';
 
     const result = await leadActivityService.getLeadActivities(leadId, options);
 
@@ -132,12 +132,12 @@ class LeadActivityController {
     const counselorId = (req as any).user.id;
     const { page, limit, sortBy, sortOrder } = req.query;
 
-    const options = {
-      page: page ? parseInt(page as string) : undefined,
-      limit: limit ? parseInt(limit as string) : undefined,
-      sortBy: sortBy as string,
-      sortOrder: sortOrder as 'asc' | 'desc',
-    };
+    const options: any = {};
+
+    if (page) options.page = parseInt(page as string);
+    if (limit) options.limit = parseInt(limit as string);
+    if (sortBy) options.sortBy = sortBy as string;
+    if (sortOrder) options.sortOrder = sortOrder as 'asc' | 'desc';
 
     const result = await leadActivityService.getCounselorActivities(counselorId, options);
 
