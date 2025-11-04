@@ -57,15 +57,6 @@ export class MaterialService {
 
     const { uploadedBy, tags, ...materialData } = material;
 
-    // Helper to check if value is an empty object (from DynamoDB)
-    const isEmptyObject = (val: any): boolean => {
-      return val !== null &&
-             val !== undefined &&
-             typeof val === 'object' &&
-             !Array.isArray(val) &&
-             Object.keys(val).length === 0;
-    };
-
     const response: any = {
       ...materialData,
       uploadedBy: uploadedByUser,
