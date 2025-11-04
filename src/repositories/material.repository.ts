@@ -19,21 +19,38 @@ export class MaterialRepository extends BaseRepository<IMaterial> {
   async create(data: Partial<IMaterial>): Promise<IMaterial> {
     const id = this.generateId();
 
-    const material: IMaterial = {
+    const material: any = {
       id,
       name: data.name || '',
-      description: data.description || '',
       fileUrl: data.fileUrl || '',
       fileType: data.fileType || '',
       fileSize: data.fileSize || 0,
-      category: data.category || '',
-      tags: data.tags || [],
       uploadedBy: data.uploadedBy || '',
       downloadCount: data.downloadCount || 0,
       isPublished: data.isPublished || false,
-      publishedAt: data.publishedAt || null,
+      publishedAt: null,
       ...createBaseFields(),
     };
+
+    // Only add optional fields if they have values
+    if (data.description) {
+      material.description = data.description;
+    }
+
+    if (data.category) {
+      material.category = data.category;
+    }
+
+    // Only add tags if array has items
+    if (data.tags && Array.isArray(data.tags) && data.tags.length > 0) {
+      material.tags = data.tags;
+    }
+
+    if (data.publishedAt) {
+      material.publishedAt = typeof data.publishedAt === 'string'
+        ? data.publishedAt
+        : new Date(data.publishedAt).toISOString();
+    }
 
     return await this.putItem(material);
   }

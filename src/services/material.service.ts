@@ -14,6 +14,7 @@ export interface CreateMaterialData {
   fileType: string;
   fileSize: number;
   category?: string;
+  tags?: string[];
   uploadedBy: string;
 }
 
@@ -27,6 +28,7 @@ export interface UpdateMaterialData {
   fileType?: string;
   fileSize?: number;
   category?: string;
+  tags?: string[];
   isActive?: boolean;
 }
 
@@ -53,12 +55,29 @@ export class MaterialService {
           email: '',
         };
 
-    const { uploadedBy, ...materialData } = material;
-    return {
+    const { uploadedBy, tags, ...materialData } = material;
+
+    // Helper to check if value is an empty object (from DynamoDB)
+    const isEmptyObject = (val: any): boolean => {
+      return val !== null &&
+             val !== undefined &&
+             typeof val === 'object' &&
+             !Array.isArray(val) &&
+             Object.keys(val).length === 0;
+    };
+
+    const response: any = {
       ...materialData,
       uploadedBy: uploadedByUser,
       formattedFileSize: this.formatFileSize(material.fileSize),
     };
+
+    // Only add tags if it's a valid non-empty array
+    if (tags && Array.isArray(tags) && tags.length > 0) {
+      response.tags = tags;
+    }
+
+    return response;
   }
 
   /**
@@ -105,11 +124,12 @@ export class MaterialService {
     // Create material
     const material = await materialRepository.create({
       name: data.name.trim(),
-      description: data.description?.trim() || '',
+      description: data.description?.trim(),
       fileUrl: data.fileUrl,
       fileType: data.fileType.toLowerCase(),
       fileSize: data.fileSize,
-      category: data.category?.trim() || 'General',
+      category: data.category?.trim(),
+      tags: data.tags,
       uploadedBy: data.uploadedBy as any,
     });
 
