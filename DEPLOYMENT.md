@@ -14,11 +14,13 @@ This guide covers deploying the Why Designers backend application to AWS EC2 usi
 ## Prerequisites
 
 - AWS Account with EC2 access
-- Domain name (for SSL/HTTPS)
+- Domain name: `whydesigners.com` (with subdomain `api.whydesigners.com`)
 - AWS credentials (Access Key, Secret Key)
 - DynamoDB tables created
 - S3 bucket created
 - SES configured for email sending
+
+> **Note:** The application will be accessible at `https://api.whydesigners.com`. See [DNS-SETUP.md](DNS-SETUP.md) for detailed DNS configuration instructions.
 
 ## EC2 Setup
 
@@ -158,6 +160,21 @@ curl http://localhost:5000/health
 ./scripts/logs.sh
 ```
 
+## DNS Configuration
+
+Before configuring SSL, you need to set up DNS for your subdomain `api.whydesigners.com`.
+
+**See detailed DNS setup instructions:** [DNS-SETUP.md](DNS-SETUP.md)
+
+Quick steps:
+1. Get your EC2 public IP or Elastic IP
+2. Add an A record in your DNS provider:
+   - **Type:** A
+   - **Name:** api
+   - **Value:** Your EC2 IP address
+3. Wait 5-15 minutes for DNS propagation
+4. Test: `nslookup api.whydesigners.com`
+
 ## SSL Configuration
 
 ### Option 1: Using Let's Encrypt (Free)
@@ -169,12 +186,13 @@ sudo apt install -y certbot
 # Stop nginx temporarily
 docker-compose stop nginx
 
-# Generate SSL certificate
-sudo certbot certonly --standalone -d yourdomain.com -d www.yourdomain.com
+# Generate SSL certificate for api.whydesigners.com
+sudo certbot certonly --standalone -d api.whydesigners.com
 
 # Copy certificates to nginx directory
-sudo cp /etc/letsencrypt/live/yourdomain.com/fullchain.pem nginx/ssl/
-sudo cp /etc/letsencrypt/live/yourdomain.com/privkey.pem nginx/ssl/
+sudo cp /etc/letsencrypt/live/api.whydesigners.com/fullchain.pem nginx/ssl/
+sudo cp /etc/letsencrypt/live/api.whydesigners.com/privkey.pem nginx/ssl/
+sudo chown -R $USER:$USER nginx/ssl/
 
 # Update nginx configuration
 # Uncomment HTTPS server block in nginx/conf.d/app.conf
@@ -182,14 +200,20 @@ nano nginx/conf.d/app.conf
 
 # Restart nginx
 docker-compose up -d nginx
+
+# Test HTTPS
+curl https://api.whydesigners.com/health
 ```
 
 ### Option 2: Using AWS Certificate Manager with ALB
 
 1. Create Application Load Balancer (ALB) in AWS
-2. Add SSL certificate from ACM
+2. Request certificate in ACM for `api.whydesigners.com`
 3. Configure target group pointing to EC2 instance port 80
-4. Update security groups
+4. Update DNS to point to ALB instead of EC2 IP
+5. Update security groups
+
+**See detailed SSL setup:** [DNS-SETUP.md](DNS-SETUP.md#ssl-certificate-setup-https)
 
 ## Monitoring & Maintenance
 
