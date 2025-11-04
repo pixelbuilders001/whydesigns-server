@@ -23,9 +23,13 @@ export class App {
     this.app.use(helmet());
 
     // CORS configuration
+    const corsOrigins = config.CORS_ORIGIN === '*'
+      ? '*'
+      : config.CORS_ORIGIN.split(',').map(origin => origin.trim());
+
     this.app.use(
       cors({
-        origin: config.CORS_ORIGIN,
+        origin: corsOrigins,
         credentials: true,
       })
     );
