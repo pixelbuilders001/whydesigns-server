@@ -45,3 +45,13 @@ coverage/
 *.db
 *.sqlite
 data/
+
+# Docker
+docker-volumes/
+
+# Backups
+backups/
+
+# SSL certificates
+nginx/ssl/*.pem
+nginx/ssl/*.key
