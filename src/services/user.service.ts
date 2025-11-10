@@ -86,22 +86,22 @@ export class UserService {
 
     // Create a lead for the new user registration
     try {
-      // Only create lead if phone number is provided (since it's required in Lead model)
-      if (user.phoneNumber && user.phoneNumber.trim() !== '') {
-        const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email;
+      const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email;
 
-        await leadService.createLead({
-          fullName,
-          email: user.email,
-          phone: user.phoneNumber,
-          areaOfInterest: 'New User Registration',
-          message: 'Automatically created from user registration',
-        });
+      // Use phone number if provided, otherwise use placeholder
+      const phoneNumber = user.phoneNumber && user.phoneNumber.trim() !== ''
+        ? user.phoneNumber
+        : 'Not provided';
 
-        console.log(`✅ Lead created for new user: ${user.email}`);
-      } else {
-        console.log(`⚠️  Lead not created for ${user.email} - phone number not provided`);
-      }
+      await leadService.createLead({
+        fullName,
+        email: user.email,
+        phone: phoneNumber,
+        areaOfInterest: 'New User Registration',
+        message: `Automatically created from user registration${!user.phoneNumber ? ' (Phone number not provided during registration)' : ''}`,
+      });
+
+      console.log(`✅ Lead created for new user: ${user.email}`);
     } catch (error) {
       console.error('Failed to create lead for new user:', error);
       // Don't fail registration if lead creation fails
