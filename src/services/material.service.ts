@@ -234,6 +234,10 @@ export class MaterialService {
       updateData.category = data.category.trim() || 'General';
     }
 
+    if (data.tags !== undefined) {
+      updateData.tags = data.tags;
+    }
+
     if (data.isActive !== undefined) {
       updateData.isActive = data.isActive;
     }
