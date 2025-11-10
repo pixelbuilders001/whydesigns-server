@@ -39,6 +39,7 @@ export class MaterialController {
       fileType: req.file.mimetype,
       fileSize: req.file.size,
       category: req.body.category || 'General',
+      tags: req.body.tags ? (Array.isArray(req.body.tags) ? req.body.tags : [req.body.tags]) : undefined,
       uploadedBy,
     };
 
